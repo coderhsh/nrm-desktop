@@ -140,12 +140,8 @@ function validateName(_rule: any, value: string, callback: any) {
   if (trimmedName.length > nameMaxLength) {
     return callback(new Error(`名称长度不能超过 ${nameMaxLength} 个字符`));
   }
-  if (isPresetEdit() && trimmedName !== props.registry?.name) {
-    return callback(new Error("预设源暂不支持修改名称"));
-  }
   if (
-    !isEdit() &&
-    store.registries.some((r) => r.name === trimmedName)
+    store.registries.some((r) => r.name === trimmedName && r.name !== props.registry?.name)
   ) {
     return callback(new Error("该名称已存在"));
   }
@@ -195,7 +191,6 @@ function validateUrl(_rule: any, value: string, callback: any) {
         <el-input
           v-model="name"
           placeholder="如: my-registry"
-          :disabled="isPresetEdit()"
           :maxlength="nameMaxLength"
           show-word-limit
         />
@@ -208,7 +203,7 @@ function validateUrl(_rule: any, value: string, callback: any) {
         <el-input v-model="url" placeholder="如: https://registry.example.com/" />
       </el-form-item>
       <div v-if="isPresetEdit()" class="text-xs text-gray-400 -mt-1 mb-2">
-        预设源支持修改 URL，不支持修改名称
+        预设源支持修改名称与 URL
       </div>
       <template v-if="isCustomEdit()">
         <el-form-item label="分类">

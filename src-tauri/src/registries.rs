@@ -161,19 +161,31 @@ pub fn delete(name: &str) -> io::Result<()> {
 /// Update a custom registry.
 pub fn update(name: &str, new_name: &str, new_url: &str) -> io::Result<()> {
     let mut data = load_custom_data()?;
+    let presets = preset_registries();
     let idx = data.registries.iter().position(|r| r.name == name);
 
-    // If target is a preset source, allow overriding URL with same name.
+    // If target is a preset source, allow overriding URL and renaming.
     if idx.is_none() {
-        let is_preset = preset_registries().iter().any(|r| r.name == name);
+        let is_preset = presets.iter().any(|r| r.name == name);
         if !is_preset {
             return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该源"));
         }
-        if new_name != name {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "预设源不支持修改名称",
-            ));
+
+        // Prevent conflicts with existing custom entries.
+        if data.registries.iter().any(|r| r.name == new_name) {
+            return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该名称已存在"));
+        }
+
+        // Prevent conflicts with visible preset entries.
+        if presets.iter().any(|preset| {
+            preset.name == new_name
+                && preset.name != name
+                && !data
+                    .deleted_presets
+                    .iter()
+                    .any(|deleted_name| deleted_name == &preset.name)
+        }) {
+            return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该名称已存在"));
         }
 
         data.registries.push(Registry {
@@ -181,20 +193,36 @@ pub fn update(name: &str, new_name: &str, new_url: &str) -> io::Result<()> {
             url: new_url.to_string(),
             is_custom: true,
         });
-        data.deleted_presets.retain(|preset_name| preset_name != name);
+
+        if new_name == name {
+            data.deleted_presets.retain(|preset_name| preset_name != name);
+        } else if !data.deleted_presets.iter().any(|preset_name| preset_name == name) {
+            data.deleted_presets.push(name.to_string());
+        }
+
         return save_custom_data(&data);
     }
 
     let idx = idx.expect("index already checked");
 
     // Check for name conflict with other entries
-    if name != new_name
-        && data
+    if name != new_name {
+        if data
             .registries
             .iter()
             .any(|r| r.name == new_name && r.name != name)
-    {
-        return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该名称已存在"));
+        {
+            return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该名称已存在"));
+        }
+        if presets.iter().any(|preset| {
+            preset.name == new_name
+                && !data
+                    .deleted_presets
+                    .iter()
+                    .any(|deleted_name| deleted_name == &preset.name)
+        }) {
+            return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该名称已存在"));
+        }
     }
 
     data.registries[idx].name = new_name.to_string();

@@ -718,7 +718,7 @@ function copyAllDetails() {
         {{ filteredRegistries.length }}
       </span>
       <el-button text size="small" @click="openCategoryManageDialog">
-        <el-icon><Setting /></el-icon>
+        <el-icon class="mr-1"><Setting /></el-icon>
         分类管理
       </el-button>
       <div v-if="latencyLoading" class="ml-auto">
@@ -799,7 +799,7 @@ function copyAllDetails() {
               ]"
               @click="handleSwitch(registry)"
               @mousedown.left="onRegistryMouseDown(registry, $event)"
-              @dblclick.stop="openDetail(registry)"
+              @dblclick.stop="openEdit(registry)"
               @contextmenu="onContextMenu($event, registry)"
             >
               <div class="flex-1 min-w-0">
