@@ -41,6 +41,11 @@ const themeOptions = computed(() => [
   { label: t('app.settings.themeDark'), value: 'dark' as const },
 ])
 const elementLocale = computed(() => (language.value === 'en' ? en : zhCn))
+const nextThemeLabel = computed(() => {
+  if (theme.theme.value === 'auto') return t('app.settings.themeDark')
+  if (theme.theme.value === 'dark') return t('app.settings.themeLight')
+  return t('app.settings.themeAuto')
+})
 let unlistenCloseRequested: null | (() => void) = null
 
 watch(
@@ -61,6 +66,9 @@ function handleSaveSettings() {
   const nextLanguage = draftLanguage.value
   language.value = draftLanguage.value
   theme.theme.value = draftTheme.value
+  void invoke('set_app_language', { lang: nextLanguage }).catch(() => {
+    ElMessage.error('托盘菜单语言更新失败，请重试')
+  })
   showSettingsDialog.value = false
   ElMessage.success(nextLanguage === 'en' ? 'Settings saved' : '设置已保存')
 }
@@ -80,7 +88,7 @@ onMounted(async () => {
       try {
         await invoke('hide_main_window')
       } catch {
-        ElMessage.error('缩小到托盘失败，请重试')
+        ElMessage.error(t('app.closeDialog.minimizeFailed'))
       }
       return
     }
@@ -140,7 +148,7 @@ async function openGithubHome() {
   try {
     await openExternal('https://github.com/coderhsh/nrm-desktop')
   } catch (e) {
-    ElMessage.error(`打开 GitHub 失败: ${e}`)
+    ElMessage.error(t('app.closeDialog.githubOpenFailed', { error: String(e) }))
   }
 }
 
@@ -203,7 +211,12 @@ async function applyCloseAction() {
 
           <span class="flex-1"></span>
 
-          <el-button text size="small" @click="theme.toggle()" :title="'主题: ' + theme.nextLabel.value">
+          <el-button
+            text
+            size="small"
+            @click="theme.toggle()"
+            :title="t('app.themeTooltip', { mode: nextThemeLabel })"
+          >
             {{ theme.icon.value }}
           </el-button>
 
@@ -276,27 +289,27 @@ async function applyCloseAction() {
 
       <el-dialog
         v-model="showCloseConfirmDialog"
-        title="关闭应用"
+        :title="t('app.closeDialog.title')"
         width="420px"
         :close-on-click-modal="false"
         :show-close="false"
       >
         <div class="close-confirm-content flex flex-col gap-4">
           <div class="close-confirm-desc text-sm leading-6 text-gray-600 dark:text-gray-300">
-            关闭窗口时，你希望执行什么操作？
+            {{ t('app.closeDialog.desc') }}
           </div>
           <el-radio-group v-model="closeActionDraft" class="close-action-group flex flex-col gap-2">
-            <el-radio value="minimize" class="close-action-item !mr-0">缩小到托盘（推荐）</el-radio>
-            <el-radio value="exit" class="close-action-item !mr-0">直接退出程序</el-radio>
+            <el-radio value="minimize" class="close-action-item !mr-0">{{ t('app.closeDialog.minimize') }}</el-radio>
+            <el-radio value="exit" class="close-action-item !mr-0">{{ t('app.closeDialog.exit') }}</el-radio>
           </el-radio-group>
           <div class="close-remember-wrap pt-1">
-            <el-checkbox v-model="rememberCloseChoice">记住我的选择</el-checkbox>
+            <el-checkbox v-model="rememberCloseChoice">{{ t('app.closeDialog.remember') }}</el-checkbox>
           </div>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <el-button @click="closeCloseConfirmDialog">取消</el-button>
-            <el-button type="primary" @click="applyCloseAction">确定</el-button>
+            <el-button @click="closeCloseConfirmDialog">{{ t('common.cancel') }}</el-button>
+            <el-button type="primary" @click="applyCloseAction">{{ t('common.confirm') }}</el-button>
           </div>
         </template>
       </el-dialog>

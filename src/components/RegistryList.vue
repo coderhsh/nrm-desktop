@@ -11,7 +11,7 @@ import { testSingleSpeed } from "@/api/speedtest";
 import RegistryDialog from "./RegistryDialog.vue";
 
 const store = useRegistryStore();
-const { isEnglish } = useI18n();
+const { t } = useI18n();
 const { filteredRegistries, currentRegistry, searchQuery, loading, latencyResults, latencyLoading } =
   storeToRefs(store);
 
@@ -453,7 +453,7 @@ function finishManageDrag() {
       nextLabels.splice(fromIndex, 1);
       nextLabels.splice(toIndex, 0, fromLabel);
       categoryLabels.value = nextLabels;
-      ElMessage.success("分类排序已更新");
+      ElMessage.success(t("categoryDialog.sorted"));
     }
   }
   manageDragLabel.value = null;
@@ -468,7 +468,7 @@ function finishManageDrag() {
 function addCategoryLabel() {
   const normalized = normalizeCategoryLabel(newCategoryLabel.value);
   if (!normalized) {
-    ElMessage.error("请输入分类名称");
+    ElMessage.error(t("categoryDialog.nameRequired"));
     return;
   }
   if (
@@ -476,7 +476,7 @@ function addCategoryLabel() {
     normalized === presetCategoryLabel.value ||
     categoryLabels.value.includes(normalized)
   ) {
-    ElMessage.error("分类标签已存在");
+    ElMessage.error(t("categoryDialog.nameExists"));
     return;
   }
   categoryLabels.value = [...categoryLabels.value, normalized];
@@ -485,7 +485,7 @@ function addCategoryLabel() {
     [normalized]: normalized,
   };
   newCategoryLabel.value = "";
-  ElMessage.success("分类已新增");
+  ElMessage.success(t("categoryDialog.added"));
 }
 
 function startRenameCategory(label: string) {
@@ -506,12 +506,12 @@ function saveRenamedCategory(oldLabel: string) {
   }
   const newLabel = normalizeCategoryLabel(categoryRenameInputs.value[oldLabel] || "");
   if (!newLabel) {
-    ElMessage.error("分类名称不能为空");
+    ElMessage.error(t("categoryDialog.nameRequired"));
     return;
   }
   if (newLabel === oldLabel) {
     editingCategoryLabel.value = null;
-    ElMessage.success("保存成功");
+    ElMessage.success(t("categoryDialog.saved"));
     return;
   }
   if (
@@ -519,7 +519,7 @@ function saveRenamedCategory(oldLabel: string) {
     newLabel === presetCategoryLabel.value ||
     categoryLabels.value.includes(newLabel)
   ) {
-    ElMessage.error("分类标签已存在");
+    ElMessage.error(t("categoryDialog.nameExists"));
     return;
   }
   categoryLabels.value = categoryLabels.value.map((label) =>
@@ -550,15 +550,15 @@ function saveRenamedCategory(oldLabel: string) {
   renameInputs[newLabel] = newLabel;
   categoryRenameInputs.value = renameInputs;
 
-  ElMessage.success("重命名成功");
+  ElMessage.success(t("categoryDialog.renamed"));
 }
 
 async function deleteCategoryLabel(label: string) {
   try {
     await ElMessageBox.confirm(
-      `确定要删除分类 "${label}" 吗？该分类下源将自动归入未分类。`,
-      "确认删除分类",
-      { confirmButtonText: "删除", cancelButtonText: "取消", type: "warning" }
+      t("categoryDialog.confirmDeleteContent", { label }),
+      t("categoryDialog.confirmDeleteTitle"),
+      { confirmButtonText: t("common.delete"), cancelButtonText: t("common.cancel"), type: "warning" }
     );
   } catch {
     return;
@@ -583,7 +583,7 @@ async function deleteCategoryLabel(label: string) {
   delete renameInputs[label];
   categoryRenameInputs.value = renameInputs;
 
-  ElMessage.success("分类已删除，相关源已归为未分类");
+  ElMessage.success(t("categoryDialog.deleted"));
 }
 
 function getLatencyColor(ms: number | null): string {
@@ -605,35 +605,38 @@ function getLatencyText(name: string): string {
 async function copyText(content: string, label: string) {
   try {
     await navigator.clipboard.writeText(content);
-    ElMessage.success(`${label}已复制`);
+    ElMessage.success(t("registryList.detail.copied", { label }));
   } catch (error) {
-    ElMessage.error(`复制失败: ${error}`);
+    ElMessage.error(t("registryList.detail.copyFailed", { error: String(error) }));
   }
 }
 
 function copyDetailField(field: "name" | "url" | "latency") {
   if (!selectedRegistry.value) return;
   if (field === "name") {
-    copyText(selectedRegistry.value.name, "名称");
+    copyText(selectedRegistry.value.name, t("registryList.detail.copyLabel.name"));
     return;
   }
   if (field === "url") {
-    copyText(selectedRegistry.value.url, "URL");
+    copyText(selectedRegistry.value.url, t("registryList.detail.copyLabel.url"));
     return;
   }
-  copyText(getLatencyText(selectedRegistry.value.name), "延迟");
+  copyText(
+    getLatencyText(selectedRegistry.value.name),
+    t("registryList.detail.copyLabel.latency")
+  );
 }
 
 function copyAllDetails() {
   if (!selectedRegistry.value) return;
   const registry = selectedRegistry.value;
   const detailText = [
-    `名称: ${registry.name}`,
-    `URL: ${registry.url}`,
-    `延迟: ${getLatencyText(registry.name)}`,
-    `分类: ${getRegistryCategory(registry)}`,
+    t("registryList.detail.copyAll.name", { value: registry.name }),
+    t("registryList.detail.copyAll.url", { value: registry.url }),
+    t("registryList.detail.copyAll.latency", { value: getLatencyText(registry.name) }),
+    t("registryList.detail.copyAll.category", { value: getRegistryCategory(registry) }),
   ].join("\n");
-  copyText(detailText, "详情");
+  copyText(detailText, t("registryList.detail.copyLabel.detail"));
 }
 </script>
 
@@ -641,13 +644,13 @@ function copyAllDetails() {
   <div class="flex flex-col h-full">
     <!-- Header -->
     <div class="flex items-center gap-2 px-5 pt-7 pb-4">
-      <h2 class="text-lg font-bold">源列表</h2>
+      <h2 class="text-lg font-bold">{{ t("registryList.title") }}</h2>
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">
         {{ filteredRegistries.length }}
       </span>
       <el-button text size="small" @click="openCategoryManageDialog">
         <el-icon class="mr-1"><Setting /></el-icon>
-        {{ isEnglish ? "Manage Categories" : "分类管理" }}
+        {{ t("registryList.categoryManage") }}
       </el-button>
       <div v-if="latencyLoading" class="ml-auto">
         <el-icon class="is-loading text-gray-400"><Search /></el-icon>
@@ -658,7 +661,7 @@ function copyAllDetails() {
     <div class="px-4 pb-3">
       <el-input
         v-model="searchQuery"
-        :placeholder="isEnglish ? 'Search name or URL...' : '搜索源名称或 URL...'"
+        :placeholder="t('registryList.searchPlaceholder')"
         clearable
       >
         <template #prefix>
@@ -682,7 +685,7 @@ function copyAllDetails() {
 
         <!-- Empty -->
         <div v-else-if="filteredRegistries.length === 0" class="flex-center py-10 text-sm text-gray-400">
-          {{ isEnglish ? "No matching sources found" : "未找到匹配的源" }}
+          {{ t("registryList.empty") }}
         </div>
 
         <!-- Items -->
@@ -714,7 +717,7 @@ function copyAllDetails() {
             >
               <div class="category-drop-hint px-3.5 py-2 text-xs font-medium text-primary bg-white/88 rounded-lg border border-white shadow-sm flex items-center gap-1.5">
                 <span class="text-[11px]">↳</span>
-                <span>释放以移动到「{{ group.label }}」</span>
+                <span>{{ t("registryList.dropHint", { label: group.label }) }}</span>
               </div>
             </div>
             <div
@@ -801,7 +804,7 @@ function copyAllDetails() {
     <!-- Footer -->
     <div class="px-4 py-4 border-t border-gray-100">
       <el-button type="primary" class="w-full registry-add-btn" @click="openAdd">
-        {{ isEnglish ? "+ Add Source" : "+ 添加源" }}
+        {{ t("registryList.addSource") }}
       </el-button>
     </div>
 
@@ -814,13 +817,13 @@ function copyAllDetails() {
         :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
       >
         <div class="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50" @click="openDetail(contextMenu!.registry); contextMenu = null">
-          查看详情
+          {{ t("registryList.context.viewDetail") }}
         </div>
         <div class="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50" @click="openEdit(contextMenu!.registry)">
-          编辑
+          {{ t("registryList.context.edit") }}
         </div>
         <div class="px-3 py-2 text-sm cursor-pointer hover:bg-red-50 text-red-500" @click="handleDelete(contextMenu!.registry)">
-          删除
+          {{ t("registryList.context.delete") }}
         </div>
       </div>
     </Teleport>
@@ -837,23 +840,23 @@ function copyAllDetails() {
 
     <el-dialog
       v-model="showCategoryManageDialog"
-      title="编辑分类标签"
+      :title="t('categoryDialog.title')"
       width="520px"
       :close-on-click-modal="false"
     >
       <div class="flex items-center gap-2 mb-3">
         <el-input
           v-model="newCategoryLabel"
-          placeholder="输入新分类名称"
+          :placeholder="t('categoryDialog.newPlaceholder')"
           :maxlength="categoryLabelMaxLength"
           show-word-limit
           clearable
           @keyup.enter="addCategoryLabel"
         />
-        <el-button type="primary" @click="addCategoryLabel">新增分类</el-button>
+        <el-button type="primary" @click="addCategoryLabel">{{ t("categoryDialog.add") }}</el-button>
       </div>
       <div v-if="categoryLabels.length === 0" class="text-sm text-gray-400 py-6 text-center">
-        暂无可编辑的分类标签
+        {{ t("categoryDialog.empty") }}
       </div>
       <div v-else class="flex flex-col gap-2">
         <div
@@ -871,7 +874,7 @@ function copyAllDetails() {
           <div
             class="w-7 h-8 flex items-center justify-center text-gray-400 cursor-grab active:cursor-grabbing"
             @mousedown.left.stop.prevent="startManageDrag(label, $event)"
-            title="拖拽排序"
+            :title="t('categoryDialog.dragSort')"
           >
             <el-icon><Rank /></el-icon>
           </div>
@@ -890,7 +893,7 @@ function copyAllDetails() {
                 : startRenameCategory(label)
             "
           >
-            {{ editingCategoryLabel === label ? "取消" : "重命名" }}
+            {{ editingCategoryLabel === label ? t("common.cancel") : t("categoryDialog.rename") }}
           </el-button>
           <el-button
             v-if="editingCategoryLabel === label"
@@ -898,22 +901,22 @@ function copyAllDetails() {
             type="primary"
             @click="saveRenamedCategory(label)"
           >
-            保存
+            {{ t("common.save") }}
           </el-button>
           <el-button size="small" type="danger" @click="deleteCategoryLabel(label)">
-            删除分类
+            {{ t("categoryDialog.delete") }}
           </el-button>
         </div>
       </div>
       <template #footer>
-        <el-button @click="showCategoryManageDialog = false">关闭</el-button>
+        <el-button @click="showCategoryManageDialog = false">{{ t("common.close") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- Registry Detail Dialog -->
     <el-dialog
       v-model="showDetailDialog"
-      title="源详情"
+      :title="t('registryList.detail.title')"
       width="520px"
       :close-on-click-modal="true"
       destroy-on-close
@@ -921,23 +924,23 @@ function copyAllDetails() {
       <div v-if="selectedRegistry" class="space-y-4">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="text-xs text-gray-400">名称</div>
+            <div class="text-xs text-gray-400">{{ t("registryList.detail.name") }}</div>
             <div class="text-sm font-semibold break-all">{{ selectedRegistry.name }}</div>
           </div>
-          <el-button text size="small" @click="copyDetailField('name')">复制</el-button>
+          <el-button text size="small" @click="copyDetailField('name')">{{ t("common.copy") }}</el-button>
         </div>
 
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <div class="text-xs text-gray-400">URL</div>
+            <div class="text-xs text-gray-400">{{ t("registryList.detail.url") }}</div>
             <div class="text-sm break-all">{{ selectedRegistry.url }}</div>
           </div>
-          <el-button text size="small" @click="copyDetailField('url')">复制</el-button>
+          <el-button text size="small" @click="copyDetailField('url')">{{ t("common.copy") }}</el-button>
         </div>
 
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="text-xs text-gray-400">延迟</div>
+            <div class="text-xs text-gray-400">{{ t("registryList.detail.latency") }}</div>
             <div
               class="text-sm font-mono"
               :style="{
@@ -947,19 +950,19 @@ function copyAllDetails() {
               {{ getLatencyText(selectedRegistry.name) }}
             </div>
           </div>
-          <el-button text size="small" @click="copyDetailField('latency')">复制</el-button>
+          <el-button text size="small" @click="copyDetailField('latency')">{{ t("common.copy") }}</el-button>
         </div>
 
         <div>
-          <div class="text-xs text-gray-400">分类</div>
+          <div class="text-xs text-gray-400">{{ t("registryList.detail.category") }}</div>
           <div class="text-sm">{{ getRegistryCategory(selectedRegistry) }}</div>
         </div>
       </div>
 
       <template #footer>
         <div class="flex justify-end gap-2">
-          <el-button @click="showDetailDialog = false">关闭</el-button>
-          <el-button type="primary" @click="copyAllDetails">复制全部</el-button>
+          <el-button @click="showDetailDialog = false">{{ t("common.close") }}</el-button>
+          <el-button type="primary" @click="copyAllDetails">{{ t("registryList.detail.copyAll") }}</el-button>
         </div>
       </template>
     </el-dialog>

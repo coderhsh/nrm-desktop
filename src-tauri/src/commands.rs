@@ -1,5 +1,5 @@
 use crate::models::Registry;
-use crate::{npmrc, project_registry, proxy, registries, speedtest};
+use crate::{app_settings, npmrc, project_registry, proxy, registries, speedtest};
 use tauri::Manager;
 
 #[tauri::command]
@@ -134,4 +134,14 @@ pub fn hide_main_window(app: tauri::AppHandle) -> Result<(), String> {
         return Ok(());
     }
     Err("未找到主窗口".to_string())
+}
+
+#[tauri::command]
+pub fn set_app_language(app: tauri::AppHandle, lang: &str) -> Result<(), String> {
+    if lang != "zh-CN" && lang != "en" {
+        return Err("不支持的语言".to_string());
+    }
+    app_settings::set_language(lang).map_err(|e| format!("保存语言设置失败: {}", e))?;
+    crate::refresh_tray_menu(&app)?;
+    Ok(())
 }

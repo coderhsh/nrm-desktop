@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useRegistryStore } from "@/stores/registry";
+import { useI18n } from "@/composables/useI18n";
 import type { Registry } from "@/types";
 
 const props = defineProps<{
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useRegistryStore();
+const { t } = useI18n();
 
 const formRef = ref();
 const name = ref("");
@@ -121,10 +123,10 @@ async function handleSubmit() {
           category: category || null,
         });
       }
-      ElMessage.success(`已更新源: ${newName}`);
+      ElMessage.success(t("registryDialog.success.updated", { name: newName }));
     } else {
       await store.addRegistry(name.value.trim(), url.value.trim());
-      ElMessage.success(`已添加源: ${name.value.trim()}`);
+      ElMessage.success(t("registryDialog.success.added", { name: name.value.trim() }));
     }
     emit("close");
   } catch {
@@ -136,33 +138,33 @@ async function handleSubmit() {
 
 function validateName(_rule: any, value: string, callback: any) {
   const trimmedName = value.trim();
-  if (!trimmedName) return callback(new Error("请输入源名称"));
+  if (!trimmedName) return callback(new Error(t("registryDialog.validate.nameRequired")));
   if (trimmedName.length > nameMaxLength) {
-    return callback(new Error(`名称长度不能超过 ${nameMaxLength} 个字符`));
+    return callback(new Error(t("registryDialog.validate.nameMax", { max: nameMaxLength })));
   }
   if (
     store.registries.some((r) => r.name === trimmedName && r.name !== props.registry?.name)
   ) {
-    return callback(new Error("该名称已存在"));
+    return callback(new Error(t("registryDialog.validate.nameExists")));
   }
   callback();
 }
 
 function validateUrl(_rule: any, value: string, callback: any) {
-  if (!value.trim()) return callback(new Error("请输入源 URL"));
+  if (!value.trim()) return callback(new Error(t("registryDialog.validate.urlRequired")));
   try {
     const u = new URL(value);
     if (!["http:", "https:"].includes(u.protocol)) {
-      return callback(new Error("仅支持 http/https 协议"));
+      return callback(new Error(t("registryDialog.validate.urlProtocol")));
     }
   } catch {
-    return callback(new Error("URL 格式不正确"));
+    return callback(new Error(t("registryDialog.validate.urlInvalid")));
   }
   if (
     !isEdit() &&
     store.registries.some((r) => r.url === value.trim())
   ) {
-    return callback(new Error("该 URL 已存在"));
+    return callback(new Error(t("registryDialog.validate.urlExists")));
   }
   callback();
 }
@@ -171,7 +173,7 @@ function validateUrl(_rule: any, value: string, callback: any) {
 <template>
   <el-dialog
     :model-value="visible"
-    :title="isEdit() ? '编辑源' : '添加源'"
+    :title="isEdit() ? t('registryDialog.editTitle') : t('registryDialog.addTitle')"
     width="420px"
     :close-on-click-modal="false"
     @update:model-value="(v: boolean) => !v && handleClose()"
@@ -184,35 +186,35 @@ function validateUrl(_rule: any, value: string, callback: any) {
       @submit.prevent="handleSubmit"
     >
       <el-form-item
-        label="名称"
+        :label="t('registryDialog.label.name')"
         prop="name"
         :rules="[{ required: true, validator: validateName, trigger: 'blur' }]"
       >
         <el-input
           v-model="name"
-          placeholder="如: my-registry"
+          :placeholder="t('registryDialog.placeholder.name')"
           :maxlength="nameMaxLength"
           show-word-limit
         />
       </el-form-item>
       <el-form-item
-        label="URL"
+        :label="t('registryDialog.label.url')"
         prop="url"
         :rules="[{ required: true, validator: validateUrl, trigger: 'blur' }]"
       >
-        <el-input v-model="url" placeholder="如: https://registry.example.com/" />
+        <el-input v-model="url" :placeholder="t('registryDialog.placeholder.url')" />
       </el-form-item>
       <div v-if="isPresetEdit()" class="text-xs text-gray-400 -mt-1 mb-2">
-        预设源支持修改名称与 URL
+        {{ t("registryDialog.presetHint") }}
       </div>
       <template v-if="isCustomEdit()">
-        <el-form-item label="分类">
+        <el-form-item :label="t('registryDialog.label.category')">
           <div class="flex items-center gap-2 w-full">
             <el-select
               v-if="!useCustomCategoryInput"
               v-model="selectedCategoryLabel"
               class="flex-1"
-              placeholder="选择已有分类（留空为未分类）"
+              :placeholder="t('registryDialog.category.selectPlaceholder')"
               clearable
               filterable
             >
@@ -227,22 +229,26 @@ function validateUrl(_rule: any, value: string, callback: any) {
               v-else
               v-model="categoryInput"
               class="flex-1"
-              placeholder="输入分类名称，留空则设为未分类"
+              :placeholder="t('registryDialog.category.inputPlaceholder')"
               :maxlength="categoryLabelMaxLength"
               show-word-limit
               clearable
             />
             <el-button @click="toggleCategoryInputMode">
-              {{ useCustomCategoryInput ? "使用已有分类" : "使用自定义分类" }}
+              {{
+                useCustomCategoryInput
+                  ? t("registryDialog.category.usePreset")
+                  : t("registryDialog.category.useCustom")
+              }}
             </el-button>
           </div>
         </el-form-item>
       </template>
     </el-form>
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ t("common.cancel") }}</el-button>
       <el-button type="primary" :loading="submitting" @click="handleSubmit">
-        保存
+        {{ t("common.save") }}
       </el-button>
     </template>
   </el-dialog>

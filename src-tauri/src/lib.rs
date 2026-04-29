@@ -1,3 +1,4 @@
+mod app_settings;
 mod commands;
 mod models;
 mod npmrc;
@@ -12,6 +13,90 @@ use tauri::{
     tray::TrayIconBuilder,
     Emitter, Manager,
 };
+
+fn i18n(lang: &str, zh: &str, en: &str) -> String {
+    if lang == "en" {
+        en.to_string()
+    } else {
+        zh.to_string()
+    }
+}
+
+fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
+    // Defensive cleanup: remove default or previous tray first.
+    let _ = app.remove_tray_by_id("tray");
+    let _ = app.remove_tray_by_id("main-tray");
+
+    let lang = app_settings::get_language();
+    let all_regs = registries::get_all().unwrap_or_default();
+    let current_name = get_current_name();
+
+    // Build menu items with checkmarks
+    let mut menu_builder = MenuBuilder::new(app);
+
+    for reg in &all_regs {
+        let is_current = current_name.as_deref() == Some(&reg.name);
+        let text = if is_current {
+            format!("✓ {}", reg.name)
+        } else {
+            reg.name.clone()
+        };
+        let item = MenuItemBuilder::with_id(reg.name.clone(), text).build(app)?;
+        menu_builder = menu_builder.item(&item);
+    }
+
+    let show_item = MenuItemBuilder::with_id("show", i18n(&lang, "显示主窗口", "Show Main Window")).build(app)?;
+    let quit_item = MenuItemBuilder::with_id("quit", i18n(&lang, "退出应用", "Quit App")).build(app)?;
+
+    menu_builder = menu_builder.separator().item(&show_item);
+    menu_builder = menu_builder.separator().item(&quit_item);
+
+    let menu = menu_builder.build()?;
+
+    let _tray = TrayIconBuilder::with_id("main-tray")
+        .icon(app.default_window_icon().unwrap().clone())
+        .menu(&menu)
+        .on_menu_event(|app, event| {
+            let id = event.id().0.as_str();
+            match id {
+                "show" => {
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+                "quit" => {
+                    app.exit(0);
+                }
+                _ => {
+                    let _ = commands::set_registry(id);
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.emit("registry-changed", id);
+                    }
+                }
+            }
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let tauri::tray::TrayIconEvent::Click {
+                button: tauri::tray::MouseButton::Left,
+                ..
+            } = event
+            {
+                let app = tray.app_handle();
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
+pub fn refresh_tray_menu(app: &tauri::AppHandle) -> Result<(), String> {
+    build_managed_tray(app).map_err(|e| e.to_string())
+}
 
 /// Get current registry name for tray menu checkmark
 fn get_current_name() -> Option<String> {
@@ -100,77 +185,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            // Defensive cleanup: if a default tray was auto-created by config,
-            // remove it before creating the managed tray to prevent duplicates.
-            let _ = app.remove_tray_by_id("tray");
-
-            if app.tray_by_id("main-tray").is_some() {
-                return Ok(());
-            }
-
-            let all_regs = registries::get_all().unwrap_or_default();
-            let current_name = get_current_name();
-
-            // Build menu items with checkmarks
-            let mut menu_builder = MenuBuilder::new(app);
-
-            for reg in &all_regs {
-                let is_current = current_name.as_deref() == Some(&reg.name);
-                let text = if is_current {
-                    format!("✓ {}", reg.name)
-                } else {
-                    reg.name.clone()
-                };
-                let item = MenuItemBuilder::with_id(reg.name.clone(), text).build(app)?;
-                menu_builder = menu_builder.item(&item);
-            }
-
-            let show_item = MenuItemBuilder::with_id("show", "显示主窗口").build(app)?;
-            let quit_item = MenuItemBuilder::with_id("quit", "退出应用").build(app)?;
-
-            menu_builder = menu_builder.separator().item(&show_item);
-            menu_builder = menu_builder.separator().item(&quit_item);
-
-            let menu = menu_builder.build()?;
-
-            let _tray = TrayIconBuilder::with_id("main-tray")
-                .icon(app.default_window_icon().unwrap().clone())
-                .menu(&menu)
-                .on_menu_event(|app, event| {
-                    let id = event.id().0.as_str();
-                    match id {
-                        "show" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
-                        }
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        _ => {
-                            let _ = commands::set_registry(id);
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("registry-changed", id);
-                            }
-                        }
-                    }
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click {
-                        button: tauri::tray::MouseButton::Left,
-                        ..
-                    } = event
-                    {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                })
-                .build(app)?;
-
+            build_managed_tray(app.handle())?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -193,6 +208,7 @@ pub fn run() {
             commands::set_proxy_config,
             commands::exit_app,
             commands::hide_main_window,
+            commands::set_app_language,
         ])
         .build(tauri::generate_context!())
         .expect("error while building nrm-desktop")
