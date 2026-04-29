@@ -53,7 +53,7 @@ async function handleOpenUrl() {
         {{ currentRegistry?.url || t("currentSource.emptyUrl") }}
       </div>
     </div>
-    <div v-if="currentRegistry" class="flex items-center gap-2">
+    <div v-if="currentRegistry" class="flex items-center">
       <el-button
         text
         size="small"
@@ -65,16 +65,6 @@ async function handleOpenUrl() {
         <el-icon class="mr-1"><CopyDocument /></el-icon>
         {{ t("currentSource.copyUrl") }}
       </el-button>
-      <div
-        class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
-        style="background: rgba(255, 255, 255, 0.2)"
-      >
-        <span
-          class="w-2 h-2 rounded-full bg-white shadow-md"
-          style="box-shadow: 0 0 6px rgba(255, 255, 255, 0.6)"
-        ></span>
-        {{ t("currentSource.inUse") }}
-      </div>
     </div>
   </div>
 </template>

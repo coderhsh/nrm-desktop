@@ -799,7 +799,7 @@ function copyAllDetails() {
                 'registry-item flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer border-l-3 border-transparent select-none cursor-grab',
                 {
                   'is-active': currentRegistry?.name === registry.name,
-                  'bg-gray-50': registry.is_custom && currentRegistry?.name !== registry.name,
+                  'is-idle': currentRegistry?.name !== registry.name,
                   'opacity-40 cursor-grabbing': pointerDragRegistryName === registry.name && isPointerDragging,
                 },
               ]"
