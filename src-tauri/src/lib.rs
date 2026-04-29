@@ -100,6 +100,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            // Defensive cleanup: if a default tray was auto-created by config,
+            // remove it before creating the managed tray to prevent duplicates.
+            let _ = app.remove_tray_by_id("tray");
+
+            if app.tray_by_id("main-tray").is_some() {
+                return Ok(());
+            }
+
             let all_regs = registries::get_all().unwrap_or_default();
             let current_name = get_current_name();
 
@@ -125,7 +133,7 @@ pub fn run() {
 
             let menu = menu_builder.build()?;
 
-            let _tray = TrayIconBuilder::new()
+            let _tray = TrayIconBuilder::with_id("main-tray")
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
                 .on_menu_event(|app, event| {

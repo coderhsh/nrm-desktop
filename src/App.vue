@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
+import { open as openExternal } from '@tauri-apps/plugin-shell'
 import { useLocalStorage } from '@vueuse/core'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
@@ -37,13 +38,13 @@ const elementLocale = computed(() => (language.value === 'en' ? en : zhCn))
 
 watch(
   language,
-  (value) => {
+  value => {
     document.documentElement.lang = value
   },
   { immediate: true }
 )
 
-watch(showSettingsDialog, (visible) => {
+watch(showSettingsDialog, visible => {
   if (!visible) return
   draftLanguage.value = language.value
   draftTheme.value = theme.theme.value
@@ -92,6 +93,14 @@ async function handleImport() {
     store.fetchRegistries()
   } catch (e) {
     ElMessage.error(`导入失败: ${e}`)
+  }
+}
+
+async function openGithubHome() {
+  try {
+    await openExternal('https://github.com/coderhsh/nrm-desktop')
+  } catch (e) {
+    ElMessage.error(`打开 GitHub 失败: ${e}`)
   }
 }
 
@@ -154,6 +163,14 @@ async function handleReset() {
             {{ t('common.import') }}
           </el-button>
 
+          <el-button text size="small" title="GitHub" @click="openGithubHome">
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="w-4 h-4 text-gray-700 dark:text-gray-200" fill="currentColor">
+              <path
+                d="M12 .5C5.65.5.5 5.66.5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.56 0-.28-.01-1.02-.01-2-3.2.7-3.88-1.55-3.88-1.55-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.78 1.2 1.78 1.2 1.03 1.78 2.7 1.27 3.36.97.1-.76.4-1.27.73-1.56-2.55-.29-5.24-1.29-5.24-5.73 0-1.26.45-2.3 1.18-3.11-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.19a10.9 10.9 0 0 1 5.76 0c2.2-1.5 3.16-1.2 3.16-1.2.63 1.59.24 2.76.12 3.05.74.81 1.18 1.85 1.18 3.11 0 4.45-2.69 5.44-5.25 5.73.41.35.78 1.04.78 2.1 0 1.52-.01 2.75-.01 3.12 0 .31.2.68.8.56A11.53 11.53 0 0 0 23.5 12C23.5 5.66 18.35.5 12 .5Z"
+              />
+            </svg>
+          </el-button>
+
           <el-button text size="small" type="danger" @click="handleReset" :title="t('app.resetDefaults')">
             {{ t('common.reset') }}
           </el-button>
@@ -163,12 +180,7 @@ async function handleReset() {
       <!-- Proxy Settings Dialog -->
       <ProxySettings v-if="isProxyFeatureVisible" v-model:visible="showProxySettings" @close="showProxySettings = false" />
 
-      <el-dialog
-        v-model="showSettingsDialog"
-        :title="t('app.settingsDialogTitle')"
-        width="420px"
-        :close-on-click-modal="true"
-      >
+      <el-dialog v-model="showSettingsDialog" :title="t('app.settingsDialogTitle')" width="420px" :close-on-click-modal="true">
         <div class="flex flex-col gap-3">
           <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             {{ t('app.settings.general') }}
@@ -176,23 +188,13 @@ async function handleReset() {
           <div class="flex items-center gap-3">
             <span class="text-sm text-gray-500 min-w-14">{{ t('app.settings.language') }}</span>
             <el-select v-model="draftLanguage" class="flex-1" :placeholder="t('app.settings.language')">
-              <el-option
-                v-for="item in languageOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
+              <el-option v-for="item in languageOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
           <div class="flex items-center gap-3">
             <span class="text-sm text-gray-500 min-w-14">{{ t('app.settings.theme') }}</span>
             <el-select v-model="draftTheme" class="flex-1" :placeholder="t('app.settings.theme')">
-              <el-option
-                v-for="item in themeOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
+              <el-option v-for="item in themeOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
           <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">

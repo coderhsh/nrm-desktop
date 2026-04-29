@@ -63,6 +63,11 @@ async function writeTempConfig(port) {
     beforeDevCommand: `pnpm dev -- --port ${port} --strictPort`,
   };
 
+  // Always use Rust side TrayIconBuilder to avoid duplicate tray icons.
+  if (config.app?.trayIcon) {
+    delete config.app.trayIcon;
+  }
+
   await fs.writeFile(tempConfigPath, JSON.stringify(config, null, 2), "utf8");
 }
 
