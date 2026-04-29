@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { ElMessage } from "element-plus";
+import { RefreshRight } from "@element-plus/icons-vue";
 import { useRegistryStore } from "@/stores/registry";
 import type { LatencyResult } from "@/api/speedtest";
 import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
@@ -213,13 +214,22 @@ const maxLatency = computed(() => {
         <!-- Re-test button -->
         <div class="w-8 flex-shrink-0 text-center">
           <el-button
+            v-if="singleTesting.has(result.name)"
             text
             size="small"
-            :loading="singleTesting.has(result.name)"
+            class="!p-1.5 !min-h-0"
+            :loading="true"
+            :disabled="true"
+          />
+          <el-button
+            v-else
+            text
+            size="small"
+            class="!p-1.5 !min-h-0"
             :disabled="testing"
             @click="runSingleTest(result.name)"
           >
-            ↻
+            <el-icon class="text-base"><RefreshRight /></el-icon>
           </el-button>
         </div>
       </div>

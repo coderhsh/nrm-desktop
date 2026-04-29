@@ -6,7 +6,10 @@ use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CustomData {
+    #[serde(default)]
     registries: Vec<Registry>,
+    #[serde(default)]
+    deleted_presets: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -44,22 +47,34 @@ fn ensure_config_dir() -> io::Result<()> {
 }
 
 /// Load custom registries from the JSON file.
-fn load_custom() -> io::Result<Vec<Registry>> {
+fn load_custom_data() -> io::Result<CustomData> {
     let path = custom_file_path();
     if !path.exists() {
-        return Ok(Vec::new());
+        return Ok(CustomData {
+            registries: Vec::new(),
+            deleted_presets: Vec::new(),
+        });
     }
     let content = fs::read_to_string(&path)?;
     let data: CustomData = serde_json::from_str(&content)?;
-    Ok(data.registries)
+    Ok(data)
+}
+
+/// Load custom registries from the JSON file.
+fn load_custom() -> io::Result<Vec<Registry>> {
+    Ok(load_custom_data()?.registries)
 }
 
 /// Save custom registries to the JSON file.
 fn save_custom(registries: &[Registry]) -> io::Result<()> {
+    let mut data = load_custom_data()?;
+    data.registries = registries.to_vec();
+    save_custom_data(&data)
+}
+
+/// Save full custom data to the JSON file.
+fn save_custom_data(data: &CustomData) -> io::Result<()> {
     ensure_config_dir()?;
-    let data = CustomData {
-        registries: registries.to_vec(),
-    };
     let content = serde_json::to_string_pretty(&data)?;
     fs::write(custom_file_path(), content)?;
     Ok(())
@@ -67,9 +82,27 @@ fn save_custom(registries: &[Registry]) -> io::Result<()> {
 
 /// Get all registries: presets + custom.
 pub fn get_all() -> io::Result<Vec<Registry>> {
-    let custom = load_custom()?;
-    let mut all = preset_registries();
-    all.extend(custom);
+    let data = load_custom_data()?;
+    let presets = preset_registries();
+    let mut all = Vec::new();
+
+    for preset in &presets {
+        if data.deleted_presets.iter().any(|name| name == &preset.name) {
+            continue;
+        }
+        if let Some(custom_override) = data.registries.iter().find(|r| r.name == preset.name) {
+            all.push(custom_override.clone());
+        } else {
+            all.push(preset.clone());
+        }
+    }
+
+    for custom in &data.registries {
+        if !presets.iter().any(|preset| preset.name == custom.name) {
+            all.push(custom.clone());
+        }
+    }
+
     Ok(all)
 }
 
@@ -106,21 +139,29 @@ pub fn add(name: &str, url: &str) -> io::Result<()> {
 
 /// Delete a custom registry.
 pub fn delete(name: &str) -> io::Result<()> {
-    let mut custom = load_custom()?;
-    let len_before = custom.len();
-    custom.retain(|r| r.name != name);
+    let mut data = load_custom_data()?;
+    let is_preset = preset_registries().iter().any(|r| r.name == name);
+    let custom_len_before = data.registries.len();
+    data.registries.retain(|r| r.name != name);
 
-    if custom.len() == len_before {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该自定义源"));
+    if is_preset {
+        if !data.deleted_presets.iter().any(|preset_name| preset_name == name) {
+            data.deleted_presets.push(name.to_string());
+        }
+        return save_custom_data(&data);
     }
 
-    save_custom(&custom)
+    if data.registries.len() == custom_len_before {
+        return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该源"));
+    }
+
+    save_custom_data(&data)
 }
 
 /// Update a custom registry.
 pub fn update(name: &str, new_name: &str, new_url: &str) -> io::Result<()> {
-    let mut custom = load_custom()?;
-    let idx = custom.iter().position(|r| r.name == name);
+    let mut data = load_custom_data()?;
+    let idx = data.registries.iter().position(|r| r.name == name);
 
     // If target is a preset source, allow overriding URL with same name.
     if idx.is_none() {
@@ -135,29 +176,31 @@ pub fn update(name: &str, new_name: &str, new_url: &str) -> io::Result<()> {
             ));
         }
 
-        custom.push(Registry {
+        data.registries.push(Registry {
             name: new_name.to_string(),
             url: new_url.to_string(),
             is_custom: true,
         });
-        return save_custom(&custom);
+        data.deleted_presets.retain(|preset_name| preset_name != name);
+        return save_custom_data(&data);
     }
 
     let idx = idx.expect("index already checked");
 
     // Check for name conflict with other entries
     if name != new_name
-        && custom
+        && data
+            .registries
             .iter()
             .any(|r| r.name == new_name && r.name != name)
     {
         return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该名称已存在"));
     }
 
-    custom[idx].name = new_name.to_string();
-    custom[idx].url = new_url.to_string();
+    data.registries[idx].name = new_name.to_string();
+    data.registries[idx].url = new_url.to_string();
 
-    save_custom(&custom)
+    save_custom_data(&data)
 }
 
 /// Export all registries (preset + custom) as ExportData.
@@ -198,12 +241,21 @@ pub fn import_custom(imported: &[Registry]) -> io::Result<()> {
         .filter(|r| !r.name.is_empty() && !r.url.is_empty())
         .collect();
     cleaned.dedup_by(|a, b| a.name == b.name);
-    save_custom(&cleaned)
+
+    let data = CustomData {
+        registries: cleaned,
+        deleted_presets: Vec::new(),
+    };
+    save_custom_data(&data)
 }
 
 /// Remove all custom registries.
 pub fn reset_to_defaults() -> io::Result<()> {
-    save_custom(&[])
+    let data = CustomData {
+        registries: Vec::new(),
+        deleted_presets: Vec::new(),
+    };
+    save_custom_data(&data)
 }
 
 fn chrono_now() -> String {
