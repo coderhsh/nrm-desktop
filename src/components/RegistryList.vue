@@ -91,7 +91,6 @@ const manageDragSourceRect = ref<{ x: number; y: number } | null>(null);
 const manageDragPointerOffset = ref({ x: 0, y: 0 });
 const manageGhostPosition = ref({ x: 0, y: 0 });
 const manageGhostTransition = ref("none");
-const draggingRegistryName = ref<string | null>(null);
 const dragOverCategoryLabel = ref<string | null>(null);
 const pointerDragRegistryName = ref<string | null>(null);
 const isPointerDragging = ref(false);
@@ -206,79 +205,6 @@ function getRegistryCategory(registry: Registry): string {
   return categoryLabels.value.includes(presetCategoryLabel.value)
     ? presetCategoryLabel.value
     : uncategorizedLabel;
-}
-
-function handleDragStart(registry: Registry, event: DragEvent) {
-  draggingRegistryName.value = registry.name;
-  event.stopPropagation();
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", registry.name);
-  }
-}
-
-function handleDragEnd() {
-  draggingRegistryName.value = null;
-  dragOverCategoryLabel.value = null;
-}
-
-function handleCategoryDragOver(label: string, event: DragEvent) {
-  event.preventDefault();
-  event.stopPropagation();
-  if (!draggingRegistryName.value) {
-    const draggedName = event.dataTransfer?.getData("text/plain");
-    if (draggedName) {
-      draggingRegistryName.value = draggedName;
-    }
-  }
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = "move";
-  }
-  if (!isCategoryExpanded(label)) {
-    categoryExpanded.value = {
-      ...categoryExpanded.value,
-      [label]: true,
-    };
-  }
-  dragOverCategoryLabel.value = label;
-}
-
-function handleCategoryDragLeave(label: string) {
-  if (dragOverCategoryLabel.value === label) {
-    dragOverCategoryLabel.value = null;
-  }
-}
-
-function handleCategoryDrop(label: string, event: DragEvent) {
-  event.preventDefault();
-  event.stopPropagation();
-  const draggedName = draggingRegistryName.value
-    || event.dataTransfer?.getData("text/plain")
-    || "";
-  if (!draggedName) return;
-
-  const registry = filteredRegistries.value.find((item) => item.name === draggedName);
-  if (!registry) {
-    handleDragEnd();
-    return;
-  }
-
-  const currentCategory = getRegistryCategory(registry);
-  if (currentCategory === label) {
-    handleDragEnd();
-    return;
-  }
-
-  const next = { ...categoryByRegistry.value };
-  if (label === uncategorizedLabel) {
-    delete next[registry.name];
-  } else {
-    ensureCategoryLabel(label);
-    next[registry.name] = label;
-  }
-  categoryByRegistry.value = next;
-  ElMessage.success(`已将 "${registry.name}" 移动到分类 "${label}"`);
-  handleDragEnd();
 }
 
 function moveRegistryToCategory(registryName: string, label: string) {
