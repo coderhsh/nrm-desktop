@@ -868,7 +868,7 @@ function copyAllDetails() {
 
     <!-- Footer -->
     <div class="px-4 py-4 border-t border-gray-100">
-      <el-button type="primary" class="w-full" @click="openAdd">
+      <el-button type="primary" class="w-full registry-add-btn" @click="openAdd">
         + 添加源
       </el-button>
     </div>

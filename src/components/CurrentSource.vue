@@ -36,8 +36,7 @@ async function handleOpenUrl() {
 
 <template>
   <div
-    class="flex items-center justify-between px-6 py-5 rounded-xl text-white"
-    style="background: linear-gradient(135deg, #4f6ef7, #6d8aff)"
+    class="current-source-card flex items-center justify-between px-6 py-5 rounded-xl text-white"
   >
     <div class="flex flex-col gap-0.5">
       <div class="text-xs opacity-80 uppercase tracking-wide">当前源</div>

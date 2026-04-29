@@ -148,14 +148,12 @@ const maxLatency = computed(() => {
       点击"全部测试"开始测速
     </div>
 
-    <!-- Testing skeleton -->
-    <div v-if="testing && !hasResults" class="flex flex-col gap-3">
-      <div
-        v-for="i in 6"
-        :key="i"
-        class="h-10 rounded-lg animate-pulse"
-        style="background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%); background-size: 200% 100%;"
-      ></div>
+    <!-- Testing loading -->
+    <div v-if="testing && !hasResults" class="py-10 flex items-center justify-center">
+      <div class="flex items-center gap-2 text-sm text-gray-400">
+        <el-icon class="is-loading"><RefreshRight /></el-icon>
+        <span>正在测速，请稍候...</span>
+      </div>
     </div>
 
     <!-- Results -->
