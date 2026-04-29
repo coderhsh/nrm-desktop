@@ -13,6 +13,7 @@ import { useTheme } from "@/composables/useTheme";
 const store = useRegistryStore();
 const theme = useTheme();
 const showProxySettings = ref(false);
+const isProxyFeatureVisible = false;
 
 onMounted(async () => {
   await store.fetchRegistries();
@@ -97,7 +98,13 @@ async function handleReset() {
           {{ theme.icon.value }}
         </el-button>
 
-        <el-button text size="small" @click="showProxySettings = true" title="代理设置">
+        <el-button
+          v-if="isProxyFeatureVisible"
+          text
+          size="small"
+          @click="showProxySettings = true"
+          title="代理设置"
+        >
           代理
         </el-button>
 
@@ -116,6 +123,10 @@ async function handleReset() {
     </main>
 
     <!-- Proxy Settings Dialog -->
-    <ProxySettings v-model:visible="showProxySettings" @close="showProxySettings = false" />
+    <ProxySettings
+      v-if="isProxyFeatureVisible"
+      v-model:visible="showProxySettings"
+      @close="showProxySettings = false"
+    />
   </div>
 </template>
