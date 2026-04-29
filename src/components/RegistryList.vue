@@ -4,12 +4,14 @@ import { onClickOutside, useLocalStorage } from "@vueuse/core";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Rank, RefreshRight, Search, Setting } from "@element-plus/icons-vue";
 import { useRegistryStore } from "@/stores/registry";
+import { useI18n } from "@/composables/useI18n";
 import { storeToRefs } from "pinia";
 import type { Registry } from "@/types";
 import { testSingleSpeed } from "@/api/speedtest";
 import RegistryDialog from "./RegistryDialog.vue";
 
 const store = useRegistryStore();
+const { isEnglish } = useI18n();
 const { filteredRegistries, currentRegistry, searchQuery, loading, latencyResults, latencyLoading } =
   storeToRefs(store);
 
@@ -719,7 +721,7 @@ function copyAllDetails() {
       </span>
       <el-button text size="small" @click="openCategoryManageDialog">
         <el-icon class="mr-1"><Setting /></el-icon>
-        分类管理
+        {{ isEnglish ? "Manage Categories" : "分类管理" }}
       </el-button>
       <div v-if="latencyLoading" class="ml-auto">
         <el-icon class="is-loading text-gray-400"><Search /></el-icon>
@@ -728,7 +730,11 @@ function copyAllDetails() {
 
     <!-- Search -->
     <div class="px-4 pb-3">
-      <el-input v-model="searchQuery" placeholder="搜索源名称或 URL..." clearable>
+      <el-input
+        v-model="searchQuery"
+        :placeholder="isEnglish ? 'Search name or URL...' : '搜索源名称或 URL...'"
+        clearable
+      >
         <template #prefix>
           <el-icon><Search /></el-icon>
         </template>
@@ -750,7 +756,7 @@ function copyAllDetails() {
 
         <!-- Empty -->
         <div v-else-if="filteredRegistries.length === 0" class="flex-center py-10 text-sm text-gray-400">
-          未找到匹配的源
+          {{ isEnglish ? "No matching sources found" : "未找到匹配的源" }}
         </div>
 
         <!-- Items -->
@@ -869,7 +875,7 @@ function copyAllDetails() {
     <!-- Footer -->
     <div class="px-4 py-4 border-t border-gray-100">
       <el-button type="primary" class="w-full registry-add-btn" @click="openAdd">
-        + 添加源
+        {{ isEnglish ? "+ Add Source" : "+ 添加源" }}
       </el-button>
     </div>
 

@@ -3,10 +3,12 @@ import { ref, computed } from "vue";
 import { ElMessage } from "element-plus";
 import { RefreshRight } from "@element-plus/icons-vue";
 import { useRegistryStore } from "@/stores/registry";
+import { useI18n } from "@/composables/useI18n";
 import type { LatencyResult } from "@/api/speedtest";
 import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
 
 const store = useRegistryStore();
+const { t } = useI18n();
 
 const results = ref<LatencyResult[]>([]);
 const testing = ref(false);
@@ -111,12 +113,12 @@ const maxLatency = computed(() => {
   <div class="bg-white rounded-xl border border-gray-200 p-5 mt-4">
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
-        <h3 class="text-base font-bold">速度测试</h3>
+        <h3 class="text-base font-bold">{{ t("speedTest.title") }}</h3>
         <span
           v-if="results.length > 0"
           class="text-xs text-gray-400"
         >
-          上次测试：{{ results.length }} 个源
+          {{ t("speedTest.lastTested", { count: results.length }) }}
         </span>
       </div>
       <div class="flex items-center gap-2">
@@ -127,7 +129,7 @@ const maxLatency = computed(() => {
           :disabled="testing"
           @click="switchToFastest"
         >
-          切换到最快 ({{ fastestResult.latency_ms }}ms)
+          {{ t("speedTest.switchFastest", { latency: fastestResult.latency_ms ?? "-" }) }}
         </el-button>
         <el-button
           type="primary"
@@ -135,7 +137,7 @@ const maxLatency = computed(() => {
           :loading="testing"
           @click="runAllTests"
         >
-          {{ testing ? "测试中..." : "全部测试" }}
+          {{ testing ? t("speedTest.testing") : t("speedTest.testAll") }}
         </el-button>
       </div>
     </div>
@@ -145,14 +147,14 @@ const maxLatency = computed(() => {
       v-if="!hasResults && !testing"
       class="py-8 text-center text-sm text-gray-400"
     >
-      点击"全部测试"开始测速
+      {{ t("speedTest.empty") }}
     </div>
 
     <!-- Testing loading -->
     <div v-if="testing && !hasResults" class="py-10 flex items-center justify-center">
       <div class="flex items-center gap-2 text-sm text-gray-400">
         <el-icon class="is-loading"><RefreshRight /></el-icon>
-        <span>正在测速，请稍候...</span>
+        <span>{{ t("speedTest.loading") }}</span>
       </div>
     </div>
 
@@ -205,7 +207,7 @@ const maxLatency = computed(() => {
             v-else
             class="text-xs text-gray-400"
           >
-            {{ result.error || "失败" }}
+            {{ result.error || t("speedTest.failed") }}
           </span>
         </div>
 
