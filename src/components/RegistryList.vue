@@ -710,9 +710,9 @@ function copyAllDetails() {
             </div>
             <div
               v-if="dragOverCategoryLabel === group.label && isPointerDragging"
-              class="absolute inset-0 z-20 pointer-events-none rounded-lg bg-white/55 border border-primary/25 backdrop-blur-[2px] flex items-center justify-center"
+              class="category-drop-overlay absolute inset-0 z-20 pointer-events-none rounded-lg bg-white/55 border border-primary/25 backdrop-blur-[2px] flex items-center justify-center"
             >
-              <div class="px-3.5 py-2 text-xs font-medium text-primary bg-white/88 rounded-lg border border-white shadow-sm flex items-center gap-1.5">
+              <div class="category-drop-hint px-3.5 py-2 text-xs font-medium text-primary bg-white/88 rounded-lg border border-white shadow-sm flex items-center gap-1.5">
                 <span class="text-[11px]">↳</span>
                 <span>释放以移动到「{{ group.label }}」</span>
               </div>

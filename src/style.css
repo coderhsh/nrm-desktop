@@ -130,6 +130,18 @@ body {
   background-color: #172033;
 }
 
+.dark .category-drop-overlay {
+  background-color: rgba(15, 23, 42, 0.58);
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.dark .category-drop-hint {
+  color: #bfdbfe;
+  background-color: rgba(30, 41, 59, 0.92);
+  border-color: rgba(96, 165, 250, 0.32);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45);
+}
+
 .dark .current-source-card {
   background: linear-gradient(135deg, #243b6b, #314a80);
 }
