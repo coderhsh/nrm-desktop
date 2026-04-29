@@ -1,0 +1,76 @@
+/* nrm-desktop global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* Sidebar scrollbar styling */
+.sidebar-scrollbar {
+  height: 100%;
+}
+.sidebar-scrollbar .el-scrollbar__view {
+  height: 100%;
+}
+
+/* Registry list item hover & active */
+.registry-item {
+  transition: all 0.2s ease;
+}
+.registry-item:hover {
+  background-color: var(--el-fill-color-light);
+}
+.registry-item.is-active {
+  background-color: var(--el-color-primary-light-9);
+  border-left: 3px solid var(--el-color-primary);
+}
+
+/* Dark mode overrides for UnoCSS classes not covered by dark: variant */
+.dark .bg-white {
+  background-color: #1e1e2e;
+}
+.dark .border-gray-200 {
+  border-color: #313145;
+}
+.dark .border-gray-100 {
+  border-color: #27273a;
+}
+.dark .bg-gray-100 {
+  background-color: #27273a;
+}
+.dark .bg-gray-50 {
+  background-color: #1e1e2e;
+}
+.dark .text-gray-400 {
+  color: #8888a0;
+}
+.dark .text-gray-500 {
+  color: #9d9db5;
+}
+.dark .from-gray-100 {
+  --un-gradient-from: #27273a;
+}
+.dark .via-gray-50 {
+  --un-gradient-via: #1e1e2e;
+}
+.dark .to-gray-100 {
+  --un-gradient-to: #27273a;
+}
