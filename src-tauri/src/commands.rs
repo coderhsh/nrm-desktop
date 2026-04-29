@@ -1,5 +1,6 @@
 use crate::models::Registry;
 use crate::{npmrc, project_registry, proxy, registries, speedtest};
+use tauri::Manager;
 
 #[tauri::command]
 pub fn get_registries() -> Result<Vec<Registry>, String> {
@@ -119,4 +120,18 @@ pub fn detect_env_proxy() -> Result<proxy::ProxyConfig, String> {
 #[tauri::command]
 pub fn set_proxy_config(config: proxy::ProxyConfig) -> Result<(), String> {
     proxy::set_npmrc_proxy(&config)
+}
+
+#[tauri::command]
+pub fn exit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
+#[tauri::command]
+pub fn hide_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.hide().map_err(|e| format!("隐藏主窗口失败: {}", e))?;
+        return Ok(());
+    }
+    Err("未找到主窗口".to_string())
 }

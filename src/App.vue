@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onBeforeUnmount, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
 import { open as openExternal } from '@tauri-apps/plugin-shell'
+import { invoke } from '@tauri-apps/api/core'
 import { useLocalStorage } from '@vueuse/core'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
@@ -21,6 +22,11 @@ const theme = useTheme()
 const { t } = useI18n()
 const showProxySettings = ref(false)
 const showSettingsDialog = ref(false)
+const showCloseConfirmDialog = ref(false)
+const closeBehavior = useLocalStorage<'ask' | 'minimize' | 'exit'>('nrm-desktop-close-behavior', 'ask')
+const closeActionDraft = ref<'minimize' | 'exit'>('minimize')
+const rememberCloseChoice = ref(false)
+const isClosingByChoice = ref(false)
 const isProxyFeatureVisible = false
 const language = useLocalStorage<'zh-CN' | 'en'>('nrm-desktop-language', 'zh-CN')
 const draftLanguage = ref<'zh-CN' | 'en'>('zh-CN')
@@ -35,6 +41,7 @@ const themeOptions = computed(() => [
   { label: t('app.settings.themeDark'), value: 'dark' as const },
 ])
 const elementLocale = computed(() => (language.value === 'en' ? en : zhCn))
+let unlistenCloseRequested: null | (() => void) = null
 
 watch(
   language,
@@ -62,6 +69,39 @@ onMounted(async () => {
   await store.fetchRegistries()
   // 初始化时静默测速，在左侧源列表展示延迟
   store.fetchLatency()
+
+  const { getCurrentWindow } = await import('@tauri-apps/api/window')
+  const appWindow = getCurrentWindow()
+  unlistenCloseRequested = await appWindow.onCloseRequested(async event => {
+    if (isClosingByChoice.value) return
+    event.preventDefault()
+
+    if (closeBehavior.value === 'minimize') {
+      try {
+        await invoke('hide_main_window')
+      } catch {
+        ElMessage.error('缩小到托盘失败，请重试')
+      }
+      return
+    }
+
+    if (closeBehavior.value === 'exit') {
+      isClosingByChoice.value = true
+      await invoke('exit_app')
+      return
+    }
+
+    closeActionDraft.value = 'minimize'
+    rememberCloseChoice.value = false
+    showCloseConfirmDialog.value = true
+  })
+})
+
+onBeforeUnmount(() => {
+  if (unlistenCloseRequested) {
+    unlistenCloseRequested()
+    unlistenCloseRequested = null
+  }
 })
 
 async function handleExport() {
@@ -113,6 +153,27 @@ async function handleReset() {
   } catch {
     // cancelled
   }
+}
+
+function closeCloseConfirmDialog() {
+  showCloseConfirmDialog.value = false
+}
+
+async function applyCloseAction() {
+  showCloseConfirmDialog.value = false
+  if (rememberCloseChoice.value) {
+    closeBehavior.value = closeActionDraft.value
+  }
+  if (closeActionDraft.value === 'minimize') {
+    try {
+      await invoke('hide_main_window')
+    } catch {
+      ElMessage.error('缩小到托盘失败，请重试')
+    }
+    return
+  }
+  isClosingByChoice.value = true
+  await invoke('exit_app')
 }
 </script>
 
@@ -212,6 +273,58 @@ async function handleReset() {
           <el-button type="primary" @click="handleSaveSettings">{{ t('common.save') }}</el-button>
         </template>
       </el-dialog>
+
+      <el-dialog
+        v-model="showCloseConfirmDialog"
+        title="关闭应用"
+        width="420px"
+        :close-on-click-modal="false"
+        :show-close="false"
+      >
+        <div class="close-confirm-content flex flex-col gap-4">
+          <div class="close-confirm-desc text-sm leading-6 text-gray-600 dark:text-gray-300">
+            关闭窗口时，你希望执行什么操作？
+          </div>
+          <el-radio-group v-model="closeActionDraft" class="close-action-group flex flex-col gap-2">
+            <el-radio value="minimize" class="close-action-item !mr-0">缩小到托盘（推荐）</el-radio>
+            <el-radio value="exit" class="close-action-item !mr-0">直接退出程序</el-radio>
+          </el-radio-group>
+          <div class="close-remember-wrap pt-1">
+            <el-checkbox v-model="rememberCloseChoice">记住我的选择</el-checkbox>
+          </div>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <el-button @click="closeCloseConfirmDialog">取消</el-button>
+            <el-button type="primary" @click="applyCloseAction">确定</el-button>
+          </div>
+        </template>
+      </el-dialog>
     </div>
   </el-config-provider>
 </template>
+
+<style scoped>
+.close-confirm-content {
+  align-items: center;
+}
+
+.close-confirm-desc {
+  text-align: center;
+}
+
+.close-action-group {
+  width: min(100%, 260px);
+  align-items: flex-start;
+}
+
+.close-action-item {
+  margin-left: 0 !important;
+}
+
+.close-remember-wrap {
+  width: min(100%, 260px);
+  display: flex;
+  justify-content: flex-start;
+}
+</style>

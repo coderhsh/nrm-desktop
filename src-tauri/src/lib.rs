@@ -191,12 +191,9 @@ pub fn run() {
             commands::get_proxy_config,
             commands::detect_env_proxy,
             commands::set_proxy_config,
+            commands::exit_app,
+            commands::hide_main_window,
         ])
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                window.app_handle().exit(0);
-            }
-        })
         .build(tauri::generate_context!())
         .expect("error while building nrm-desktop")
         .run(|_app, event| {
