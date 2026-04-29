@@ -2,6 +2,29 @@
   "name": "nrm-desktop",
   "private": true,
   "version": "0.1.0",
+  "description": "nrm-desktop - A lightweight desktop GUI for npm registry management, built with Tauri + Vue.",
+  "author": "coderhsh",
+  "license": "MIT",
+  "keywords": [
+    "nrm",
+    "npm",
+    "registry",
+    "tauri",
+    "vue",
+    "desktop"
+  ],
+  "homepage": "https://github.com/coderhsh/nrm-desktop#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coderhsh/nrm-desktop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/coderhsh/nrm-desktop/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
