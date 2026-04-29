@@ -1,0 +1,14 @@
+import { defineConfig, presetUno, presetAttributify } from "unocss";
+import transformerDirectives from "@unocss/transformer-directives";
+
+export default defineConfig({
+  presets: [presetUno(), presetAttributify()],
+  transformers: [transformerDirectives()],
+  shortcuts: {
+    "flex-center": "flex items-center justify-center",
+    "flex-between": "flex items-center justify-between",
+    "text-muted": "color-gray-400",
+    "text-secondary": "color-gray-500",
+  },
+  rules: [],
+});
