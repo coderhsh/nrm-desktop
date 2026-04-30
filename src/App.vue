@@ -33,6 +33,10 @@ const nodeNpmVersionsLabel = computed(() => {
   })
 })
 const showCloseConfirmDialog = ref(false)
+/** 关于软件信息弹窗 */
+const showAboutDialog = ref(false)
+const aboutLoading = ref(false)
+const aboutInfo = ref<{ name: string; version: string; tauriVersion: string } | null>(null)
 const closeBehavior = useLocalStorage<'ask' | 'minimize' | 'exit'>('nrm-desktop-close-behavior', 'ask')
 const closeActionDraft = ref<'minimize' | 'exit'>('minimize')
 const rememberCloseChoice = ref(false)
@@ -85,6 +89,32 @@ function handleSaveSettings() {
   })
   showSettingsDialog.value = false
   ElMessage.success(nextLanguage === 'en' ? 'Settings saved' : '设置已保存')
+}
+
+/**
+ * 打开关于对话框并异步拉取 Tauri 应用名称、版本与 Tauri 运行时版本。
+ */
+async function openAboutInfo() {
+  showAboutDialog.value = true
+  aboutLoading.value = true
+  aboutInfo.value = null
+  try {
+    const { getName, getVersion, getTauriVersion } = await import('@tauri-apps/api/app')
+    const [name, version, tauriVersion] = await Promise.all([
+      getName(),
+      getVersion(),
+      getTauriVersion(),
+    ])
+    aboutInfo.value = { name, version, tauriVersion }
+  } catch {
+    aboutInfo.value = {
+      name: 'nrm-desktop',
+      version: '—',
+      tauriVersion: '—',
+    }
+  } finally {
+    aboutLoading.value = false
+  }
 }
 
 onMounted(async () => {
@@ -197,6 +227,7 @@ async function handleReset() {
     ElMessage.success(t('app.resetConfirm.success'))
     categoryByRegistry.value = {}
     store.fetchRegistries()
+    showSettingsDialog.value = false
   } catch {
     // cancelled
   }
@@ -321,9 +352,44 @@ async function applyCloseAction() {
           <el-button type="danger" plain @click="handleReset">
             {{ t('app.resetDefaults') }}
           </el-button>
+          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
+            {{ t('app.settings.about') }}
+          </div>
+          <el-button class="w-full" plain @click="openAboutInfo">
+            {{ t('app.about.openButton') }}
+          </el-button>
         </div>
         <template #footer>
           <el-button type="primary" @click="handleSaveSettings">{{ t('common.save') }}</el-button>
+        </template>
+      </el-dialog>
+
+      <el-dialog
+        v-model="showAboutDialog"
+        :title="t('app.about.dialogTitle')"
+        width="400px"
+        :close-on-click-modal="true"
+        append-to-body
+      >
+        <div v-if="aboutLoading" class="py-6 text-center text-sm text-gray-400">
+          {{ t('app.about.loading') }}
+        </div>
+        <dl v-else-if="aboutInfo" class="text-sm flex flex-col gap-3">
+          <div class="flex items-baseline justify-between gap-4">
+            <dt class="text-gray-500 shrink-0">{{ t('app.about.productName') }}</dt>
+            <dd class="font-medium text-right break-all">{{ aboutInfo.name }}</dd>
+          </div>
+          <div class="flex items-baseline justify-between gap-4">
+            <dt class="text-gray-500 shrink-0">{{ t('app.about.version') }}</dt>
+            <dd class="font-mono font-medium text-right">{{ aboutInfo.version }}</dd>
+          </div>
+          <div class="flex items-baseline justify-between gap-4">
+            <dt class="text-gray-500 shrink-0">{{ t('app.about.tauriVersion') }}</dt>
+            <dd class="font-mono font-medium text-right break-all">{{ aboutInfo.tauriVersion }}</dd>
+          </div>
+        </dl>
+        <template #footer>
+          <el-button type="primary" @click="showAboutDialog = false">{{ t('common.close') }}</el-button>
         </template>
       </el-dialog>
 
