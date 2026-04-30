@@ -78,9 +78,9 @@ async function renameMsiFilesStripLocaleSuffix() {
   }
 
   for (const { from, to } of pairs) {
+    /** 覆盖上一次构建留下的无语言后缀 MSI，否则会跳过 rename 导致 en-US 与 x64 两个文件并存。 */
     if (await pathExists(to)) {
-      process.stderr.write(`[tauri-build] 目标已存在，跳过 MSI 重命名: ${to}\n`)
-      continue
+      await fs.rm(to, { force: true })
     }
     await fs.rename(from, to)
   }
