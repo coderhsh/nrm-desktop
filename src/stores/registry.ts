@@ -113,12 +113,18 @@ export const useRegistryStore = defineStore("registry", () => {
     }
   }
 
+  /**
+   * 删除源；若删除的是当前正在使用的源，后端会测速并自动切换到延迟最低（测速失败则用列表首项）的源。
+   */
   async function deleteRegistry(name: string) {
+    const prevCurrentName = currentRegistry.value?.name ?? null;
     try {
       await api.deleteRegistry(name);
       registries.value = registries.value.filter((r) => r.name !== name);
-      if (currentRegistry.value?.name === name) {
-        currentRegistry.value = null;
+      const current = await api.getCurrentRegistry();
+      currentRegistry.value = current;
+      if (prevCurrentName === name && current && current.name !== name) {
+        ElMessage.success(`已切换到延迟最低的源: ${current.name}`);
       }
     } catch (e) {
       ElMessage.error(`删除源失败: ${e}`);

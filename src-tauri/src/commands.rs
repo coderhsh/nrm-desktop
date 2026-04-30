@@ -1,6 +1,57 @@
 use crate::models::Registry;
 use crate::{app_settings, npmrc, project_registry, proxy, registries, speedtest};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+
+/// 与列表比较用的 registry URL 规范化。
+fn registry_url_key(url: &str) -> String {
+    url.trim().trim_end_matches('/').to_string()
+}
+
+/// 切换到指定名称的源并刷新托盘、通知前端（与 `set_registry` 行为一致，供自动选源复用）。
+fn switch_to_registry_named(app: &tauri::AppHandle, name: &str) -> Result<(), String> {
+    let all = registries::get_all().map_err(|e| e.to_string())?;
+    let registry = all
+        .iter()
+        .find(|r| r.name == name)
+        .ok_or_else(|| format!("未找到源: {}", name))?;
+
+    npmrc::backup_npmrc().map_err(|e| format!("备份失败: {}", e))?;
+    npmrc::set_registry(&registry.url).map_err(|e| format!("设置失败: {}", e))?;
+
+    crate::refresh_tray_menu(app).map_err(|e| e.to_string())?;
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.emit("registry-changed", name);
+    }
+    Ok(())
+}
+
+/// 若用户未配置 `registry`（无或为空），启动时自动测速并切换到延迟最低的源。
+pub async fn apply_fastest_registry_if_npmrc_empty(app: tauri::AppHandle) {
+    let unset = match npmrc::read_current_registry() {
+        Ok(None) => true,
+        Ok(Some(s)) if s.trim().is_empty() => true,
+        _ => false,
+    };
+    if !unset {
+        return;
+    }
+
+    if registries::get_all().map(|v| v.is_empty()).unwrap_or(true) {
+        return;
+    }
+
+    let best_name = match speedtest::fastest_registry_name_with_fallback().await {
+        Ok(n) => n,
+        Err(e) => {
+            eprintln!("[nrm-desktop] 自动测速选择默认源失败: {e}");
+            return;
+        }
+    };
+
+    if let Err(e) = switch_to_registry_named(&app, &best_name) {
+        eprintln!("[nrm-desktop] 自动设置默认源失败: {e}");
+    }
+}
 
 #[tauri::command]
 pub fn get_registries() -> Result<Vec<Registry>, String> {
@@ -16,11 +67,11 @@ pub fn get_current_registry() -> Result<Option<Registry>, String> {
             let key = current_url.trim().trim_end_matches('/').to_string();
             let all = registries::get_all().map_err(|e| e.to_string())?;
             let found = all.into_iter().find(|r| {
-                r.url.trim().trim_end_matches('/') == key
+                registry_url_key(&r.url) == key
             });
             Ok(found.or_else(|| {
                 Some(Registry {
-                    name: "自定义".to_string(),
+                    name: "当前源".to_string(),
                     url: current_url,
                     is_custom: true,
                 })
@@ -53,8 +104,28 @@ pub fn add_registry(name: &str, url: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn delete_registry(name: &str) -> Result<(), String> {
-    registries::delete(name).map_err(|e| e.to_string())
+pub async fn delete_registry(app: tauri::AppHandle, name: String) -> Result<(), String> {
+    let current_url = npmrc::read_current_registry().map_err(|e| e.to_string())?;
+    let all_before = registries::get_all().map_err(|e| e.to_string())?;
+    let target = all_before.iter().find(|r| r.name == name);
+    let was_current = match (&current_url, target) {
+        (Some(cu), Some(reg)) => registry_url_key(cu) == registry_url_key(&reg.url),
+        _ => false,
+    };
+
+    registries::delete(&name).map_err(|e| e.to_string())?;
+
+    if was_current {
+        let all_after = registries::get_all().map_err(|e| e.to_string())?;
+        if all_after.is_empty() {
+            eprintln!("[nrm-desktop] 已删除最后一个源，registry 仍指向已删除的地址");
+            return Ok(());
+        }
+        let best_name = speedtest::fastest_registry_name_with_fallback().await?;
+        switch_to_registry_named(&app, &best_name)?;
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

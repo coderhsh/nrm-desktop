@@ -228,7 +228,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            if let Err(e) = registries::merge_current_npm_registry_if_missing() {
+                eprintln!("[nrm-desktop] 合并当前 npm 源到列表失败: {e}");
+            }
             build_managed_tray(app.handle())?;
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                commands::apply_fastest_registry_if_npmrc_empty(handle).await;
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

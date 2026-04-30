@@ -70,6 +70,19 @@ pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
     Ok(results)
 }
 
+/// 测速后返回延迟最低且测通的一个源名称；全部失败时退回列表中的第一个源。
+pub async fn fastest_registry_name_with_fallback() -> Result<String, String> {
+    let all = registries::get_all().map_err(|e| e.to_string())?;
+    if all.is_empty() {
+        return Err("无可用源".to_string());
+    }
+    let results = test_all().await?;
+    if let Some(r) = results.iter().find(|r| r.latency_ms.is_some()) {
+        return Ok(r.name.clone());
+    }
+    Ok(all[0].name.clone())
+}
+
 pub async fn test_single(name: &str) -> Result<LatencyResult, String> {
     let all = registries::get_all().map_err(|e| e.to_string())?;
     let registry = all

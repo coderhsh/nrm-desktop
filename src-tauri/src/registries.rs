@@ -1,8 +1,12 @@
 use crate::models::{preset_registries, Registry};
+use crate::npmrc;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+
+/// 自动导入的「当前 npm 源」在列表中的默认显示名称（与预设源名称不冲突）。
+const IMPORTED_CURRENT_REGISTRY_NAME: &str = "当前源";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CustomData {
@@ -78,6 +82,106 @@ fn save_custom_data(data: &CustomData) -> io::Result<()> {
     let content = serde_json::to_string_pretty(&data)?;
     fs::write(custom_file_path(), content)?;
     Ok(())
+}
+
+/// 与列表/托盘比较 registry URL 时统一规范化（忽略首尾空白与末尾 `/`）。
+fn normalize_registry_url_key(url: &str) -> String {
+    url.trim().trim_end_matches('/').to_string()
+}
+
+/// 从 registry URL 推断用于展示的主机名片段（用于名称冲突时的备选名）。
+fn host_hint_from_registry_url(url: &str) -> Option<String> {
+    let u = url.trim();
+    let rest = u
+        .strip_prefix("https://")
+        .or_else(|| u.strip_prefix("http://"))?;
+    let host_port = rest.split('/').next()?;
+    let host = host_port.split(':').next()?;
+    if host.is_empty() {
+        None
+    } else {
+        Some(host.to_string())
+    }
+}
+
+/// 为即将导入的未知当前源生成不与现有列表冲突的名称。
+fn pick_name_for_imported_current(all: &[Registry], url: &str) -> String {
+    if !all.iter().any(|r| r.name == IMPORTED_CURRENT_REGISTRY_NAME) {
+        return IMPORTED_CURRENT_REGISTRY_NAME.to_string();
+    }
+    let base = host_hint_from_registry_url(url)
+        .map(|h| format!("自定义·{}", h))
+        .unwrap_or_else(|| "npmrc 源".to_string());
+    if !all.iter().any(|r| r.name == base) {
+        return base;
+    }
+    let mut n = 2u32;
+    loop {
+        let candidate = format!("{}·{}", base, n);
+        if !all.iter().any(|r| r.name == candidate) {
+            return candidate;
+        }
+        n += 1;
+    }
+}
+
+/// 将「当前 npmrc 中的源」写入自定义列表（供启动时合并）；允许与**已删除**的预设同源 URL，避免 `add` 的预设 URL 校验误伤。
+fn insert_merged_current_registry(name: &str, url: &str) -> io::Result<()> {
+    let mut data = load_custom_data()?;
+    let presets = preset_registries();
+    let key = normalize_registry_url_key(url);
+
+    if data
+        .registries
+        .iter()
+        .any(|r| normalize_registry_url_key(&r.url) == key)
+    {
+        return Ok(());
+    }
+    if data.registries.iter().any(|r| r.name == name) {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            "该名称已存在",
+        ));
+    }
+    let represented_by_visible_preset = presets.iter().any(|p| {
+        normalize_registry_url_key(&p.url) == key
+            && !data.deleted_presets.iter().any(|d| d == &p.name)
+    });
+    if represented_by_visible_preset {
+        return Ok(());
+    }
+
+    data.registries.push(Registry {
+        name: name.to_string(),
+        url: url.to_string(),
+        is_custom: true,
+    });
+    save_custom_data(&data)
+}
+
+/// 启动时：若用户 `.npmrc` 中的 registry 不在当前列表中，则写入自定义配置以便界面与托盘可操作。
+pub fn merge_current_npm_registry_if_missing() -> io::Result<()> {
+    let Some(raw_url) = npmrc::read_current_registry()? else {
+        return Ok(());
+    };
+    let url = raw_url.trim().to_string();
+    if url.is_empty() {
+        return Ok(());
+    }
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Ok(());
+    }
+    let key = normalize_registry_url_key(&url);
+    let all = get_all()?;
+    if all
+        .iter()
+        .any(|r| normalize_registry_url_key(&r.url) == key)
+    {
+        return Ok(());
+    }
+    let name = pick_name_for_imported_current(&all, &url);
+    insert_merged_current_registry(name.as_str(), url.as_str())
 }
 
 /// Get all registries: presets + custom.
