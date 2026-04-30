@@ -22,10 +22,16 @@ fn trim_cli_version_output(bytes: &[u8]) -> Option<String> {
 }
 
 fn run_cli_version(bin: &str, version_flag: &str) -> Option<String> {
-    let output = std::process::Command::new(bin)
-        .arg(version_flag)
-        .output()
-        .ok()?;
+    let mut cmd = std::process::Command::new(bin);
+    cmd.arg(version_flag);
+    // Windows：GUI 父进程默认会为 `node`/`npm` 等控制台子进程分配可见控制台，导致启动时闪现黑框。
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    let output = cmd.output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -266,4 +272,17 @@ pub fn set_app_language(app: tauri::AppHandle, lang: &str) -> Result<(), String>
     app_settings::set_language(lang).map_err(|e| format!("保存语言设置失败: {}", e))?;
     crate::refresh_tray_menu(&app)?;
     Ok(())
+}
+
+/// 当前环境是否允许在应用内开关「登录时启动」：仅 **正式构建** 的 Windows / macOS / Linux 桌面端。  
+/// 开发构建（`pnpm dev`）会访问 `devUrl` localhost，若注册自启动会在开机后因无开发服务器而白屏/拒连。
+#[tauri::command]
+pub fn is_autostart_platform_supported() -> bool {
+    let desktop = cfg!(any(
+        target_os = "windows",
+        target_os = "macos",
+        target_os = "linux"
+    ));
+    let release_build = cfg!(not(debug_assertions));
+    desktop && release_build
 }

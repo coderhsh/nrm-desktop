@@ -37,6 +37,12 @@ const showCloseConfirmDialog = ref(false)
 const showAboutDialog = ref(false)
 const aboutLoading = ref(false)
 const aboutInfo = ref<{ name: string; version: string; tauriVersion: string } | null>(null)
+/** 当前系统中「登录时启动」是否已启用（与 OS 同步；仅在保存设置后或未改草稿时与草稿一致） */
+const autostartEnabled = ref(false)
+/** 设置弹窗内的自启动开关草稿，需点击保存才写入系统 */
+const draftAutostartEnabled = ref(false)
+/** 当前环境是否支持在应用内开关自启动（桌面 Tauri 为 true，浏览器调试等为 false） */
+const autostartSupported = ref(true)
 const closeBehavior = useLocalStorage<'ask' | 'minimize' | 'exit'>('nrm-desktop-close-behavior', 'ask')
 const closeActionDraft = ref<'minimize' | 'exit'>('minimize')
 const rememberCloseChoice = ref(false)
@@ -78,10 +84,36 @@ watch(showSettingsDialog, visible => {
   if (!visible) return
   draftLanguage.value = language.value
   draftTheme.value = theme.theme.value
+  void refreshAutostartState().then(() => {
+    draftAutostartEnabled.value = autostartEnabled.value
+  })
 })
 
-function handleSaveSettings() {
+/**
+ * 将语言、主题与自启动（草稿）一并提交；自启动仅在保存时调用系统 API。
+ */
+async function handleSaveSettings() {
   const nextLanguage = draftLanguage.value
+
+  if (autostartSupported.value) {
+    try {
+      const { enable, disable, isEnabled } = await import('@tauri-apps/plugin-autostart')
+      if (draftAutostartEnabled.value !== autostartEnabled.value) {
+        if (draftAutostartEnabled.value) {
+          await enable()
+        } else {
+          await disable()
+        }
+      }
+      autostartEnabled.value = await isEnabled()
+    } catch (e) {
+      ElMessage.error(t('app.settings.autostartError', { error: String(e) }))
+      await refreshAutostartState()
+      draftAutostartEnabled.value = autostartEnabled.value
+      return
+    }
+  }
+
   language.value = draftLanguage.value
   theme.theme.value = draftTheme.value
   void invoke('set_app_language', { lang: nextLanguage }).catch(() => {
@@ -114,6 +146,25 @@ async function openAboutInfo() {
     }
   } finally {
     aboutLoading.value = false
+  }
+}
+
+/**
+ * 从系统读取当前自启动注册状态；不支持或非 Tauri 时关闭开关并禁用 UI。
+ */
+async function refreshAutostartState() {
+  try {
+    const supported = await invoke<boolean>('is_autostart_platform_supported')
+    autostartSupported.value = supported
+    if (!supported) {
+      autostartEnabled.value = false
+      return
+    }
+    const { isEnabled } = await import('@tauri-apps/plugin-autostart')
+    autostartEnabled.value = await isEnabled()
+  } catch {
+    autostartSupported.value = false
+    autostartEnabled.value = false
   }
 }
 
@@ -341,6 +392,26 @@ async function applyCloseAction() {
             <el-select v-model="draftTheme" class="flex-1" :placeholder="t('app.settings.theme')">
               <el-option v-for="item in themeOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
+          </div>
+          <div
+            class="flex items-start justify-between gap-4"
+            :class="{ 'opacity-60': !autostartSupported }"
+          >
+            <div class="flex flex-col gap-0.5 min-w-0 pr-2">
+              <span class="text-sm text-gray-500">{{ t('app.settings.autostart') }}</span>
+              <span class="text-xs text-gray-400 leading-snug">{{ t('app.settings.autostartHint') }}</span>
+              <span
+                v-if="!autostartSupported"
+                class="text-xs text-gray-500 dark:text-gray-400 leading-snug"
+              >
+                {{ t('app.settings.autostartUnsupported') }}
+              </span>
+            </div>
+            <el-switch
+              v-model="draftAutostartEnabled"
+              class="shrink-0"
+              :disabled="!autostartSupported"
+            />
           </div>
           <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
             {{ t('app.settings.data') }}

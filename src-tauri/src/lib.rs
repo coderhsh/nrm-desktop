@@ -13,6 +13,7 @@ use tauri::{
     tray::TrayIconBuilder,
     Emitter, Manager, Wry,
 };
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
 fn i18n(lang: &str, zh: &str, en: &str) -> String {
     if lang == "en" {
@@ -70,6 +71,8 @@ fn build_managed_tray(app: &tauri::AppHandle<Wry>) -> tauri::Result<()> {
     let _tray = TrayIconBuilder::with_id("main-tray")
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
+        // 左键仅由 `on_tray_icon_event` 唤起主窗口；右键仍弹出上下文菜单（切换源、退出等）。
+        .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
             match id {
@@ -227,7 +230,16 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .setup(|app| {
+            // 开发构建下自启动会注册 target/debug 可执行文件，开机后将请求 devUrl localhost；清除误注册。
+            #[cfg(debug_assertions)]
+            if let Err(e) = app.autolaunch().disable() {
+                eprintln!("[nrm-desktop] 开发构建：尝试清除自启动项失败: {e}");
+            }
             if let Err(e) = registries::merge_current_npm_registry_if_missing() {
                 eprintln!("[nrm-desktop] 合并当前 npm 源到列表失败: {e}");
             }
@@ -261,6 +273,7 @@ pub fn run() {
             commands::get_app_language,
             commands::set_app_language,
             commands::get_node_npm_versions,
+            commands::is_autostart_platform_supported,
         ])
         .build(tauri::generate_context!())
         .expect("error while building nrm-desktop")
