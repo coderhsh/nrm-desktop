@@ -47,10 +47,35 @@ fn save_settings(settings: &AppSettings) -> io::Result<()> {
     fs::write(settings_file_path(), content)
 }
 
-pub fn get_language() -> String {
+/// 根据操作系统区域设置推断界面语言标签（`zh-CN` 或 `en`），用于首次生成 `app-settings.json`。
+fn detect_os_language_tag() -> String {
+    let locale = sys_locale::get_locale()
+        .unwrap_or_default()
+        .to_lowercase();
+    if locale.starts_with("zh") {
+        "zh-CN".to_string()
+    } else {
+        "en".to_string()
+    }
+}
+
+fn load_or_create_language() -> String {
+    let path = settings_file_path();
+    if !path.exists() {
+        let lang = detect_os_language_tag();
+        let settings = AppSettings { language: lang.clone() };
+        if let Err(e) = save_settings(&settings) {
+            eprintln!("[nrm-desktop] 无法写入默认语言设置: {e}");
+        }
+        return lang;
+    }
     load_settings()
         .map(|s| s.language)
         .unwrap_or_else(|_| default_language())
+}
+
+pub fn get_language() -> String {
+    load_or_create_language()
 }
 
 pub fn set_language(language: &str) -> io::Result<()> {

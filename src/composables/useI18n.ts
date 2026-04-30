@@ -3,6 +3,9 @@ import { useLocalStorage } from "@vueuse/core";
 
 export type AppLanguage = "zh-CN" | "en";
 
+/** 与界面、托盘共用的 localStorage 键名 */
+export const LANGUAGE_STORAGE_KEY = "nrm-desktop-language";
+
 interface LocaleMessages {
   [key: string]: string;
 }
@@ -278,8 +281,21 @@ const messages: Record<AppLanguage, LocaleMessages> = {
   },
 };
 
+/**
+ * 非 Tauri（如纯 Vite）且本地尚未写入语言时，根据浏览器 `navigator` 写入一次。
+ * 桌面端由 `main.ts` 在挂载前通过 `get_app_language` 与系统语言对齐。
+ */
+export function ensureLanguageSeededFromNavigator(): void {
+  if (typeof localStorage === "undefined") return;
+  const existing = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  if (existing === "en" || existing === "zh-CN") return;
+  const raw = navigator.languages?.[0] ?? navigator.language ?? "";
+  const lang: AppLanguage = raw.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
+  localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+}
+
 export function useI18n() {
-  const language = useLocalStorage<AppLanguage>("nrm-desktop-language", "zh-CN");
+  const language = useLocalStorage<AppLanguage>(LANGUAGE_STORAGE_KEY, "zh-CN");
 
   function t(key: string, params?: Record<string, string | number>): string {
     const template = messages[language.value][key] || messages["zh-CN"][key] || key;

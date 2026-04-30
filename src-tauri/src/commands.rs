@@ -211,6 +211,11 @@ pub fn hide_main_window(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn get_app_language() -> Result<String, String> {
+    Ok(app_settings::get_language())
+}
+
+#[tauri::command]
 pub fn set_app_language(app: tauri::AppHandle, lang: &str) -> Result<(), String> {
     if lang != "zh-CN" && lang != "en" {
         return Err("不支持的语言".to_string());

@@ -258,6 +258,7 @@ pub fn run() {
             commands::set_proxy_config,
             commands::exit_app,
             commands::hide_main_window,
+            commands::get_app_language,
             commands::set_app_language,
         ])
         .build(tauri::generate_context!())
