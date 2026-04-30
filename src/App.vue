@@ -164,9 +164,17 @@ async function openGithubHome() {
 
 async function handleReset() {
   try {
-    await ElMessageBox.confirm('确定要恢复默认设置吗？这将删除所有自定义源。', '确认恢复', { confirmButtonText: '恢复', cancelButtonText: '取消', type: 'warning' })
+    await ElMessageBox.confirm(
+      t('app.resetConfirm.message'),
+      t('app.resetConfirm.title'),
+      {
+        confirmButtonText: t('app.resetConfirm.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
     await api.resetDefaults()
-    ElMessage.success('已恢复默认设置')
+    ElMessage.success(t('app.resetConfirm.success'))
     store.fetchRegistries()
   } catch {
     // cancelled
