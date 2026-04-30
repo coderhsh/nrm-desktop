@@ -9,6 +9,66 @@ const rootDir = path.resolve(__dirname, "..");
 const releaseDir = path.join(rootDir, "src-tauri", "target", "release");
 const bundleDir = path.join(releaseDir, "bundle");
 
+/** WiX 输出常见后缀：_{lang}.msi，如 en-US、zh-CN（Tauri 无法通过配置省略该段，构建后再改名）。 */
+const MSI_LOCALE_SUFFIX = /_(?:[a-z]{2})(?:-(?:[a-zA-Z0-9]+))+\.msi$/i;
+
+/**
+ * Build destination path for MSI with locale suffix removed (e.g. *_en-US.msi → *.msi).
+ * @param {string} msiPath
+ * @returns {string|null} 若 basename 不含上述语言后缀则返回 null
+ */
+function getMsiPathWithoutLocaleSuffix(msiPath) {
+  const base = path.basename(msiPath);
+  if (!MSI_LOCALE_SUFFIX.test(base)) {
+    return null;
+  }
+  const nextBase = base.replace(MSI_LOCALE_SUFFIX, ".msi");
+  return path.join(path.dirname(msiPath), nextBase);
+}
+
+/**
+ * Rename MSI files in bundle/msi to drop the trailing locale segment (e.g. _en-US), when renames are collision-free.
+ * @returns {Promise<void>}
+ */
+async function renameMsiFilesStripLocaleSuffix() {
+  const msiRoot = path.join(bundleDir, "msi");
+  let entries;
+  try {
+    entries = await fs.readdir(msiRoot, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  const msiFiles = entries
+    .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".msi"))
+    .map((e) => path.join(msiRoot, e.name));
+
+  const pairs = msiFiles.map((from) => {
+    const to = getMsiPathWithoutLocaleSuffix(from);
+    return to && to !== from ? { from, to } : null;
+  }).filter((p) => p !== null);
+
+  if (pairs.length === 0) {
+    return;
+  }
+
+  const destinations = pairs.map((p) => p.to);
+  if (new Set(destinations).size !== destinations.length) {
+    process.stderr.write(
+      "[tauri-build] MSI 多语言产物若去掉区域后缀会重名，已跳过重命名；请保留带语言后缀的文件名或分别发布。\n",
+    );
+    return;
+  }
+
+  for (const { from, to } of pairs) {
+    if (await pathExists(to)) {
+      process.stderr.write(`[tauri-build] 目标已存在，跳过 MSI 重命名: ${to}\n`);
+      continue;
+    }
+    await fs.rename(from, to);
+  }
+}
+
 /**
  * Path to the main app binary next to `bundle/` (not inside installer outputs).
  * @returns {string}
@@ -124,6 +184,7 @@ async function printArtifacts() {
 
 async function main() {
   await runTauriBuild();
+  await renameMsiFilesStripLocaleSuffix();
   await printArtifacts();
 }
 
