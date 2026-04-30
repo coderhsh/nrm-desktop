@@ -236,9 +236,6 @@ async function handleDelete(registry: Registry) {
       }
     );
     await store.deleteRegistry(registry.name);
-    ElMessage.success(
-      t("registryList.deleteSuccess", { name: registry.name })
-    );
   } catch {
     // cancelled
   }

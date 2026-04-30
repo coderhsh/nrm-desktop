@@ -108,12 +108,13 @@ const messages: Record<AppLanguage, LocaleMessages> = {
 
     "registryList.confirmDeleteTitle": "确认删除",
     "registryList.confirmDeleteContent": "确定要删除源「{name}」吗？",
-    "registryList.deleteSuccess": "已删除源：{name}",
 
     // registry store messages
     "registryStore.switchSuccess": "已切换到源：{name}",
     "registryStore.switchFailed": "切换源失败：{error}",
-    "registryStore.deleteAutoSwitchSuccess": "已切换到延迟最低的源：{name}",
+    "registryStore.deleteSuccess": "已删除源：{name}",
+    "registryStore.deleteSuccessWithAutoSwitch":
+      "已删除源「{deleted}」，当前已切换为延迟最低的源「{current}」",
     "registryStore.deleteFailed": "删除源失败：{error}",
 
     // category-manage-dialog
@@ -248,11 +249,12 @@ const messages: Record<AppLanguage, LocaleMessages> = {
 
     "registryList.confirmDeleteTitle": "Confirm delete",
     "registryList.confirmDeleteContent": "Delete source \"{name}\"?",
-    "registryList.deleteSuccess": "Source deleted: {name}",
 
     "registryStore.switchSuccess": "Switched to source: {name}",
     "registryStore.switchFailed": "Failed to switch source: {error}",
-    "registryStore.deleteAutoSwitchSuccess": "Switched to lowest-latency source: {name}",
+    "registryStore.deleteSuccess": "Source deleted: {name}",
+    "registryStore.deleteSuccessWithAutoSwitch":
+      "Deleted \"{deleted}\". Switched to lowest-latency source \"{current}\".",
     "registryStore.deleteFailed": "Failed to delete source: {error}",
 
     "categoryDialog.title": "Edit Category Labels",

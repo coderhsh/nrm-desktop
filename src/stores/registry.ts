@@ -143,10 +143,19 @@ export const useRegistryStore = defineStore("registry", () => {
       registries.value = registries.value.filter((r) => r.name !== name);
       const current = await api.getCurrentRegistry();
       currentRegistry.value = current;
-      if (prevCurrentName === name && current && current.name !== name) {
+      const autoSwitched =
+        prevCurrentName === name &&
+        current !== null &&
+        current.name !== name;
+      if (autoSwitched) {
         ElMessage.success(
-          t("registryStore.deleteAutoSwitchSuccess", { name: current.name })
+          t("registryStore.deleteSuccessWithAutoSwitch", {
+            deleted: name,
+            current: current.name,
+          })
         );
+      } else {
+        ElMessage.success(t("registryStore.deleteSuccess", { name }));
       }
     } catch (e) {
       ElMessage.error(
