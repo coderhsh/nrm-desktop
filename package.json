@@ -27,12 +27,12 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "tauri": "tauri",
-    "icons:generate": "node ./scripts/generate-icons.cjs",
     "tauri:dev": "node ./scripts/tauri-dev-auto-port.mjs",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "build": "vue-tsc --noEmit && vite build",
+    "dev": "vite",
+    "tauri": "tauri",
+    "icons:generate": "node ./scripts/generate-icons.cjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",
