@@ -24,20 +24,5 @@ pub fn preset_registries() -> Vec<Registry> {
             url: "https://registry.npmmirror.com/".to_string(),
             is_custom: false,
         },
-        Registry {
-            name: "tencent".to_string(),
-            url: "https://mirrors.cloud.tencent.com/npm/".to_string(),
-            is_custom: false,
-        },
-        Registry {
-            name: "npmMirror".to_string(),
-            url: "https://skimdb.npmjs.com/registry/".to_string(),
-            is_custom: false,
-        },
-        Registry {
-            name: "huawei".to_string(),
-            url: "https://repo.huaweicloud.com/repository/npm/".to_string(),
-            is_custom: false,
-        },
     ]
 }
