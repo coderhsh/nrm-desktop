@@ -110,7 +110,6 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "registryList.confirmDeleteContent": "确定要删除源「{name}」吗？",
 
     // registry store messages
-    "registryStore.switchSuccess": "已切换到源：{name}",
     "registryStore.switchFailed": "切换源失败：{error}",
     "registryStore.deleteSuccess": "已删除源：{name}",
     "registryStore.deleteSuccessWithAutoSwitch":
@@ -250,7 +249,6 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "registryList.confirmDeleteTitle": "Confirm delete",
     "registryList.confirmDeleteContent": "Delete source \"{name}\"?",
 
-    "registryStore.switchSuccess": "Switched to source: {name}",
     "registryStore.switchFailed": "Failed to switch source: {error}",
     "registryStore.deleteSuccess": "Source deleted: {name}",
     "registryStore.deleteSuccessWithAutoSwitch":

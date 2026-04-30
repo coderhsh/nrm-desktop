@@ -91,7 +91,6 @@ export const useRegistryStore = defineStore("registry", () => {
       await api.setRegistry(name);
       currentRegistry.value =
         registries.value.find((r) => r.name === name) || null;
-      ElMessage.success(t("registryStore.switchSuccess", { name }));
     } catch (e) {
       ElMessage.error(
         t("registryStore.switchFailed", { error: String(e) })
