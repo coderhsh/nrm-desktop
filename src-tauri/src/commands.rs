@@ -13,8 +13,11 @@ pub fn get_current_registry() -> Result<Option<Registry>, String> {
 
     match url {
         Some(current_url) => {
+            let key = current_url.trim().trim_end_matches('/').to_string();
             let all = registries::get_all().map_err(|e| e.to_string())?;
-            let found = all.into_iter().find(|r| r.url == current_url);
+            let found = all.into_iter().find(|r| {
+                r.url.trim().trim_end_matches('/') == key
+            });
             Ok(found.or_else(|| {
                 Some(Registry {
                     name: "自定义".to_string(),

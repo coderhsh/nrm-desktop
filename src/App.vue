@@ -47,6 +47,7 @@ const nextThemeLabel = computed(() => {
   return t('app.settings.themeAuto')
 })
 let unlistenCloseRequested: null | (() => void) = null
+let unlistenRegistryChanged: null | (() => void) = null
 
 watch(
   language,
@@ -78,6 +79,11 @@ onMounted(async () => {
   // 初始化时静默测速，在左侧源列表展示延迟
   store.fetchLatency()
 
+  const { listen } = await import('@tauri-apps/api/event')
+  unlistenRegistryChanged = await listen<string>('registry-changed', () => {
+    void store.fetchRegistries()
+  })
+
   const { getCurrentWindow } = await import('@tauri-apps/api/window')
   const appWindow = getCurrentWindow()
   unlistenCloseRequested = await appWindow.onCloseRequested(async event => {
@@ -106,6 +112,10 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  if (unlistenRegistryChanged) {
+    unlistenRegistryChanged()
+    unlistenRegistryChanged = null
+  }
   if (unlistenCloseRequested) {
     unlistenCloseRequested()
     unlistenCloseRequested = null

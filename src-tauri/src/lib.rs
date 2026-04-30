@@ -22,6 +22,14 @@ fn i18n(lang: &str, zh: &str, en: &str) -> String {
     }
 }
 
+/// Windows 菜单将 `&` 视为助记符，需写成 `&&` 才能显示原字符。
+fn escape_menu_mnemonic(label: &str) -> String {
+    label.replace('&', "&&")
+}
+
+/// 与 `show` / `quit` reserved 错开，事件里解析时去掉此前缀。
+const REGISTRY_MENU_ID_PREFIX: &str = "reg:";
+
 fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
     // Defensive cleanup: remove default or previous tray first.
     let _ = app.remove_tray_by_id("tray");
@@ -36,12 +44,14 @@ fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
 
     for reg in &all_regs {
         let is_current = current_name.as_deref() == Some(&reg.name);
+        let label = escape_menu_mnemonic(&reg.name);
         let text = if is_current {
-            format!("✓ {}", reg.name)
+            format!("✓ {}", label)
         } else {
-            reg.name.clone()
+            label
         };
-        let item = MenuItemBuilder::with_id(reg.name.clone(), text).build(app)?;
+        let menu_id = format!("{REGISTRY_MENU_ID_PREFIX}{}", reg.name);
+        let item = MenuItemBuilder::with_id(menu_id, text).build(app)?;
         menu_builder = menu_builder.item(&item);
     }
 
@@ -57,7 +67,7 @@ fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
         .on_menu_event(|app, event| {
-            let id = event.id().0.as_str();
+            let id = event.id().as_ref();
             match id {
                 "show" => {
                     if let Some(window) = app.get_webview_window("main") {
@@ -68,12 +78,31 @@ fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 "quit" => {
                     app.exit(0);
                 }
-                _ => {
-                    let _ = commands::set_registry(id);
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.emit("registry-changed", id);
+                _ if id.starts_with(REGISTRY_MENU_ID_PREFIX) => {
+                    let name = &id[REGISTRY_MENU_ID_PREFIX.len()..];
+                    match commands::set_registry(name) {
+                        Ok(()) => {
+                            // 勿在 on_menu_event 内同步 refresh_tray；勿在同一线程直接 run_on_main_thread（会立刻执行并死锁）。先 spawn 再起线程安全地 schedule。
+                            let ah = app.clone();
+                            let name_owned = name.to_string();
+                            std::thread::spawn(move || {
+                                let ah_main = ah.clone();
+                                if let Err(e) = ah.run_on_main_thread(move || {
+                                    if let Err(e) = refresh_tray_menu(&ah_main) {
+                                        eprintln!("[tray] 刷新菜单失败: {e}");
+                                    }
+                                    if let Some(window) = ah_main.get_webview_window("main") {
+                                        let _ = window.emit("registry-changed", name_owned.as_str());
+                                    }
+                                }) {
+                                    eprintln!("[tray] 无法调度托盘刷新: {e}");
+                                }
+                            });
+                        }
+                        Err(e) => eprintln!("[tray] 切换源失败: {e}"),
                     }
                 }
+                _ => {}
             }
         })
         .on_tray_icon_event(|tray, event| {
@@ -98,13 +127,18 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle) -> Result<(), String> {
     build_managed_tray(app).map_err(|e| e.to_string())
 }
 
+/// 与列表里的 URL 比较时忽略首尾空白与末尾 `/`。
+fn registry_url_key(url: &str) -> String {
+    url.trim().trim_end_matches('/').to_string()
+}
+
 /// Get current registry name for tray menu checkmark
 fn get_current_name() -> Option<String> {
-    let url = npmrc::read_current_registry().ok()?;
-    let current_url = url?;
+    let url = npmrc::read_current_registry().ok()??;
+    let current_key = registry_url_key(&url);
     let all = registries::get_all().ok()?;
     all.into_iter()
-        .find(|r| r.url == current_url)
+        .find(|r| registry_url_key(&r.url) == current_key)
         .map(|r| r.name)
 }
 

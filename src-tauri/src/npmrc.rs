@@ -30,12 +30,13 @@ pub fn read_current_registry() -> io::Result<Option<String>> {
     for line in content.lines() {
         let trimmed = line.trim();
         if let Some(value) = trimmed.strip_prefix("registry=") {
-            return Ok(Some(value.trim().to_string()));
+            return Ok(Some(value.trim().trim_matches('"').to_string()));
         }
-        // Also handle registry = "url" with quotes
-        if let Some(value) = trimmed.strip_prefix("registry=") {
-            let cleaned = value.trim().trim_matches('"').to_string();
-            return Ok(Some(cleaned));
+        if let Some(rest) = trimmed.strip_prefix("registry") {
+            let rest = rest.trim_start();
+            if let Some(value) = rest.strip_prefix('=') {
+                return Ok(Some(value.trim().trim_matches('"').to_string()));
+            }
         }
     }
     Ok(None)
