@@ -51,6 +51,7 @@ async function findAvailablePort(startPort, attempts) {
 
 /**
  * Create temporary tauri dev config with dynamic port.
+ * beforeDevCommand 必须使用 ui:dev（Vite），不可使用 pnpm dev，否则会再次进入本脚本导致 tauri dev 死循环。
  * @param {number} port
  * @returns {Promise<void>}
  */
@@ -61,7 +62,7 @@ async function writeTempConfig(port) {
   config.build = {
     ...config.build,
     devUrl: `http://localhost:${port}`,
-    beforeDevCommand: `pnpm dev -- --port ${port} --strictPort`,
+    beforeDevCommand: `pnpm ui:dev -- --port ${port} --strictPort`,
   }
 
   // Always use Rust side TrayIconBuilder to avoid duplicate tray icons.
