@@ -1,21 +1,13 @@
-const fs = require("node:fs");
-const path = require("node:path");
-const { execSync } = require("node:child_process");
+/* @desc 从 logo.png 生成 Tauri 图标集，并清理掉非桌面打包需要的产物，让 icons 目录只留桌面用资源。 */
+const fs = require('node:fs')
+const path = require('node:path')
+const { execSync } = require('node:child_process')
 
-const rootDir = path.resolve(__dirname, "..");
-const iconDir = path.resolve(rootDir, "src-tauri/icons");
-const sourceLogo = path.resolve(iconDir, "logo.png");
+const rootDir = path.resolve(__dirname, '..')
+const iconDir = path.resolve(rootDir, 'src-tauri/icons')
+const sourceLogo = path.resolve(iconDir, 'logo.png')
 
-const desktopKeepFiles = new Set([
-  "logo.png",
-  "README.md",
-  "32x32.png",
-  "128x128.png",
-  "128x128@2x.png",
-  "icon.png",
-  "icon.ico",
-  "icon.icns",
-]);
+const desktopKeepFiles = new Set(['logo.png', 'README.md', '32x32.png', '128x128.png', '128x128@2x.png', 'icon.png', 'icon.ico', 'icon.icns'])
 
 /**
  * 生成 Tauri 图标资源。
@@ -25,8 +17,8 @@ const desktopKeepFiles = new Set([
 function generateIcons() {
   execSync(`pnpm tauri icon "${sourceLogo}"`, {
     cwd: rootDir,
-    stdio: "inherit",
-  });
+    stdio: 'inherit',
+  })
 }
 
 /**
@@ -34,22 +26,22 @@ function generateIcons() {
  * @returns {void}
  */
 function cleanupNonDesktopIcons() {
-  const entries = fs.readdirSync(iconDir, { withFileTypes: true });
+  const entries = fs.readdirSync(iconDir, { withFileTypes: true })
 
   for (const entry of entries) {
-    const fullPath = path.join(iconDir, entry.name);
+    const fullPath = path.join(iconDir, entry.name)
 
     if (entry.isDirectory()) {
       // 移除 iOS / Android 等移动端目录
-      fs.rmSync(fullPath, { recursive: true, force: true });
-      console.log(`[clean] removed dir: ${entry.name}`);
-      continue;
+      fs.rmSync(fullPath, { recursive: true, force: true })
+      console.log(`[clean] removed dir: ${entry.name}`)
+      continue
     }
 
     if (!desktopKeepFiles.has(entry.name)) {
       // 移除 Windows Appx 等非桌面必需图标
-      fs.rmSync(fullPath, { force: true });
-      console.log(`[clean] removed file: ${entry.name}`);
+      fs.rmSync(fullPath, { force: true })
+      console.log(`[clean] removed file: ${entry.name}`)
     }
   }
 }
@@ -60,12 +52,12 @@ function cleanupNonDesktopIcons() {
  */
 function main() {
   if (!fs.existsSync(sourceLogo)) {
-    throw new Error(`未找到图标源文件: ${sourceLogo}`);
+    throw new Error(`未找到图标源文件: ${sourceLogo}`)
   }
 
-  generateIcons();
-  cleanupNonDesktopIcons();
-  console.log("[done] desktop icons generated successfully.");
+  generateIcons()
+  cleanupNonDesktopIcons()
+  console.log('[done] desktop icons generated successfully.')
 }
 
-main();
+main()

@@ -42,7 +42,9 @@
 
 ## 更新图标建议
 
+方案一： 替换icons/logo.png 后执行 npm run update:logo
+方案二：
 1. 先准备一份高分辨率母版（建议 1024x1024）。
 2. 导出对应尺寸与格式，覆盖本目录同名文件。
 3. 重新执行打包命令验证效果：
-   - `pnpm tauri:build`
+   - `pnpm build`
