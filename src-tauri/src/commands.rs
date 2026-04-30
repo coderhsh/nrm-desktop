@@ -71,7 +71,7 @@ pub fn get_current_registry() -> Result<Option<Registry>, String> {
             });
             Ok(found.or_else(|| {
                 Some(Registry {
-                    name: "当前源".to_string(),
+                    name: app_settings::i18n_merged_current_registry_name(),
                     url: current_url,
                     is_custom: true,
                 })
@@ -159,8 +159,12 @@ pub fn import_config(json_data: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn reset_defaults() -> Result<(), String> {
-    registries::reset_to_defaults().map_err(|e| e.to_string())
+pub fn reset_defaults(app: tauri::AppHandle) -> Result<String, String> {
+    registries::reset_to_defaults().map_err(|e| e.to_string())?;
+    let lang = app_settings::reset_language_to_os_default().map_err(|e| e.to_string())?;
+    registries::merge_current_npm_registry_if_missing().map_err(|e| e.to_string())?;
+    crate::refresh_tray_menu(&app).map_err(|e| e.to_string())?;
+    Ok(lang)
 }
 
 #[tauri::command]

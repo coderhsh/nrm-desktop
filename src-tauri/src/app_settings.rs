@@ -78,8 +78,40 @@ pub fn get_language() -> String {
     load_or_create_language()
 }
 
+/// 合并未知 npm 源时的主显示名称（随当前界面语言 / `app-settings`）。
+pub fn i18n_merged_current_registry_name() -> String {
+    match get_language().as_str() {
+        "en" => "Current source".to_string(),
+        _ => "当前源".to_string(),
+    }
+}
+
+/// 主机名备选：`自定义·host` / `Custom · host`
+pub fn i18n_merged_registry_from_host(host: &str) -> String {
+    match get_language().as_str() {
+        "en" => format!("Custom · {}", host),
+        _ => format!("自定义·{}", host),
+    }
+}
+
+/// 无法解析主机时的备选标签
+pub fn i18n_merged_registry_npmrc_fallback() -> String {
+    match get_language().as_str() {
+        "en" => "npmrc registry".to_string(),
+        _ => "npmrc 源".to_string(),
+    }
+}
+
 pub fn set_language(language: &str) -> io::Result<()> {
     let mut settings = load_settings().unwrap_or_default();
     settings.language = language.to_string();
     save_settings(&settings)
+}
+
+/// 将界面语言重置为当前操作系统区域对应的 `zh-CN` / `en`，并写入配置文件。
+pub fn reset_language_to_os_default() -> io::Result<String> {
+    let lang = detect_os_language_tag();
+    let settings = AppSettings { language: lang.clone() };
+    save_settings(&settings)?;
+    Ok(lang)
 }

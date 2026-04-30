@@ -15,11 +15,11 @@ import SpeedTest from '@/components/SpeedTest.vue'
 import ProxySettings from '@/components/ProxySettings.vue'
 import * as api from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
-import { useI18n, LANGUAGE_STORAGE_KEY } from '@/composables/useI18n'
+import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
 
 const store = useRegistryStore()
 const theme = useTheme()
-const { t } = useI18n()
+const { t, language } = useI18n()
 const showProxySettings = ref(false)
 const showSettingsDialog = ref(false)
 const showCloseConfirmDialog = ref(false)
@@ -28,8 +28,11 @@ const closeActionDraft = ref<'minimize' | 'exit'>('minimize')
 const rememberCloseChoice = ref(false)
 const isClosingByChoice = ref(false)
 const isProxyFeatureVisible = false
-const language = useLocalStorage<'zh-CN' | 'en'>(LANGUAGE_STORAGE_KEY, 'zh-CN')
 const draftLanguage = ref<'zh-CN' | 'en'>('zh-CN')
+const categoryByRegistry = useLocalStorage<Record<string, string>>(
+  CATEGORY_BY_REGISTRY_STORAGE_KEY,
+  {}
+)
 const draftTheme = ref<'light' | 'dark' | 'auto'>('auto')
 const languageOptions = [
   { label: '简体中文', value: 'zh-CN' as const },
@@ -173,8 +176,13 @@ async function handleReset() {
         type: 'warning',
       }
     )
-    await api.resetDefaults()
+    const lang = await api.resetDefaults()
+    if (lang === 'en' || lang === 'zh-CN') {
+      language.value = lang
+      draftLanguage.value = lang
+    }
     ElMessage.success(t('app.resetConfirm.success'))
+    categoryByRegistry.value = {}
     store.fetchRegistries()
   } catch {
     // cancelled

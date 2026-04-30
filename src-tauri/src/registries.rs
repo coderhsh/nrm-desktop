@@ -1,12 +1,10 @@
+use crate::app_settings;
 use crate::models::{preset_registries, Registry};
 use crate::npmrc;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::path::PathBuf;
-
-/// 自动导入的「当前 npm 源」在列表中的默认显示名称（与预设源名称不冲突）。
-const IMPORTED_CURRENT_REGISTRY_NAME: &str = "当前源";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CustomData {
@@ -104,14 +102,15 @@ fn host_hint_from_registry_url(url: &str) -> Option<String> {
     }
 }
 
-/// 为即将导入的未知当前源生成不与现有列表冲突的名称。
+/// 为即将导入的未知当前源生成不与现有列表冲突的名称（主名与备选随 `app_settings` 语言）。
 fn pick_name_for_imported_current(all: &[Registry], url: &str) -> String {
-    if !all.iter().any(|r| r.name == IMPORTED_CURRENT_REGISTRY_NAME) {
-        return IMPORTED_CURRENT_REGISTRY_NAME.to_string();
+    let primary = app_settings::i18n_merged_current_registry_name();
+    if !all.iter().any(|r| r.name == primary) {
+        return primary;
     }
     let base = host_hint_from_registry_url(url)
-        .map(|h| format!("自定义·{}", h))
-        .unwrap_or_else(|| "npmrc 源".to_string());
+        .map(|h| app_settings::i18n_merged_registry_from_host(&h))
+        .unwrap_or_else(|| app_settings::i18n_merged_registry_npmrc_fallback());
     if !all.iter().any(|r| r.name == base) {
         return base;
     }

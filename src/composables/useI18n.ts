@@ -6,6 +6,9 @@ export type AppLanguage = "zh-CN" | "en";
 /** 与界面、托盘共用的 localStorage 键名 */
 export const LANGUAGE_STORAGE_KEY = "nrm-desktop-language";
 
+/** 源名称 → 分类标签（localStorage） */
+export const CATEGORY_BY_REGISTRY_STORAGE_KEY = "nrm-desktop-category-by-registry";
+
 interface LocaleMessages {
   [key: string]: string;
 }
@@ -81,6 +84,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "registryList.empty": "未找到匹配的源",
     "registryList.addSource": "+ 添加源",
     "registryList.categoryManage": "分类管理",
+    "registryList.uncategorized": "未分类",
     "registryList.dropHint": "释放以移动到「{label}」",
     "registryList.context.viewDetail": "查看详情",
     "registryList.context.edit": "编辑",
@@ -129,6 +133,8 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "categoryDialog.deleted": "分类已删除，相关源已归为未分类",
     "categoryDialog.confirmDeleteTitle": "确认删除分类",
     "categoryDialog.confirmDeleteContent": "确定要删除分类 \"{label}\" 吗？该分类下源将自动归入未分类。",
+    "categoryDialog.registryCategoryUpdated": "分类已更新",
+    "categoryDialog.registrySetUncategorized": "已设为未分类",
 
     // registry-dialog
     "registryDialog.addTitle": "添加源",
@@ -218,6 +224,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "registryList.empty": "No matching sources found",
     "registryList.addSource": "+ Add Source",
     "registryList.categoryManage": "Manage Categories",
+    "registryList.uncategorized": "Uncategorized",
     "registryList.dropHint": "Release to move to \"{label}\"",
     "registryList.context.viewDetail": "View Details",
     "registryList.context.edit": "Edit",
@@ -264,6 +271,8 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "categoryDialog.deleted": "Category deleted, related sources moved to uncategorized",
     "categoryDialog.confirmDeleteTitle": "Confirm Delete Category",
     "categoryDialog.confirmDeleteContent": "Are you sure to delete category \"{label}\"? Sources in this category will be moved to uncategorized.",
+    "categoryDialog.registryCategoryUpdated": "Category updated",
+    "categoryDialog.registrySetUncategorized": "Set to uncategorized",
 
     "registryDialog.addTitle": "Add Source",
     "registryDialog.editTitle": "Edit Source",

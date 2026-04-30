@@ -1,25 +1,27 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { onClickOutside, useLocalStorage } from "@vueuse/core";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Rank, RefreshRight, Search, Setting } from "@element-plus/icons-vue";
 import { useRegistryStore } from "@/stores/registry";
-import { useI18n } from "@/composables/useI18n";
+import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from "@/composables/useI18n";
 import { storeToRefs } from "pinia";
 import type { Registry } from "@/types";
 import { testSingleSpeed } from "@/api/speedtest";
 import RegistryDialog from "./RegistryDialog.vue";
 
 const store = useRegistryStore();
-const { t } = useI18n();
+const { t, language } = useI18n();
 const { filteredRegistries, currentRegistry, searchQuery, loading, latencyResults, latencyLoading } =
   storeToRefs(store);
 
-const uncategorizedLabel = "未分类";
+/** 左侧列表中「未分类」分组标题，随界面语言变化。 */
+const uncategorizedLabel = computed(() => t("registryList.uncategorized"));
+
 const defaultPresetLabel = "预设源";
 const categoryLabelMaxLength = 20;
 const categoryByRegistry = useLocalStorage<Record<string, string>>(
-  "nrm-desktop-category-by-registry",
+  CATEGORY_BY_REGISTRY_STORAGE_KEY,
   {}
 );
 const categoryLabels = useLocalStorage<string[]>("nrm-desktop-category-labels", []);
@@ -35,7 +37,73 @@ if (!categoryLabels.value.includes(presetCategoryLabel.value)) {
   categoryLabels.value = [presetCategoryLabel.value, ...categoryLabels.value];
 }
 
+/**
+ * 切换语言后，把展开状态与曾显式存成旧文案的「未分类」映射迁移到当前语言的标签。
+ */
+function migrateUncategorizedCategoryStorage() {
+  const cur = uncategorizedLabel.value;
+  const expanded = { ...categoryExpanded.value };
+  let expChanged = false;
+  for (const legacy of ["未分类", "Uncategorized"] as const) {
+    if (legacy === cur) continue;
+    if (expanded[legacy] === undefined) continue;
+    if (expanded[cur] === undefined) expanded[cur] = expanded[legacy];
+    delete expanded[legacy];
+    expChanged = true;
+  }
+  if (expChanged) categoryExpanded.value = expanded;
+
+  const mapping = { ...categoryByRegistry.value };
+  let mapChanged = false;
+  for (const [name, cat] of Object.entries(mapping)) {
+    if ((cat === "未分类" || cat === "Uncategorized") && cat !== cur) {
+      delete mapping[name];
+      mapChanged = true;
+    }
+  }
+  if (mapChanged) categoryByRegistry.value = mapping;
+}
+
+watch(language, () => {
+  migrateUncategorizedCategoryStorage();
+});
+
+/**
+ * 自定义源（含首次启动合并进来的当前源）不应出现在「预设源」分组下；并清理已不存在源的分类映射。
+ */
+function normalizeCustomRegistryCategories() {
+  const presetCat = presetCategoryLabel.value;
+  const validNames = new Set(store.registries.map((r) => r.name));
+  const next = { ...categoryByRegistry.value };
+  let changed = false;
+
+  for (const key of Object.keys(next)) {
+    if (!validNames.has(key)) {
+      delete next[key];
+      changed = true;
+    }
+  }
+
+  for (const r of store.registries) {
+    if (!r.is_custom) continue;
+    if (next[r.name] === presetCat) {
+      delete next[r.name];
+      changed = true;
+    }
+  }
+
+  if (changed) categoryByRegistry.value = next;
+}
+
+watch(
+  () => store.registries.map((r) => `${r.name}:${r.is_custom}`).join("|"),
+  () => {
+    normalizeCustomRegistryCategories();
+  },
+  { immediate: true }
+);
 const groupedRegistries = computed(() => {
+  const ucat = uncategorizedLabel.value;
   const groups: Record<string, Registry[]> = {};
   for (const label of categoryLabels.value) {
     groups[label] = [];
@@ -44,10 +112,10 @@ const groupedRegistries = computed(() => {
     const assignedCategory = categoryByRegistry.value[registry.name];
     const category = assignedCategory
       || (registry.is_custom
-        ? uncategorizedLabel
+        ? ucat
         : (categoryLabels.value.includes(presetCategoryLabel.value)
             ? presetCategoryLabel.value
-            : uncategorizedLabel));
+            : ucat));
     if (!groups[category]) {
       groups[category] = [];
     }
@@ -55,7 +123,7 @@ const groupedRegistries = computed(() => {
   }
   const labels = Object.keys(groups);
   const orderedLabels = labels
-    .filter((label) => label !== uncategorizedLabel)
+    .filter((label) => label !== ucat)
     .sort((a, b) => {
       const ai = categoryLabels.value.indexOf(a);
       const bi = categoryLabels.value.indexOf(b);
@@ -64,8 +132,8 @@ const groupedRegistries = computed(() => {
       if (bi === -1) return -1;
       return ai - bi;
     });
-  if (labels.includes(uncategorizedLabel)) {
-    orderedLabels.push(uncategorizedLabel);
+  if (labels.includes(ucat)) {
+    orderedLabels.push(ucat);
   }
   return orderedLabels.map((label) => ({
     label,
@@ -205,12 +273,13 @@ function onContextMenu(e: MouseEvent, registry: Registry) {
 }
 
 function getRegistryCategory(registry: Registry): string {
+  const ucat = uncategorizedLabel.value;
   const assignedCategory = categoryByRegistry.value[registry.name];
   if (assignedCategory) return assignedCategory;
-  if (registry.is_custom) return uncategorizedLabel;
+  if (registry.is_custom) return ucat;
   return categoryLabels.value.includes(presetCategoryLabel.value)
     ? presetCategoryLabel.value
-    : uncategorizedLabel;
+    : ucat;
 }
 
 function moveRegistryToCategory(registryName: string, label: string) {
@@ -220,7 +289,7 @@ function moveRegistryToCategory(registryName: string, label: string) {
   if (currentCategory === label) return;
 
   const next = { ...categoryByRegistry.value };
-  if (label === uncategorizedLabel) {
+  if (label === uncategorizedLabel.value) {
     delete next[registry.name];
   } else {
     ensureCategoryLabel(label);
@@ -364,6 +433,8 @@ function onWindowMouseUp() {
 }
 
 onMounted(() => {
+  migrateUncategorizedCategoryStorage();
+  normalizeCustomRegistryCategories();
   window.addEventListener("mousemove", onWindowMouseMove);
   window.addEventListener("mouseup", onWindowMouseUp);
 });
@@ -381,7 +452,8 @@ function normalizeCategoryLabel(label: string | null | undefined): string {
 }
 
 function ensureCategoryLabel(label: string) {
-  if (!label || label === uncategorizedLabel) return;
+  const ucat = uncategorizedLabel.value;
+  if (!label || label === ucat) return;
   if (!categoryLabels.value.includes(label)) {
     categoryLabels.value = [...categoryLabels.value, label];
   }
@@ -394,9 +466,9 @@ function saveCategoryFromDialog(payload: { oldName: string; newName: string; cat
   if (normalized) {
     ensureCategoryLabel(normalized);
     nextMapping[payload.newName] = normalized;
-    ElMessage.success("分类已更新");
+    ElMessage.success(t("categoryDialog.registryCategoryUpdated"));
   } else {
-    ElMessage.success("已设为未分类");
+    ElMessage.success(t("categoryDialog.registrySetUncategorized"));
   }
   categoryByRegistry.value = nextMapping;
 }
@@ -478,7 +550,7 @@ function addCategoryLabel() {
     return;
   }
   if (
-    normalized === uncategorizedLabel ||
+    normalized === uncategorizedLabel.value ||
     normalized === presetCategoryLabel.value ||
     categoryLabels.value.includes(normalized)
   ) {
@@ -521,7 +593,7 @@ function saveRenamedCategory(oldLabel: string) {
     return;
   }
   if (
-    newLabel === uncategorizedLabel ||
+    newLabel === uncategorizedLabel.value ||
     newLabel === presetCategoryLabel.value ||
     categoryLabels.value.includes(newLabel)
   ) {

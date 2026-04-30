@@ -44,8 +44,8 @@ export async function importConfig(jsonData: string): Promise<void> {
   return invoke<void>("import_config", { jsonData });
 }
 
-export async function resetDefaults(): Promise<void> {
-  return invoke<void>("reset_defaults");
+export async function resetDefaults(): Promise<string> {
+  return invoke<string>("reset_defaults");
 }
 
 export async function writeTextFile(path: string, content: string): Promise<void> {
