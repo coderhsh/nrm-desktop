@@ -233,10 +233,10 @@ async function applyCloseAction() {
       </aside>
 
       <!-- Main Content -->
-      <main class="flex-1 flex flex-col min-w-0">
-        <div class="flex-1 p-6 overflow-y-auto">
-          <CurrentSource />
-          <SpeedTest />
+      <main class="flex-1 flex flex-col min-w-0 min-h-0">
+        <div class="flex-1 flex flex-col min-h-0 overflow-hidden p-6 gap-4">
+          <CurrentSource class="shrink-0" />
+          <SpeedTest class="min-h-0 flex-1 flex flex-col overflow-hidden" />
         </div>
 
         <!-- Status Bar -->

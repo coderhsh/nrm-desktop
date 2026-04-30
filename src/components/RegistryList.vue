@@ -755,7 +755,7 @@ function copyAllDetails() {
 
     <!-- List -->
     <div class="flex-1 overflow-hidden px-3">
-      <el-scrollbar class="h-full">
+      <el-scrollbar class="app-scrollbar h-full">
         <!-- Loading Skeleton -->
         <div v-if="loading" class="flex flex-col gap-2 p-2">
           <div

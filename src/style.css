@@ -23,7 +23,34 @@ body {
   user-select: none;
 }
 
-/* Sidebar scrollbar styling */
+/* Element Plus 滚动条统一样式：左侧源列表与测速柱状图共用 */
+.app-scrollbar.el-scrollbar {
+  height: 100%;
+  width: 100%;
+}
+.app-scrollbar .el-scrollbar__wrap {
+  overflow-x: hidden;
+}
+.app-scrollbar .el-scrollbar__bar.is-vertical {
+  width: 6px;
+  right: 0;
+}
+.app-scrollbar .el-scrollbar__thumb {
+  background-color: rgba(100, 116, 139, 0.45);
+  border-radius: 3px;
+}
+.app-scrollbar .el-scrollbar__thumb:hover {
+  background-color: rgba(71, 85, 105, 0.65);
+}
+
+.dark .app-scrollbar .el-scrollbar__thumb {
+  background-color: rgba(148, 163, 184, 0.35);
+}
+.dark .app-scrollbar .el-scrollbar__thumb:hover {
+  background-color: rgba(148, 163, 184, 0.55);
+}
+
+/* @deprecated 命名保留，与同上类一致 */
 .sidebar-scrollbar {
   height: 100%;
 }
