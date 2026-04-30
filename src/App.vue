@@ -80,8 +80,8 @@ onMounted(async () => {
   store.fetchLatency()
 
   const { listen } = await import('@tauri-apps/api/event')
-  unlistenRegistryChanged = await listen<string>('registry-changed', () => {
-    void store.fetchRegistries()
+  unlistenRegistryChanged = await listen<string>('registry-changed', event => {
+    store.syncCurrentRegistryByName(event.payload)
   })
 
   const { getCurrentWindow } = await import('@tauri-apps/api/window')

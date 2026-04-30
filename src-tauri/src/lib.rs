@@ -9,9 +9,9 @@ mod speedtest;
 
 use std::path::PathBuf;
 use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder},
+    menu::{Menu, MenuBuilder, MenuItemBuilder},
     tray::TrayIconBuilder,
-    Emitter, Manager,
+    Emitter, Manager, Wry,
 };
 
 fn i18n(lang: &str, zh: &str, en: &str) -> String {
@@ -30,16 +30,12 @@ fn escape_menu_mnemonic(label: &str) -> String {
 /// 与 `show` / `quit` reserved 错开，事件里解析时去掉此前缀。
 const REGISTRY_MENU_ID_PREFIX: &str = "reg:";
 
-fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
-    // Defensive cleanup: remove default or previous tray first.
-    let _ = app.remove_tray_by_id("tray");
-    let _ = app.remove_tray_by_id("main-tray");
-
+/// 仅构建托盘右键菜单（不创建/销毁托盘图标，供 `set_menu` 使用）。
+fn build_tray_context_menu(app: &tauri::AppHandle<Wry>) -> tauri::Result<Menu<Wry>> {
     let lang = app_settings::get_language();
     let all_regs = registries::get_all().unwrap_or_default();
     let current_name = get_current_name();
 
-    // Build menu items with checkmarks
     let mut menu_builder = MenuBuilder::new(app);
 
     for reg in &all_regs {
@@ -61,7 +57,15 @@ fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
     menu_builder = menu_builder.separator().item(&show_item);
     menu_builder = menu_builder.separator().item(&quit_item);
 
-    let menu = menu_builder.build()?;
+    menu_builder.build()
+}
+
+fn build_managed_tray(app: &tauri::AppHandle<Wry>) -> tauri::Result<()> {
+    // Defensive cleanup: remove default or previous tray first.
+    let _ = app.remove_tray_by_id("tray");
+    let _ = app.remove_tray_by_id("main-tray");
+
+    let menu = build_tray_context_menu(app)?;
 
     let _tray = TrayIconBuilder::with_id("main-tray")
         .icon(app.default_window_icon().unwrap().clone())
@@ -123,8 +127,13 @@ fn build_managed_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-pub fn refresh_tray_menu(app: &tauri::AppHandle) -> Result<(), String> {
-    build_managed_tray(app).map_err(|e| e.to_string())
+pub fn refresh_tray_menu(app: &tauri::AppHandle<Wry>) -> Result<(), String> {
+    let menu = build_tray_context_menu(app).map_err(|e| e.to_string())?;
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        tray.set_menu(Some(menu)).map_err(|e| e.to_string())
+    } else {
+        build_managed_tray(app).map_err(|e| e.to_string())
+    }
 }
 
 /// 与列表里的 URL 比较时忽略首尾空白与末尾 `/`。

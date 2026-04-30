@@ -95,6 +95,14 @@ export const useRegistryStore = defineStore("registry", () => {
     }
   }
 
+  /**
+   * 仅根据已缓存的源列表更新当前源（不请求接口、不触发 loading），用于托盘切换后的界面同步。
+   */
+  function syncCurrentRegistryByName(name: string) {
+    currentRegistry.value =
+      registries.value.find((r) => r.name === name) ?? null;
+  }
+
   async function addRegistry(name: string, url: string) {
     try {
       await api.addRegistry(name, url);
@@ -152,6 +160,7 @@ export const useRegistryStore = defineStore("registry", () => {
     setSingleLatencyResult,
     fetchRegistries,
     fetchLatency,
+    syncCurrentRegistryByName,
     switchRegistry,
     addRegistry,
     deleteRegistry,
