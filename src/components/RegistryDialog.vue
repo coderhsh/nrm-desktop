@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { ElMessage } from "element-plus";
 import { useRegistryStore } from "@/stores/registry";
 import { useI18n } from "@/composables/useI18n";
@@ -32,6 +32,9 @@ const categoryInput = ref("");
 const isEdit = () => props.registry !== null && props.registry !== undefined;
 const isPresetEdit = () => isEdit() && !props.registry?.is_custom;
 const isCustomEdit = () => isEdit() && !!props.registry?.is_custom;
+
+/** 新增自定义源与编辑自定义源时展示分类（与编辑预设源区分）。 */
+const showCategoryField = computed(() => !isEdit() || isCustomEdit());
 
 watch(
   () => props.visible,
@@ -125,8 +128,17 @@ async function handleSubmit() {
       }
       ElMessage.success(t("registryDialog.success.updated", { name: newName }));
     } else {
-      await store.addRegistry(name.value.trim(), url.value.trim());
-      ElMessage.success(t("registryDialog.success.added", { name: name.value.trim() }));
+      const newName = name.value.trim();
+      await store.addRegistry(newName, url.value.trim());
+      const category = useCustomCategoryInput.value
+        ? normalizeCategoryLabel(categoryInput.value)
+        : normalizeCategoryLabel(selectedCategoryLabel.value);
+      emit("save-category", {
+        oldName: newName,
+        newName,
+        category: category || null,
+      });
+      ElMessage.success(t("registryDialog.success.added", { name: newName }));
     }
     emit("close");
   } catch {
@@ -207,7 +219,7 @@ function validateUrl(_rule: any, value: string, callback: any) {
       <div v-if="isPresetEdit()" class="text-xs text-gray-400 -mt-1 mb-2">
         {{ t("registryDialog.presetHint") }}
       </div>
-      <template v-if="isCustomEdit()">
+      <template v-if="showCategoryField">
         <el-form-item :label="t('registryDialog.label.category')">
           <div class="flex items-center gap-2 w-full">
             <el-select
