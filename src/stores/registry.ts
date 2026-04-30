@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import { ElMessage } from "element-plus";
 import type { Registry } from "@/types";
 import * as api from "@/api/tauri";
-import { testAllSpeed } from "@/api/speedtest";
+import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
 import type { LatencyResult } from "@/api/speedtest";
 import { useI18n } from "@/composables/useI18n";
 
@@ -107,10 +107,26 @@ export const useRegistryStore = defineStore("registry", () => {
       registries.value.find((r) => r.name === name) ?? null;
   }
 
+  /**
+   * 对指定源执行单次延迟测试并写入结果；失败时静默（与 `fetchLatency` 一致）。
+   */
+  async function measureRegistryLatency(name: string) {
+    try {
+      const result = await testSingleSpeed(name);
+      setSingleLatencyResult(result);
+    } catch {
+      // best-effort
+    }
+  }
+
+  /**
+   * 添加自定义源；成功后立即在后台对该源测速一次，更新列表中的延迟显示。
+   */
   async function addRegistry(name: string, url: string) {
     try {
       await api.addRegistry(name, url);
       registries.value.push({ name, url, is_custom: true });
+      void measureRegistryLatency(name);
     } catch (e) {
       ElMessage.error(`添加源失败: ${e}`);
       throw e;
