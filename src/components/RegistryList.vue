@@ -159,12 +159,18 @@ async function handleDelete(registry: Registry) {
   contextMenu.value = null;
   try {
     await ElMessageBox.confirm(
-      `确定要删除源 "${registry.name}" 吗？`,
-      "确认删除",
-      { confirmButtonText: "删除", cancelButtonText: "取消", type: "warning" }
+      t("registryList.confirmDeleteContent", { name: registry.name }),
+      t("registryList.confirmDeleteTitle"),
+      {
+        confirmButtonText: t("common.delete"),
+        cancelButtonText: t("common.cancel"),
+        type: "warning",
+      }
     );
     await store.deleteRegistry(registry.name);
-    ElMessage.success(`已删除源: ${registry.name}`);
+    ElMessage.success(
+      t("registryList.deleteSuccess", { name: registry.name })
+    );
   } catch {
     // cancelled
   }

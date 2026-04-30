@@ -95,6 +95,16 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "registryList.detail.copied": "{label}已复制",
     "registryList.detail.copyFailed": "复制失败: {error}",
 
+    "registryList.confirmDeleteTitle": "确认删除",
+    "registryList.confirmDeleteContent": "确定要删除源「{name}」吗？",
+    "registryList.deleteSuccess": "已删除源：{name}",
+
+    // registry store messages
+    "registryStore.switchSuccess": "已切换到源：{name}",
+    "registryStore.switchFailed": "切换源失败：{error}",
+    "registryStore.deleteAutoSwitchSuccess": "已切换到延迟最低的源：{name}",
+    "registryStore.deleteFailed": "删除源失败：{error}",
+
     // category-manage-dialog
     "categoryDialog.title": "编辑分类标签",
     "categoryDialog.newPlaceholder": "输入新分类名称",
@@ -217,6 +227,15 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "registryList.detail.copyAll.category": "Category: {value}",
     "registryList.detail.copied": "{label} copied",
     "registryList.detail.copyFailed": "Copy failed: {error}",
+
+    "registryList.confirmDeleteTitle": "Confirm delete",
+    "registryList.confirmDeleteContent": "Delete source \"{name}\"?",
+    "registryList.deleteSuccess": "Source deleted: {name}",
+
+    "registryStore.switchSuccess": "Switched to source: {name}",
+    "registryStore.switchFailed": "Failed to switch source: {error}",
+    "registryStore.deleteAutoSwitchSuccess": "Switched to lowest-latency source: {name}",
+    "registryStore.deleteFailed": "Failed to delete source: {error}",
 
     "categoryDialog.title": "Edit Category Labels",
     "categoryDialog.newPlaceholder": "Enter new category name",

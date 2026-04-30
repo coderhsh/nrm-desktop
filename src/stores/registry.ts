@@ -5,8 +5,10 @@ import type { Registry } from "@/types";
 import * as api from "@/api/tauri";
 import { testAllSpeed } from "@/api/speedtest";
 import type { LatencyResult } from "@/api/speedtest";
+import { useI18n } from "@/composables/useI18n";
 
 export const useRegistryStore = defineStore("registry", () => {
+  const { t } = useI18n();
   const registries = ref<Registry[]>([]);
   const currentRegistry = ref<Registry | null>(null);
   const loading = ref(false);
@@ -89,9 +91,11 @@ export const useRegistryStore = defineStore("registry", () => {
       await api.setRegistry(name);
       currentRegistry.value =
         registries.value.find((r) => r.name === name) || null;
-      ElMessage.success(`已切换到源: ${name}`);
+      ElMessage.success(t("registryStore.switchSuccess", { name }));
     } catch (e) {
-      ElMessage.error(`切换源失败: ${e}`);
+      ElMessage.error(
+        t("registryStore.switchFailed", { error: String(e) })
+      );
     }
   }
 
@@ -124,10 +128,14 @@ export const useRegistryStore = defineStore("registry", () => {
       const current = await api.getCurrentRegistry();
       currentRegistry.value = current;
       if (prevCurrentName === name && current && current.name !== name) {
-        ElMessage.success(`已切换到延迟最低的源: ${current.name}`);
+        ElMessage.success(
+          t("registryStore.deleteAutoSwitchSuccess", { name: current.name })
+        );
       }
     } catch (e) {
-      ElMessage.error(`删除源失败: ${e}`);
+      ElMessage.error(
+        t("registryStore.deleteFailed", { error: String(e) })
+      );
       throw e;
     }
   }
