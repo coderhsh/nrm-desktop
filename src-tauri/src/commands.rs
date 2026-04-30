@@ -1,6 +1,45 @@
 use crate::models::Registry;
 use crate::{app_settings, npmrc, project_registry, proxy, registries, speedtest};
+use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager};
+
+/// 系统 PATH 中 `node` / `npm` 的版本输出（与 `.npmrc` 实际使用的 CLI 一致）。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeNpmVersions {
+    pub node: Option<String>,
+    pub npm: Option<String>,
+}
+
+fn trim_cli_version_output(bytes: &[u8]) -> Option<String> {
+    let s = String::from_utf8_lossy(bytes);
+    let s = s.trim();
+    if s.is_empty() {
+        None
+    } else {
+        Some(s.to_string())
+    }
+}
+
+fn run_cli_version(bin: &str, version_flag: &str) -> Option<String> {
+    let output = std::process::Command::new(bin)
+        .arg(version_flag)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    trim_cli_version_output(&output.stdout).or_else(|| trim_cli_version_output(&output.stderr))
+}
+
+/// 读取当前 shell PATH 下的 Node 与 npm 版本（不成功则为 `null`）。
+#[tauri::command]
+pub fn get_node_npm_versions() -> NodeNpmVersions {
+    NodeNpmVersions {
+        node: run_cli_version("node", "-v"),
+        npm: run_cli_version("npm", "-v"),
+    }
+}
 
 /// 与列表比较用的 registry URL 规范化。
 fn registry_url_key(url: &str) -> String {

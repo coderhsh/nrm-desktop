@@ -260,6 +260,7 @@ pub fn run() {
             commands::hide_main_window,
             commands::get_app_language,
             commands::set_app_language,
+            commands::get_node_npm_versions,
         ])
         .build(tauri::generate_context!())
         .expect("error while building nrm-desktop")

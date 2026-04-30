@@ -6,6 +6,7 @@ import { useRegistryStore } from "@/stores/registry";
 import { useI18n } from "@/composables/useI18n";
 import type { LatencyResult } from "@/api/speedtest";
 import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
+import { formatLatencyErrorMessage, truncateSpeedTestRunError } from "@/utils/latency-error-i18n";
 
 const store = useRegistryStore();
 const { t } = useI18n();
@@ -49,7 +50,9 @@ async function runAllTests() {
     results.value = await testAllSpeed();
     syncAllLatencyResults(results.value);
   } catch (e) {
-    ElMessage.error(`测速失败: ${e}`);
+    ElMessage.error(
+      t("speedTest.runError", { detail: truncateSpeedTestRunError(String(e)) }),
+    );
   } finally {
     testing.value = false;
   }
@@ -74,7 +77,9 @@ async function runSingleTest(name: string) {
       });
     }
   } catch (e) {
-    ElMessage.error(`测速失败: ${e}`);
+    ElMessage.error(
+      t("speedTest.runError", { detail: truncateSpeedTestRunError(String(e)) }),
+    );
   } finally {
     singleTesting.value.delete(name);
   }
@@ -84,6 +89,11 @@ function switchToFastest() {
   if (fastestResult.value) {
     store.switchRegistry(fastestResult.value.name);
   }
+}
+
+/** 结果行上展示的短失败原因（随语言切换） */
+function latencyRowFailText(error: string | null | undefined): string {
+  return formatLatencyErrorMessage(t, error, 20);
 }
 
 function getBarColor(ms: number | null): string {
@@ -207,32 +217,50 @@ const maxLatency = computed(() => {
             v-else
             class="text-xs text-gray-400"
           >
-            {{ result.error || t("speedTest.failed") }}
+            {{ latencyRowFailText(result.error) }}
           </span>
         </div>
 
-        <!-- Re-test button -->
-        <div class="w-8 flex-shrink-0 text-center">
+        <!-- Re-test button：固定占位，避免 loading 与图标切换时抖动 -->
+        <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center">
           <el-button
-            v-if="singleTesting.has(result.name)"
-            text
+            link
             size="small"
-            class="!p-1.5 !min-h-0"
-            :loading="true"
-            :disabled="true"
-          />
-          <el-button
-            v-else
-            text
-            size="small"
-            class="!p-1.5 !min-h-0"
-            :disabled="testing"
+            class="speed-retest-btn speed-retest-btn-fixed"
+            :loading="singleTesting.has(result.name)"
+            :disabled="testing || singleTesting.has(result.name)"
             @click="runSingleTest(result.name)"
           >
-            <el-icon class="text-base"><RefreshRight /></el-icon>
+            <el-icon v-if="!singleTesting.has(result.name)" class="text-base leading-none">
+              <RefreshRight />
+            </el-icon>
           </el-button>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.speed-retest-btn.el-button.is-link {
+  background-color: transparent !important;
+}
+.speed-retest-btn.el-button.is-link:hover,
+.speed-retest-btn.el-button.is-link:focus {
+  background-color: transparent !important;
+}
+.speed-retest-btn-fixed.el-button.is-link {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+.speed-retest-btn-fixed :deep(.el-icon) {
+  font-size: 1rem;
+}
+.speed-retest-btn-fixed.is-loading :deep(.el-icon) {
+  font-size: 1rem;
+}
+</style>

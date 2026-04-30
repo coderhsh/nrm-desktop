@@ -28,8 +28,6 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "common.delete": "删除",
 
     // app
-    "app.currentSourceLabel": "当前源：{name}",
-    "app.currentSourceUnset": "未设置 registry",
     "app.proxy": "代理",
     "app.exportConfig": "导出配置",
     "app.importConfig": "导入配置",
@@ -57,6 +55,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.closeDialog.remember": "记住我的选择",
     "app.closeDialog.minimizeFailed": "缩小到托盘失败，请重试",
     "app.closeDialog.githubOpenFailed": "打开 GitHub 失败: {error}",
+    "app.envVersions": "Node {nodeVersion} · npm {npmVersion}",
 
     // current-source
     "currentSource.title": "当前源",
@@ -76,7 +75,13 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "speedTest.testing": "测试中...",
     "speedTest.empty": "点击\"全部测试\"开始测速",
     "speedTest.loading": "正在测速，请稍候...",
-    "speedTest.failed": "失败",
+    "speedTest.toastOk": "{name} {ms}ms",
+    "speedTest.timeout": "超时",
+    "speedTest.connectFail": "无法连接",
+    "speedTest.httpErr": "HTTP {code}",
+    "speedTest.requestFail": "请求失败",
+    "speedTest.notTested": "—",
+    "speedTest.runError": "{detail}",
 
     // registry-list
     "registryList.title": "源列表",
@@ -171,8 +176,6 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "common.settings": "Settings",
     "common.delete": "Delete",
 
-    "app.currentSourceLabel": "Current source: {name}",
-    "app.currentSourceUnset": "Registry not set",
     "app.proxy": "Proxy",
     "app.exportConfig": "Export config",
     "app.importConfig": "Import config",
@@ -200,6 +203,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.closeDialog.remember": "Remember my choice",
     "app.closeDialog.minimizeFailed": "Failed to minimize to tray, please try again",
     "app.closeDialog.githubOpenFailed": "Failed to open GitHub: {error}",
+    "app.envVersions": "Node {nodeVersion} · npm {npmVersion}",
 
     "currentSource.title": "Current Source",
     "currentSource.unset": "Not Set",
@@ -217,7 +221,13 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "speedTest.testing": "Testing...",
     "speedTest.empty": "Click \"Test All\" to start",
     "speedTest.loading": "Testing in progress...",
-    "speedTest.failed": "Failed",
+    "speedTest.toastOk": "{name} {ms}ms",
+    "speedTest.timeout": "Timeout",
+    "speedTest.connectFail": "No conn",
+    "speedTest.httpErr": "HTTP {code}",
+    "speedTest.requestFail": "Bad req",
+    "speedTest.notTested": "—",
+    "speedTest.runError": "{detail}",
 
     "registryList.title": "Source List",
     "registryList.searchPlaceholder": "Search name or URL...",

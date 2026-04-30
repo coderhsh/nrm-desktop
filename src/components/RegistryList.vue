@@ -8,6 +8,7 @@ import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from "@/composables/useI18n
 import { storeToRefs } from "pinia";
 import type { Registry } from "@/types";
 import { testSingleSpeed } from "@/api/speedtest";
+import { formatLatencyErrorMessage, truncateSpeedTestRunError } from "@/utils/latency-error-i18n";
 import RegistryDialog from "./RegistryDialog.vue";
 
 const store = useRegistryStore();
@@ -250,12 +251,14 @@ async function handleTest(registry: Registry) {
     const result = await testSingleSpeed(registry.name);
     store.setSingleLatencyResult(result);
     if (result.latency_ms !== null) {
-      ElMessage.success(`测速完成: ${registry.name} ${result.latency_ms}ms`);
+      ElMessage.success(t("speedTest.toastOk", { name: registry.name, ms: result.latency_ms }));
       return;
     }
-    ElMessage.warning(`测速失败: ${result.error || "超时"}`);
+    ElMessage.warning(formatLatencyErrorMessage(t, result.error));
   } catch (error) {
-    ElMessage.error(`测速失败: ${error}`);
+    ElMessage.error(
+      t("speedTest.runError", { detail: truncateSpeedTestRunError(String(error)) }),
+    );
   } finally {
     testingByRegistry.value = {
       ...testingByRegistry.value,
@@ -672,9 +675,14 @@ function getLatencyColor(ms: number | null): string {
 
 function getLatencyText(name: string): string {
   const latency = latencyResults.value[name];
-  if (!latency) return "未测试";
+  if (!latency) return t("speedTest.notTested");
   if (latency.latency_ms !== null) return `${latency.latency_ms}ms`;
-  return latency.error || "超时";
+  return formatLatencyErrorMessage(t, latency.error, 120);
+}
+
+/** 列表/拖拽气泡中与语言一致的测速失败短文案 */
+function latencyFailLabel(error: string | null | undefined): string {
+  return formatLatencyErrorMessage(t, error, 14);
 }
 
 async function copyText(content: string, label: string) {
@@ -838,7 +846,7 @@ function copyAllDetails() {
                       {{ latencyResults[registry.name].latency_ms }}ms
                     </template>
                     <template v-else class="text-gray-400">
-                      {{ latencyResults[registry.name].error || "超时" }}
+                      {{ latencyFailLabel(latencyResults[registry.name].error) }}
                     </template>
                   </span>
                   <span
@@ -851,24 +859,20 @@ function copyAllDetails() {
                   class="w-2 h-2 rounded-full"
                   style="background: var(--el-color-primary); box-shadow: 0 0 6px rgba(79, 110, 247, 0.4)"
                 ></div>
-                <el-button
-                  v-if="testingByRegistry[registry.name]"
-                  text
-                  size="small"
-                  class="!p-1.5 !min-h-0"
-                  :loading="true"
-                  :disabled="true"
-                  @click.stop
-                />
-                <el-button
-                  v-else
-                  text
-                  size="small"
-                  class="!p-1.5 !min-h-0"
-                  @click.stop="handleTest(registry)"
-                >
-                  <el-icon class="text-base"><RefreshRight /></el-icon>
-                </el-button>
+                <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                  <el-button
+                    link
+                    size="small"
+                    class="registry-speed-btn registry-speed-btn-fixed"
+                    :loading="!!testingByRegistry[registry.name]"
+                    :disabled="!!testingByRegistry[registry.name]"
+                    @click.stop="handleTest(registry)"
+                  >
+                    <el-icon v-if="!testingByRegistry[registry.name]" class="text-base leading-none">
+                      <RefreshRight />
+                    </el-icon>
+                  </el-button>
+                </div>
               </div>
             </div>
           </div>
@@ -1074,7 +1078,7 @@ function copyAllDetails() {
                 {{ latencyResults[draggingRegistry.name].latency_ms }}ms
               </template>
               <template v-else>
-                {{ latencyResults[draggingRegistry.name].error || "超时" }}
+                {{ latencyFailLabel(latencyResults[draggingRegistry.name].error) }}
               </template>
             </span>
             <span
@@ -1111,3 +1115,28 @@ function copyAllDetails() {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.registry-speed-btn.el-button.is-link {
+  background-color: transparent !important;
+}
+.registry-speed-btn.el-button.is-link:hover,
+.registry-speed-btn.el-button.is-link:focus {
+  background-color: transparent !important;
+}
+/* 与 loading 动画占位一致，避免切换时布局抖动 */
+.registry-speed-btn-fixed.el-button.is-link {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+.registry-speed-btn-fixed :deep(.el-icon) {
+  font-size: 1rem;
+}
+.registry-speed-btn-fixed.is-loading :deep(.el-icon) {
+  font-size: 1rem;
+}
+</style>

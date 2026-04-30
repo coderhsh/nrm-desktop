@@ -14,6 +14,7 @@ import CurrentSource from '@/components/CurrentSource.vue'
 import SpeedTest from '@/components/SpeedTest.vue'
 import ProxySettings from '@/components/ProxySettings.vue'
 import * as api from '@/api/tauri'
+import type { NodeNpmVersions } from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
 
@@ -22,6 +23,15 @@ const theme = useTheme()
 const { t, language } = useI18n()
 const showProxySettings = ref(false)
 const showSettingsDialog = ref(false)
+const nodeNpmVersions = ref<NodeNpmVersions | null>(null)
+const nodeNpmVersionsLabel = computed(() => {
+  const v = nodeNpmVersions.value
+  if (!v) return ''
+  return t('app.envVersions', {
+    nodeVersion: v.node ?? '—',
+    npmVersion: v.npm ?? '—',
+  })
+})
 const showCloseConfirmDialog = ref(false)
 const closeBehavior = useLocalStorage<'ask' | 'minimize' | 'exit'>('nrm-desktop-close-behavior', 'ask')
 const closeActionDraft = ref<'minimize' | 'exit'>('minimize')
@@ -79,6 +89,9 @@ function handleSaveSettings() {
 
 onMounted(async () => {
   await store.fetchRegistries()
+  void api.getNodeNpmVersions().then(v => {
+    nodeNpmVersions.value = v
+  })
   // 初始化时静默测速，在左侧源列表展示延迟
   store.fetchLatency()
 
@@ -228,11 +241,12 @@ async function applyCloseAction() {
 
         <!-- Status Bar -->
         <div class="h-10 px-3 border-t border-gray-200 bg-white flex items-center gap-0.5">
-          <span class="text-xs text-gray-400 truncate mr-2">
-            <template v-if="store.currentRegistry">
-              {{ t('app.currentSourceLabel', { name: store.currentRegistry.name }) }}
-            </template>
-            <template v-else>{{ t('app.currentSourceUnset') }}</template>
+          <span
+            v-if="nodeNpmVersionsLabel"
+            class="text-xs text-gray-400 shrink-0 truncate max-w-[280px] mr-2"
+            :title="nodeNpmVersionsLabel"
+          >
+            {{ nodeNpmVersionsLabel }}
           </span>
 
           <span class="flex-1"></span>
