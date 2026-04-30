@@ -1,4 +1,4 @@
-/* @desc 构建并输出产物路径 */
+/* @desc 仅打 Windows 安装包：x64；Windows 上产出 MSI+NSIS，非 Windows 上交叉编译仅产出 NSIS（MSI 需 WiX，仅在 Windows 可用）。 */
 import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
@@ -7,10 +7,11 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
-const releaseDir = path.join(rootDir, 'src-tauri', 'target', 'release')
+/** @type {const} */
+const WIN_TARGET = 'x86_64-pc-windows-msvc'
+const releaseDir = path.join(rootDir, 'src-tauri', 'target', WIN_TARGET, 'release')
 const bundleDir = path.join(releaseDir, 'bundle')
 
-/** WiX 输出常见后缀：_{lang}.msi，如 en-US、zh-CN（Tauri 无法通过配置省略该段，构建后再改名）。 */
 const MSI_LOCALE_SUFFIX = /_(?:[a-z]{2})(?:-(?:[a-zA-Z0-9]+))+\.msi$/i
 
 /**
@@ -32,9 +33,8 @@ function formatBuildDuration(ms) {
 }
 
 /**
- * Build destination path for MSI with locale suffix removed (e.g. *_en-US.msi → *.msi).
  * @param {string} msiPath
- * @returns {string|null} 若 basename 不含上述语言后缀则返回 null
+ * @returns {string|null}
  */
 function getMsiPathWithoutLocaleSuffix(msiPath) {
   const base = path.basename(msiPath)
@@ -46,7 +46,20 @@ function getMsiPathWithoutLocaleSuffix(msiPath) {
 }
 
 /**
- * Rename MSI files in bundle/msi to drop the trailing locale segment (e.g. _en-US), when renames are collision-free.
+ * @param {string} filePath
+ * @returns {Promise<boolean>}
+ */
+async function pathExists(filePath) {
+  try {
+    await fs.access(filePath)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Rename MSI files to drop trailing locale segment (e.g. _en-US).
  * @returns {Promise<void>}
  */
 async function renameMsiFilesStripLocaleSuffix() {
@@ -73,13 +86,13 @@ async function renameMsiFilesStripLocaleSuffix() {
 
   const destinations = pairs.map(p => p.to)
   if (new Set(destinations).size !== destinations.length) {
-    process.stderr.write('[tauri-build] MSI 多语言产物若去掉区域后缀会重名，已跳过重命名；请保留带语言后缀的文件名或分别发布。\n')
+    process.stderr.write('[tauri-build-win] MSI 多语言产物若去掉区域后缀会重名，已跳过重命名。\n')
     return
   }
 
   for (const { from, to } of pairs) {
     if (await pathExists(to)) {
-      process.stderr.write(`[tauri-build] 目标已存在，跳过 MSI 重命名: ${to}\n`)
+      process.stderr.write(`[tauri-build-win] 目标已存在，跳过 MSI 重命名: ${to}\n`)
       continue
     }
     await fs.rename(from, to)
@@ -87,36 +100,83 @@ async function renameMsiFilesStripLocaleSuffix() {
 }
 
 /**
- * Path to the main app binary next to `bundle/` (not inside installer outputs).
- * @returns {string}
+ * @param {string} directory
+ * @returns {Promise<string[]>}
  */
-function getMainReleaseBinaryPath() {
-  const binaryName = process.platform === 'win32' ? 'nrm-desktop.exe' : 'nrm-desktop'
-  return path.join(releaseDir, binaryName)
+async function collectArtifacts(directory) {
+  const entries = await fs.readdir(directory, { withFileTypes: true })
+  const files = await Promise.all(
+    entries.map(async entry => {
+      const fullPath = path.join(directory, entry.name)
+      if (entry.isDirectory()) {
+        return collectArtifacts(fullPath)
+      }
+      return [fullPath]
+    })
+  )
+  return files.flat()
 }
 
 /**
- * @param {string} filePath
- * @returns {Promise<boolean>}
- */
-async function pathExists(filePath) {
-  try {
-    await fs.access(filePath)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * Run tauri build command and inherit terminal output.
  * @returns {Promise<void>}
  */
-function runTauriBuild() {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+async function printArtifacts() {
+  const mainExe = path.join(releaseDir, 'nrm-desktop.exe')
+  const hasMain = await pathExists(mainExe)
+
+  let artifacts = []
+  let hasBundleDir = false
+  try {
+    artifacts = await collectArtifacts(bundleDir)
+    hasBundleDir = true
+  } catch {
+    hasBundleDir = false
+  }
+
+  const sorted = artifacts.sort((a, b) => a.localeCompare(b))
+  process.stdout.write('\n=== 打包产物（Windows x64）===\n')
+
+  if (hasMain) {
+    process.stdout.write(`主程序: ${mainExe}\n`)
+  } else {
+    process.stdout.write(`[tauri-build-win] 未找到主程序: ${mainExe}\n`)
+  }
+
+  if (!hasBundleDir) {
+    process.stdout.write('[tauri-build-win] 未找到 bundle 目录。\n')
+    return
+  }
+
+  if (sorted.length === 0) {
+    process.stdout.write('bundle 目录内未发现产物文件。\n')
+    return
+  }
+
+  process.stdout.write('\nbundle 内文件:\n')
+  sorted.forEach((p, i) => {
+    process.stdout.write(`${i + 1}. ${p}\n`)
+  })
+}
+
+/**
+ * Spawn `pnpm tauri build` with Windows target and bundle set.
+ * @returns {Promise<void>}
+ */
+function runTauriBuildWin() {
+  const isWin = process.platform === 'win32'
+  const command = isWin ? 'pnpm.cmd' : 'pnpm'
+
+  /** MSI 依赖 WiX，官方仅支持在 Windows 上生成。 */
+  const bundles = isWin ? 'msi,nsis' : 'nsis'
+  const args = ['tauri', 'build', '--target', WIN_TARGET, '--bundles', bundles]
+
+  if (!isWin) {
+    args.push('--runner', 'cargo-xwin')
+    process.stdout.write('[tauri-build-win] 非 Windows：仅构建 NSIS（需已安装 NSIS、LLVM/LLD 与 cargo-xwin）；MSI 请在 Windows 上执行 pnpm build:win。\n\n')
+  }
 
   return new Promise((resolve, reject) => {
-    const child = spawn(command, ['tauri', 'build'], {
+    const child = spawn(command, args, {
       cwd: rootDir,
       stdio: 'inherit',
       env: process.env,
@@ -137,78 +197,16 @@ function runTauriBuild() {
   })
 }
 
-/**
- * Recursively collect generated artifact file paths.
- * @param {string} directory
- * @returns {Promise<string[]>}
- */
-async function collectArtifacts(directory) {
-  const entries = await fs.readdir(directory, { withFileTypes: true })
-  const files = await Promise.all(
-    entries.map(async entry => {
-      const fullPath = path.join(directory, entry.name)
-      if (entry.isDirectory()) {
-        return collectArtifacts(fullPath)
-      }
-      return [fullPath]
-    })
-  )
-
-  return files.flat()
-}
-
-/**
- * Print main binary path plus bundle files.
- * @returns {Promise<void>}
- */
-async function printArtifacts() {
-  const mainBinary = getMainReleaseBinaryPath()
-  const hasMainBinary = await pathExists(mainBinary)
-
-  let artifacts = []
-  let hasBundleDir = false
-  try {
-    artifacts = await collectArtifacts(bundleDir)
-    hasBundleDir = true
-  } catch {
-    hasBundleDir = false
-  }
-
-  const sortedArtifacts = artifacts.sort((left, right) => left.localeCompare(right))
-  process.stdout.write('\n=== 打包产物 ===\n')
-
-  if (hasMainBinary) {
-    process.stdout.write(`主程序: ${mainBinary}\n`)
-  } else {
-    process.stdout.write(`[tauri-build] 未找到主程序: ${mainBinary}\n`)
-  }
-
-  if (!hasBundleDir) {
-    process.stdout.write('[tauri-build] 未找到 bundle 目录（可能未开启安装包或未成功打包）。\n')
-    return
-  }
-
-  if (sortedArtifacts.length === 0) {
-    process.stdout.write('bundle 目录内未发现额外产物文件，请检查打包配置。\n')
-    return
-  }
-
-  process.stdout.write('\nbundle 内文件:\n')
-  sortedArtifacts.forEach((artifactPath, index) => {
-    process.stdout.write(`${index + 1}. ${artifactPath}\n`)
-  })
-}
-
 async function main() {
   const startedAt = Date.now()
-  await runTauriBuild()
+  await runTauriBuildWin()
   await renameMsiFilesStripLocaleSuffix()
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
   process.stdout.write(`\n打包总时长: ${formatBuildDuration(elapsedMs)}（${elapsedMs} ms）\n`)
 }
 
-main().catch(error => {
-  process.stderr.write(`[tauri-build] ${error instanceof Error ? error.message : String(error)}\n`)
+main().catch(err => {
+  process.stderr.write(`[tauri-build-win] ${err instanceof Error ? err.message : String(err)}\n`)
   process.exit(1)
 })

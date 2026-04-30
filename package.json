@@ -29,6 +29,7 @@
   "scripts": {
     "dev": "node ./scripts/tauri-dev-auto-port.mjs",
     "build": "node ./scripts/tauri-build-with-output.mjs",
+    "build:win": "node ./scripts/tauri-build-win.mjs",
     "ui:build": "vue-tsc --noEmit && vite build",
     "ui:dev": "vite",
     "tauri": "tauri",
