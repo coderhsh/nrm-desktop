@@ -1,5 +1,6 @@
 /* @desc 构建并输出产物路径 */
 import { spawn } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -8,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
+const appVersion = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf8')).version
 const cargoTargetDir = path.join(rootDir, 'src-tauri', 'target')
 const releaseDir = path.join(rootDir, 'src-tauri', 'target', 'release')
 const bundleDir = path.join(releaseDir, 'bundle')
@@ -185,7 +187,7 @@ async function createNonInteractiveMacDmg() {
   await fs.mkdir(dmgDir, { recursive: true })
 
   const arch = process.arch === 'arm64' ? 'aarch64' : process.arch
-  const dmgName = `nrm-desktop_0.1.0_${arch}.dmg`
+  const dmgName = `nrm-desktop_${appVersion}_${arch}.dmg`
   const dmgPath = path.join(dmgDir, dmgName)
 
   const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nrm-desktop-dmg-'))
