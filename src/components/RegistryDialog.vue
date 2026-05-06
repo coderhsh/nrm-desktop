@@ -188,6 +188,7 @@ function validateUrl(_rule: any, value: string, callback: any) {
     :title="isEdit() ? t('registryDialog.editTitle') : t('registryDialog.addTitle')"
     width="420px"
     :close-on-click-modal="false"
+    class="registry-dialog"
     @update:model-value="(v: boolean) => !v && handleClose()"
   >
     <el-form

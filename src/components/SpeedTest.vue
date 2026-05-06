@@ -253,6 +253,10 @@ const maxLatency = computed(() => {
 .speed-retest-btn.el-button.is-link:focus {
   background-color: transparent !important;
 }
+/* Element Plus loading 态会绘制 ::before 蒙层，这里强制透明避免深色模式出现黑底 */
+.speed-retest-btn.el-button.is-link.is-loading::before {
+  background-color: transparent !important;
+}
 .speed-retest-btn-fixed.el-button.is-link {
   width: 2rem;
   height: 2rem;

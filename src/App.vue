@@ -376,19 +376,26 @@ async function applyCloseAction() {
       <!-- Proxy Settings Dialog -->
       <ProxySettings v-if="isProxyFeatureVisible" v-model:visible="showProxySettings" @close="showProxySettings = false" />
 
-      <el-dialog v-model="showSettingsDialog" :title="t('app.settingsDialogTitle')" width="420px" :close-on-click-modal="true">
-        <div class="flex flex-col gap-3">
-          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+      <el-drawer
+        v-model="showSettingsDialog"
+        :title="t('app.settingsDialogTitle')"
+        size="440px"
+        direction="rtl"
+        :destroy-on-close="false"
+        class="settings-drawer"
+      >
+        <div class="settings-panel flex flex-col gap-3">
+          <div class="settings-section-title text-xs font-semibold text-gray-500 uppercase tracking-wide">
             {{ t('app.settings.general') }}
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-500 min-w-14">{{ t('app.settings.language') }}</span>
+            <span class="settings-item-label text-sm text-gray-500 min-w-14">{{ t('app.settings.language') }}</span>
             <el-select v-model="draftLanguage" class="flex-1" :placeholder="t('app.settings.language')">
               <el-option v-for="item in languageOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-500 min-w-14">{{ t('app.settings.theme') }}</span>
+            <span class="settings-item-label text-sm text-gray-500 min-w-14">{{ t('app.settings.theme') }}</span>
             <el-select v-model="draftTheme" class="flex-1" :placeholder="t('app.settings.theme')">
               <el-option v-for="item in themeOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
@@ -398,11 +405,11 @@ async function applyCloseAction() {
             :class="{ 'opacity-60': !autostartSupported }"
           >
             <div class="flex flex-col gap-0.5 min-w-0 pr-2">
-              <span class="text-sm text-gray-500">{{ t('app.settings.autostart') }}</span>
-              <span class="text-xs text-gray-400 leading-snug">{{ t('app.settings.autostartHint') }}</span>
+              <span class="settings-item-label text-sm text-gray-500">{{ t('app.settings.autostart') }}</span>
+              <span class="settings-note text-xs text-gray-400 leading-snug">{{ t('app.settings.autostartHint') }}</span>
               <span
                 v-if="!autostartSupported"
-                class="text-xs text-gray-500 dark:text-gray-400 leading-snug"
+                class="settings-note text-xs text-gray-500 dark:text-gray-400 leading-snug"
               >
                 {{ t('app.settings.autostartUnsupported') }}
               </span>
@@ -413,27 +420,29 @@ async function applyCloseAction() {
               :disabled="!autostartSupported"
             />
           </div>
-          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
+          <div class="settings-section-title text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
             {{ t('app.settings.data') }}
           </div>
-          <div class="flex items-center gap-2">
+          <div class="settings-actions-grid flex items-center gap-2">
             <el-button class="flex-1" @click="handleExport">{{ t('common.export') }}</el-button>
             <el-button class="flex-1" @click="handleImport">{{ t('common.import') }}</el-button>
           </div>
-          <el-button type="danger" plain @click="handleReset">
+          <el-button class="settings-danger-btn" type="danger" plain @click="handleReset">
             {{ t('app.resetDefaults') }}
           </el-button>
-          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
+          <div class="settings-section-title text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
             {{ t('app.settings.about') }}
           </div>
-          <el-button class="w-full" plain @click="openAboutInfo">
+          <el-button class="settings-about-btn w-full" plain @click="openAboutInfo">
             {{ t('app.about.openButton') }}
           </el-button>
         </div>
         <template #footer>
-          <el-button type="primary" @click="handleSaveSettings">{{ t('common.save') }}</el-button>
+          <div class="flex justify-end">
+            <el-button type="primary" @click="handleSaveSettings">{{ t('common.save') }}</el-button>
+          </div>
         </template>
-      </el-dialog>
+      </el-drawer>
 
       <el-dialog
         v-model="showAboutDialog"
@@ -516,5 +525,63 @@ async function applyCloseAction() {
   width: min(100%, 260px);
   display: flex;
   justify-content: flex-start;
+}
+
+.settings-panel {
+  padding: 0.25rem 0.15rem 0.1rem;
+}
+
+.settings-section-title {
+  letter-spacing: 0.08em;
+}
+
+.settings-item {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 0.75rem;
+  background: var(--el-fill-color-blank);
+}
+
+.settings-item-label {
+  font-weight: 500;
+}
+
+.settings-note {
+  opacity: 0.92;
+}
+
+.settings-danger-btn,
+.settings-about-btn {
+  border-radius: 0.7rem;
+}
+
+:global(.dark) .settings-item {
+  border-color: color-mix(in srgb, #334155 85%, transparent);
+  background: color-mix(in srgb, #111827 80%, #1e293b 20%);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.28);
+}
+
+:global(.dark) .settings-section-title {
+  color: #9fb0c7 !important;
+}
+
+:global(.dark) .settings-item-label {
+  color: #d3deef !important;
+}
+
+:global(.dark) .settings-note {
+  color: #93a5be !important;
+}
+
+:global(.dark) .settings-danger-btn {
+  border-color: rgba(248, 113, 113, 0.38) !important;
+  color: #fca5a5 !important;
+  background: rgba(127, 29, 29, 0.18) !important;
+}
+
+:global(.dark) .settings-about-btn {
+  border-color: rgba(96, 165, 250, 0.28) !important;
+  color: #bfdbfe !important;
+  background: rgba(30, 58, 138, 0.2) !important;
 }
 </style>
