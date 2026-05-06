@@ -176,9 +176,18 @@ const contextMenu = ref<{
   registry: Registry;
 } | null>(null);
 const contextMenuRef = ref<HTMLElement | null>(null);
+const categoryContextMenu = ref<{
+  x: number;
+  y: number;
+  label: string;
+} | null>(null);
+const categoryContextMenuRef = ref<HTMLElement | null>(null);
 
 onClickOutside(contextMenuRef, () => {
   contextMenu.value = null;
+});
+onClickOutside(categoryContextMenuRef, () => {
+  categoryContextMenu.value = null;
 });
 
 const draggingRegistry = computed(() =>
@@ -269,7 +278,77 @@ async function handleTest(registry: Registry) {
 
 function onContextMenu(e: MouseEvent, registry: Registry) {
   e.preventDefault();
+  categoryContextMenu.value = null;
   contextMenu.value = { x: e.clientX, y: e.clientY, registry };
+}
+
+function onCategoryContextMenu(e: MouseEvent, label: string) {
+  e.preventDefault();
+  contextMenu.value = null;
+  categoryContextMenu.value = { x: e.clientX, y: e.clientY, label };
+}
+
+function isUncategorizedCategory(label: string): boolean {
+  return label === uncategorizedLabel.value;
+}
+
+async function renameCategoryFromContext(label: string) {
+  categoryContextMenu.value = null;
+  if (isUncategorizedCategory(label)) return;
+
+  try {
+    const { value } = await ElMessageBox.prompt(
+      t("registryList.categoryContext.renamePrompt"),
+      t("registryList.categoryContext.renameTitle"),
+      {
+        inputValue: label,
+        confirmButtonText: t("common.save"),
+        cancelButtonText: t("common.cancel"),
+      }
+    );
+    categoryRenameInputs.value = {
+      ...categoryRenameInputs.value,
+      [label]: value,
+    };
+    editingCategoryLabel.value = label;
+    saveRenamedCategory(label);
+  } catch {
+    // cancelled
+  }
+}
+
+async function createCategoryFromContext() {
+  categoryContextMenu.value = null;
+  try {
+    const { value } = await ElMessageBox.prompt(
+      t("registryList.categoryContext.createPrompt"),
+      t("registryList.categoryContext.createTitle"),
+      {
+        confirmButtonText: t("categoryDialog.add"),
+        cancelButtonText: t("common.cancel"),
+      }
+    );
+    newCategoryLabel.value = value;
+    addCategoryLabel();
+  } catch {
+    // cancelled
+  }
+}
+
+async function deleteCategoryFromContext(label: string) {
+  categoryContextMenu.value = null;
+  if (isUncategorizedCategory(label)) return;
+  await deleteCategoryLabel(label);
+}
+
+function toggleCategoryFromContext(label: string) {
+  toggleCategoryExpanded(label);
+  categoryContextMenu.value = null;
+}
+
+function openCategoryManageFromContext() {
+  categoryContextMenu.value = null;
+  openCategoryManageDialog();
 }
 
 function getRegistryCategory(registry: Registry): string {
@@ -790,6 +869,7 @@ function copyAllDetails() {
                 { 'bg-gray-100': dragOverCategoryLabel === group.label },
               ]"
               @click="toggleCategoryExpanded(group.label)"
+              @contextmenu="onCategoryContextMenu($event, group.label)"
             >
               <span>{{ isCategoryExpanded(group.label) ? "▾" : "▸" }}</span>
               <span>{{ group.label }} ({{ group.items.length }})</span>
@@ -903,6 +983,47 @@ function copyAllDetails() {
         </div>
         <div class="context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer text-red-500" @click="handleDelete(contextMenu!.registry)">
           {{ t("registryList.context.delete") }}
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="categoryContextMenu"
+        ref="categoryContextMenuRef"
+        class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-44"
+        :style="{ left: categoryContextMenu.x + 'px', top: categoryContextMenu.y + 'px' }"
+      >
+        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="toggleCategoryFromContext(categoryContextMenu.label)">
+          {{
+            isCategoryExpanded(categoryContextMenu.label)
+              ? t("registryList.categoryContext.collapse")
+              : t("registryList.categoryContext.expand")
+          }}
+        </div>
+        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="createCategoryFromContext">
+          {{ t("registryList.categoryContext.create") }}
+        </div>
+        <div
+          :class="[
+            'context-menu-item px-3 py-2 text-sm cursor-pointer',
+            { 'opacity-40 pointer-events-none': isUncategorizedCategory(categoryContextMenu.label) },
+          ]"
+          @click="renameCategoryFromContext(categoryContextMenu.label)"
+        >
+          {{ t("registryList.categoryContext.rename") }}
+        </div>
+        <div class="h-px mx-2 my-1 bg-gray-100"></div>
+        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openCategoryManageFromContext">
+          {{ t("registryList.categoryContext.manage") }}
+        </div>
+        <div
+          :class="[
+            'context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer text-red-500',
+            { 'opacity-40 pointer-events-none': isUncategorizedCategory(categoryContextMenu.label) },
+          ]"
+          @click="deleteCategoryFromContext(categoryContextMenu.label)"
+        >
+          {{ t("registryList.categoryContext.delete") }}
         </div>
       </div>
     </Teleport>
