@@ -1,6 +1,7 @@
 /* @desc 构建并输出产物路径 */
 import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -138,6 +139,98 @@ function runTauriBuild() {
 }
 
 /**
+ * Run tauri build with explicit bundle targets.
+ * @param {string[]} bundles
+ * @returns {Promise<void>}
+ */
+function runTauriBuildWithBundles(bundles) {
+  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  const args = ['tauri', 'build', '--bundles', bundles.join(',')]
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: rootDir,
+      stdio: 'inherit',
+      env: process.env,
+    })
+
+    child.on('error', reject)
+    child.on('exit', (code, signal) => {
+      if (signal) {
+        reject(new Error(`构建进程被信号中断: ${signal}`))
+        return
+      }
+      if (code !== 0) {
+        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
+        return
+      }
+      resolve()
+    })
+  })
+}
+
+/**
+ * Create a plain DMG from generated .app without Finder automation.
+ * @returns {Promise<void>}
+ */
+async function createNonInteractiveMacDmg() {
+  const appBundlePath = path.join(bundleDir, 'macos', 'nrm-desktop.app')
+  if (!(await pathExists(appBundlePath))) {
+    throw new Error(`未找到 .app 产物，无法生成 dmg: ${appBundlePath}`)
+  }
+
+  const dmgDir = path.join(bundleDir, 'dmg')
+  await fs.mkdir(dmgDir, { recursive: true })
+
+  const arch = process.arch === 'arm64' ? 'aarch64' : process.arch
+  const dmgName = `nrm-desktop_0.1.0_${arch}.dmg`
+  const dmgPath = path.join(dmgDir, dmgName)
+
+  const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nrm-desktop-dmg-'))
+  try {
+    const stagedAppPath = path.join(stagingDir, 'nrm-desktop.app')
+    await fs.cp(appBundlePath, stagedAppPath, { recursive: true })
+
+    await new Promise((resolve, reject) => {
+      const child = spawn(
+        'hdiutil',
+        [
+          'create',
+          '-volname',
+          'nrm-desktop',
+          '-srcfolder',
+          stagingDir,
+          '-ov',
+          '-format',
+          'UDZO',
+          dmgPath,
+        ],
+        {
+          cwd: rootDir,
+          stdio: 'inherit',
+          env: process.env,
+        }
+      )
+
+      child.on('error', reject)
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`hdiutil 进程被信号中断: ${signal}`))
+          return
+        }
+        if (code !== 0) {
+          reject(new Error(`hdiutil 生成 dmg 失败，退出码: ${code ?? 'unknown'}`))
+          return
+        }
+        resolve()
+      })
+    })
+  } finally {
+    await fs.rm(stagingDir, { recursive: true, force: true })
+  }
+}
+
+/**
  * Recursively collect generated artifact file paths.
  * @param {string} directory
  * @returns {Promise<string[]>}
@@ -201,7 +294,15 @@ async function printArtifacts() {
 
 async function main() {
   const startedAt = Date.now()
-  await runTauriBuild()
+  const isCi = String(process.env.CI || '').toLowerCase() === 'true'
+  const shouldUseNonInteractiveMacDmg = process.platform === 'darwin' && isCi
+
+  if (shouldUseNonInteractiveMacDmg) {
+    await runTauriBuildWithBundles(['app'])
+    await createNonInteractiveMacDmg()
+  } else {
+    await runTauriBuild()
+  }
   await renameMsiFilesStripLocaleSuffix()
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
