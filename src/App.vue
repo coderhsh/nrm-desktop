@@ -543,15 +543,15 @@ async function handleCloseDialogClosed() {
         :destroy-on-close="true"
         @closed="handleCloseDialogClosed"
       >
-        <div class="close-confirm-content flex flex-col gap-4">
-          <div class="close-confirm-desc text-sm leading-6 text-app-muted">
+        <div class="close-confirm-content flex flex-col gap-3">
+          <p class="close-confirm-desc text-sm leading-relaxed text-app-muted m-0">
             {{ t('app.closeDialog.desc') }}
-          </div>
-          <el-radio-group v-model="closeActionDraft" class="close-action-group flex flex-col gap-2">
-            <el-radio value="minimize" class="close-action-item !mr-0">{{ t('app.closeDialog.minimize') }}</el-radio>
-            <el-radio value="exit" class="close-action-item !mr-0">{{ t('app.closeDialog.exit') }}</el-radio>
+          </p>
+          <el-radio-group v-model="closeActionDraft" class="close-action-group flex flex-col gap-2.5">
+            <el-radio value="minimize" class="close-action-item">{{ t('app.closeDialog.minimize') }}</el-radio>
+            <el-radio value="exit" class="close-action-item">{{ t('app.closeDialog.exit') }}</el-radio>
           </el-radio-group>
-          <div class="close-remember-wrap pt-1">
+          <div class="close-remember-wrap">
             <el-checkbox v-model="rememberCloseChoice">{{ t('app.closeDialog.remember') }}</el-checkbox>
           </div>
         </div>
@@ -568,26 +568,54 @@ async function handleCloseDialogClosed() {
 
 <style scoped>
 .close-confirm-content {
-  align-items: center;
+  align-items: stretch;
+  width: 100%;
+  text-align: start;
 }
 
 .close-confirm-desc {
-  text-align: center;
+  text-align: start;
+  max-width: 100%;
 }
 
 .close-action-group {
-  width: min(100%, 260px);
+  width: 100%;
+  align-items: stretch;
+}
+
+.close-action-group :deep(.el-radio) {
+  margin-right: 0;
+  height: auto;
   align-items: flex-start;
+  white-space: normal;
+}
+
+.close-action-group :deep(.el-radio__label) {
+  line-height: 1.45;
+  white-space: normal;
+  padding-left: 0.5rem;
 }
 
 .close-action-item {
   margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .close-remember-wrap {
-  width: min(100%, 260px);
+  width: 100%;
   display: flex;
   justify-content: flex-start;
+}
+
+.close-remember-wrap :deep(.el-checkbox) {
+  height: auto;
+  align-items: flex-start;
+  white-space: normal;
+}
+
+.close-remember-wrap :deep(.el-checkbox__label) {
+  line-height: 1.45;
+  white-space: normal;
 }
 
 .settings-panel {
