@@ -11,8 +11,106 @@ const rootDir = path.resolve(__dirname, '..')
 const WIN_TARGET = 'x86_64-pc-windows-msvc'
 const releaseDir = path.join(rootDir, 'src-tauri', 'target', WIN_TARGET, 'release')
 const bundleDir = path.join(releaseDir, 'bundle')
+const EXTRA_PATH_DIRS = [
+  '/opt/homebrew/bin',
+  '/usr/local/bin',
+  '/opt/homebrew/opt/llvm/bin',
+  '/usr/local/opt/llvm/bin',
+]
 
 const MSI_LOCALE_SUFFIX = /_(?:[a-z]{2})(?:-(?:[a-zA-Z0-9]+))+\.msi$/i
+
+/**
+ * 执行命令并采集输出（非 0 退出码时不抛错，返回结果供调用方判断）。
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {Promise<{ exitCode: number|null, stdout: string, stderr: string, error: Error|null }>}
+ */
+function runCommandCapture(command, args) {
+  const basePath = process.env.PATH ?? ''
+  const pathParts = basePath.split(path.delimiter).filter(Boolean)
+  const mergedPath = [...new Set([...EXTRA_PATH_DIRS, ...pathParts])].join(path.delimiter)
+  return new Promise(resolve => {
+    const child = spawn(command, args, {
+      cwd: rootDir,
+      env: { ...process.env, PATH: mergedPath },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    child.stdout.on('data', chunk => {
+      stdout += String(chunk)
+    })
+    child.stderr.on('data', chunk => {
+      stderr += String(chunk)
+    })
+
+    child.on('error', error => {
+      resolve({ exitCode: null, stdout, stderr, error })
+    })
+    child.on('close', exitCode => {
+      resolve({ exitCode, stdout, stderr, error: null })
+    })
+  })
+}
+
+/**
+ * 检查命令是否可用（在 PATH 可执行）。
+ * @param {string} command
+ * @param {string[]} [probeArgs]
+ * @returns {Promise<boolean>}
+ */
+async function commandExists(command, probeArgs = ['--version']) {
+  const probe = await runCommandCapture(command, probeArgs)
+  if (probe.error) {
+    return false
+  }
+  return probe.exitCode === 0
+}
+
+/**
+ * 构建前依赖预检：非 Windows 场景下检查 rustup target、cargo-xwin、makensis。
+ * @returns {Promise<void>}
+ */
+async function preflightChecks() {
+  if (process.platform === 'win32') {
+    return
+  }
+
+  /** @type {string[]} */
+  const problems = []
+
+  if (!(await commandExists('cargo-xwin'))) {
+    problems.push('缺少 `cargo-xwin`：请先执行 `cargo install cargo-xwin`。')
+  }
+
+  if (!(await commandExists('makensis', ['-VERSION']))) {
+    problems.push('缺少 `makensis`（NSIS）：请先安装 NSIS，并确保 `makensis` 已加入 PATH。')
+  }
+  if (!(await commandExists('llvm-lib'))) {
+    problems.push('缺少 `llvm-lib`（LLVM 工具链）：请先安装 LLVM，并确保其 bin 目录在 PATH（例如 `brew install llvm`）。')
+  }
+
+  const rustup = await runCommandCapture('rustup', ['target', 'list', '--installed'])
+  if (rustup.error || rustup.exitCode !== 0) {
+    problems.push('无法执行 `rustup`：请先安装并初始化 Rust 工具链（https://rustup.rs/）。')
+  } else {
+    const installedTargets = rustup.stdout
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+    if (!installedTargets.includes(WIN_TARGET)) {
+      problems.push(`缺少 Rust 目标 ` + `\`${WIN_TARGET}\`` + `：请执行 \`rustup target add ${WIN_TARGET}\`。`)
+    }
+  }
+
+  if (problems.length > 0) {
+    const details = problems.map((item, index) => `${index + 1}. ${item}`).join('\n')
+    throw new Error(`构建前环境检查未通过：\n${details}`)
+  }
+}
 
 /**
  * 将毫秒格式化为可读打包时长（如 `12.3秒`、`2分15.0秒`）。
@@ -165,21 +263,47 @@ async function printArtifacts() {
 function runTauriBuildWin() {
   const isWin = process.platform === 'win32'
   const command = isWin ? 'pnpm.cmd' : 'pnpm'
+  const basePath = process.env.PATH ?? ''
+  const pathParts = basePath.split(path.delimiter).filter(Boolean)
+  const mergedPath = [...new Set([...EXTRA_PATH_DIRS, ...pathParts])].join(path.delimiter)
 
-  /** MSI 依赖 WiX，官方仅支持在 Windows 上生成。 */
-  const bundles = isWin ? 'msi,nsis' : 'nsis'
-  const args = ['tauri', 'build', '--target', WIN_TARGET, '--bundles', bundles]
+  /** @type {string[]} */
+  const args = ['tauri', 'build', '--target', WIN_TARGET]
 
   if (!isWin) {
+    /**
+     * macOS/Linux 上 tauri CLI 的 `--bundles` 参数值会受宿主平台限制，
+     * 即使指定了 Windows target，也会拒绝 `nsis/msi`（仅识别 dmg/app 等）。
+     * 因此改用 `--config` 覆盖 bundle.targets，仅构建 NSIS。
+     */
+    const crossBuildConfig = JSON.stringify({
+      bundle: { targets: 'nsis' },
+    })
+    args.push('--config', crossBuildConfig)
     args.push('--runner', 'cargo-xwin')
     process.stdout.write('[tauri-build-win] 非 Windows：仅构建 NSIS（需已安装 NSIS、LLVM/LLD 与 cargo-xwin）；MSI 请在 Windows 上执行 pnpm build:win。\n\n')
+  } else {
+    /** MSI 依赖 WiX，官方仅支持在 Windows 上生成。 */
+    args.push('--bundles', 'msi,nsis')
   }
 
   return new Promise((resolve, reject) => {
+    let combinedOutput = ''
     const child = spawn(command, args, {
       cwd: rootDir,
-      stdio: 'inherit',
-      env: process.env,
+      stdio: ['inherit', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: mergedPath },
+    })
+
+    child.stdout.on('data', chunk => {
+      const text = String(chunk)
+      combinedOutput += text
+      process.stdout.write(text)
+    })
+    child.stderr.on('data', chunk => {
+      const text = String(chunk)
+      combinedOutput += text
+      process.stderr.write(text)
     })
 
     child.on('error', reject)
@@ -189,7 +313,8 @@ function runTauriBuildWin() {
         return
       }
       if (code !== 0) {
-        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
+        const tail = combinedOutput.slice(-2000).trim()
+        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}\n${tail}`))
         return
       }
       resolve()
@@ -197,9 +322,53 @@ function runTauriBuildWin() {
   })
 }
 
+/**
+ * 判断是否为可重试的网络下载错误（NSIS 工具下载阶段常见 TLS EOF）。
+ * @param {Error} error
+ * @returns {boolean}
+ */
+function isRetriableNetworkError(error) {
+  const message = error.message.toLowerCase()
+  return message.includes('peer closed connection without sending tls close_notify')
+    || message.includes('unexpected-eof')
+    || (message.includes('failed to bundle project') && message.includes('downloading https://github.com/tauri-apps/nsis-tauri-utils'))
+}
+
+/**
+ * 异步等待指定毫秒。
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * 执行构建，并对可重试网络错误进行有限重试。
+ * @returns {Promise<void>}
+ */
+async function runTauriBuildWinWithRetry() {
+  const maxAttempts = 2
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await runTauriBuildWin()
+      return
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      const canRetry = attempt < maxAttempts && isRetriableNetworkError(err)
+      if (!canRetry) {
+        throw err
+      }
+      process.stderr.write(`[tauri-build-win] 检测到网络下载中断（第 ${attempt} 次），3 秒后自动重试...\n`)
+      await sleep(3000)
+    }
+  }
+}
+
 async function main() {
   const startedAt = Date.now()
-  await runTauriBuildWin()
+  await preflightChecks()
+  await runTauriBuildWinWithRetry()
   await renameMsiFilesStripLocaleSuffix()
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
