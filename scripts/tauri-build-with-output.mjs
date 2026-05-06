@@ -8,8 +8,10 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
+const cargoTargetDir = path.join(rootDir, 'src-tauri', 'target')
 const releaseDir = path.join(rootDir, 'src-tauri', 'target', 'release')
 const bundleDir = path.join(releaseDir, 'bundle')
+const INSTALLER_EXTENSIONS = new Set(['.dmg', '.pkg', '.msi', '.exe', '.deb', '.rpm', '.appimage'])
 
 /** WiX 输出常见后缀：_{lang}.msi，如 en-US、zh-CN（Tauri 无法通过配置省略该段，构建后再改名）。 */
 const MSI_LOCALE_SUFFIX = /_(?:[a-z]{2})(?:-(?:[a-zA-Z0-9]+))+\.msi$/i
@@ -120,7 +122,7 @@ function runTauriBuild() {
     const child = spawn(command, ['tauri', 'build'], {
       cwd: rootDir,
       stdio: 'inherit',
-      env: process.env,
+      env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
     })
 
     child.on('error', reject)
@@ -151,7 +153,7 @@ function runTauriBuildWithBundles(bundles) {
     const child = spawn(command, args, {
       cwd: rootDir,
       stdio: 'inherit',
-      env: process.env,
+      env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
     })
 
     child.on('error', reject)
@@ -189,7 +191,13 @@ async function createNonInteractiveMacDmg() {
   const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nrm-desktop-dmg-'))
   try {
     const stagedAppPath = path.join(stagingDir, 'nrm-desktop.app')
+    const applicationsLinkPath = path.join(stagingDir, 'Applications')
     await fs.cp(appBundlePath, stagedAppPath, { recursive: true })
+    try {
+      await fs.symlink('/Applications', applicationsLinkPath)
+    } catch (error) {
+      throw new Error(`创建 Applications 快捷方式失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
 
     await new Promise((resolve, reject) => {
       const child = spawn(
@@ -251,13 +259,68 @@ async function collectArtifacts(directory) {
 }
 
 /**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isInstallerArtifact(filePath) {
+  const base = path.basename(filePath).toLowerCase()
+  if (base.startsWith('rw.') && base.endsWith('.dmg')) {
+    return false
+  }
+  const ext = path.extname(filePath).toLowerCase()
+  return INSTALLER_EXTENSIONS.has(ext)
+}
+
+/**
+ * Recursively remove empty directories.
+ * @param {string} directory
+ * @returns {Promise<void>}
+ */
+async function removeEmptyDirectories(directory) {
+  let entries
+  try {
+    entries = await fs.readdir(directory, { withFileTypes: true })
+  } catch {
+    return
+  }
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue
+    }
+    await removeEmptyDirectories(path.join(directory, entry.name))
+  }
+
+  const remaining = await fs.readdir(directory)
+  if (remaining.length === 0 && directory !== bundleDir) {
+    await fs.rm(directory, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Keep only installer artifacts under bundle directory.
+ * @returns {Promise<void>}
+ */
+async function pruneBundleArtifactsToInstallers() {
+  let artifacts
+  try {
+    artifacts = await collectArtifacts(bundleDir)
+  } catch {
+    return
+  }
+
+  const removable = artifacts.filter(filePath => !isInstallerArtifact(filePath))
+  for (const filePath of removable) {
+    await fs.rm(filePath, { force: true })
+  }
+  await removeEmptyDirectories(bundleDir)
+}
+
+/**
  * Print main binary path plus bundle files.
  * @returns {Promise<void>}
  */
 async function printArtifacts() {
-  const mainBinary = getMainReleaseBinaryPath()
-  const hasMainBinary = await pathExists(mainBinary)
-
   let artifacts = []
   let hasBundleDir = false
   try {
@@ -268,26 +331,21 @@ async function printArtifacts() {
   }
 
   const sortedArtifacts = artifacts.sort((left, right) => left.localeCompare(right))
+  const installerArtifacts = sortedArtifacts.filter(isInstallerArtifact)
   process.stdout.write('\n=== 打包产物 ===\n')
-
-  if (hasMainBinary) {
-    process.stdout.write(`主程序: ${mainBinary}\n`)
-  } else {
-    process.stdout.write(`[tauri-build] 未找到主程序: ${mainBinary}\n`)
-  }
 
   if (!hasBundleDir) {
     process.stdout.write('[tauri-build] 未找到 bundle 目录（可能未开启安装包或未成功打包）。\n')
     return
   }
 
-  if (sortedArtifacts.length === 0) {
-    process.stdout.write('bundle 目录内未发现额外产物文件，请检查打包配置。\n')
+  if (installerArtifacts.length === 0) {
+    process.stdout.write('bundle 目录内未发现安装包产物，请检查打包配置。\n')
     return
   }
 
-  process.stdout.write('\nbundle 内文件:\n')
-  sortedArtifacts.forEach((artifactPath, index) => {
+  process.stdout.write('\n安装包文件:\n')
+  installerArtifacts.forEach((artifactPath, index) => {
     process.stdout.write(`${index + 1}. ${artifactPath}\n`)
   })
 }
@@ -304,6 +362,7 @@ async function main() {
     await runTauriBuild()
   }
   await renameMsiFilesStripLocaleSuffix()
+  await pruneBundleArtifactsToInstallers()
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
   process.stdout.write(`\n打包总时长: ${formatBuildDuration(elapsedMs)}（${elapsedMs} ms）\n`)

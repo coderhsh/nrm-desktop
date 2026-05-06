@@ -31,7 +31,19 @@ fn run_cli_version(bin: &str, version_flag: &str) -> Option<String> {
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
-    let output = cmd.output().ok()?;
+    let output = match cmd.output() {
+        Ok(output) => output,
+        Err(_) => {
+            #[cfg(target_os = "macos")]
+            {
+                return run_cli_version_via_login_shell(bin, version_flag);
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                return None;
+            }
+        }
+    };
     if !output.status.success() {
         #[cfg(target_os = "macos")]
         {
