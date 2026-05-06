@@ -6,6 +6,18 @@
 
 It is designed for developers who frequently switch registries and want a fast visual workflow instead of terminal-only commands.
 
+## Screenshots
+
+UI is shown in **English** below. (For the Simplified Chinese UI, see [README.zh-CN.md](./README.zh-CN.md#界面预览).)
+
+### Light theme
+
+![nrm-desktop main window — light theme, English UI](./docs/images/screenshot-light-en.png)
+
+### Dark theme
+
+![nrm-desktop main window — dark theme, English UI](./docs/images/screenshot-dark-en.png)
+
 ## Why nrm-desktop ✨
 
 - **Fast workflow**: switch registries in one click, no command memorization needed

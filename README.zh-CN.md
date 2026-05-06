@@ -6,6 +6,18 @@
 
 适合经常切换 npm 源、希望用图形界面替代命令行操作的开发者。
 
+## 界面预览
+
+以下界面为 **简体中文**。英文界面截图见 [README.md](./README.md#screenshots)。
+
+### 浅色主题
+
+![nrm-desktop 主界面 — 浅色主题、中文界面](./docs/images/screenshot-light-zh.png)
+
+### 深色主题
+
+![nrm-desktop 主界面 — 深色主题、中文界面](./docs/images/screenshot-dark-zh.png)
+
 ## 为什么选择 nrm-desktop ✨
 
 - **切换更高效**：一键切换源，减少命令行记忆和误操作
