@@ -364,7 +364,7 @@ async function handleCloseDialogClosed() {
         <!-- Main Content -->
         <main class="app-main-area">
           <div class="app-main-stage flex flex-1 flex-col min-h-0">
-            <div class="flex-1 flex flex-col min-h-0 overflow-hidden p-6 gap-4">
+            <div class="flex-1 flex flex-col min-h-0 overflow-hidden pt-6 pb-6 pr-6 pl-3 gap-4">
               <CurrentSource class="shrink-0" />
               <SpeedTest class="min-h-0 flex-1 flex flex-col overflow-hidden" />
             </div>
@@ -435,7 +435,7 @@ async function handleCloseDialogClosed() {
       <el-drawer
         v-model="showSettingsDialog"
         :title="t('app.settingsDialogTitle')"
-        size="440px"
+        size="360px"
         direction="rtl"
         :destroy-on-close="false"
         class="settings-drawer"
@@ -444,20 +444,24 @@ async function handleCloseDialogClosed() {
           <div class="settings-section-title text-xs font-semibold text-gray-500 uppercase tracking-wide">
             {{ t('app.settings.general') }}
           </div>
-          <div class="flex items-center gap-3">
-            <span class="settings-item-label text-sm text-gray-500 min-w-14">{{ t('app.settings.language') }}</span>
-            <el-select v-model="draftLanguage" class="flex-1" :placeholder="t('app.settings.language')">
+          <div class="settings-drawer-inline-row flex items-center gap-2">
+            <span class="settings-item-label settings-drawer-inline-label text-sm text-gray-500 shrink-0">{{
+              t('app.settings.language')
+            }}</span>
+            <el-select v-model="draftLanguage" class="min-w-0 flex-1" :placeholder="t('app.settings.language')">
               <el-option v-for="item in languageOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="settings-item-label text-sm text-gray-500 min-w-14">{{ t('app.settings.theme') }}</span>
-            <el-select v-model="draftTheme" class="flex-1" :placeholder="t('app.settings.theme')">
+          <div class="settings-drawer-inline-row flex items-center gap-2">
+            <span class="settings-item-label settings-drawer-inline-label text-sm text-gray-500 shrink-0">{{
+              t('app.settings.theme')
+            }}</span>
+            <el-select v-model="draftTheme" class="min-w-0 flex-1" :placeholder="t('app.settings.theme')">
               <el-option v-for="item in themeOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
           <div
-            class="flex items-start justify-between gap-4"
+            class="flex items-start justify-between gap-3"
             :class="{ 'opacity-60': !autostartSupported }"
           >
             <div class="flex flex-col gap-0.5 min-w-0 pr-2">
@@ -588,6 +592,11 @@ async function handleCloseDialogClosed() {
 
 .settings-panel {
   padding: 0.25rem 0.15rem 0.1rem;
+}
+
+/* 固定标签列宽，避免「Language / Theme」等长度不一导致右侧下拉左缘不齐 */
+.settings-drawer-inline-label {
+  width: 7.5rem;
 }
 
 .settings-section-title {

@@ -224,7 +224,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.about.tauriVersion": "Tauri version",
     "app.about.loading": "Loading…",
     "app.settings.language": "Language",
-    "app.settings.languageZhCn": "Simplified Chinese",
+    "app.settings.languageZhCn": "简体中文",
     "app.settings.languageEn": "English",
     "app.settings.theme": "Theme",
     "app.settings.themeAuto": "Auto",

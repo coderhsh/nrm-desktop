@@ -806,7 +806,7 @@ function copyAllDetails() {
   <div class="registry-list-root flex flex-col h-full min-h-0" :class="registryListIntroClass">
     <!-- Header -->
     <div class="rl-intro-header flex items-center gap-2 px-4 pt-4 pb-2">
-      <h2 class="text-lg font-bold">{{ t("registryList.title") }}</h2>
+      <h2 class="text-base font-bold">{{ t("registryList.title") }}</h2>
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">
         {{ filteredRegistries.length }}
       </span>

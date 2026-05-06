@@ -964,9 +964,17 @@ html.dark .el-message--info {
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
+/* 成功：与信息类 toast 同底，用主色描边/图标表达「完成」，避免大块荧光绿 */
 html.dark .el-message--success {
-  background-color: #1e3a28 !important;
-  border-color: rgba(50, 215, 75, 0.55) !important;
+  background-color: #38383f !important;
+  border-color: color-mix(in srgb, var(--el-color-primary) 38%, transparent) !important;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.42),
+    0 0 0 1px color-mix(in srgb, var(--el-color-primary) 22%, transparent) inset !important;
+}
+
+html.dark .el-message--success .el-message__icon {
+  color: color-mix(in srgb, var(--el-color-primary) 82%, #b8d4ff 18%) !important;
 }
 
 html.dark .el-message--error {
@@ -979,24 +987,53 @@ html.dark .el-message--warning {
   border-color: rgba(255, 214, 10, 0.5) !important;
 }
 
+/* 浅色里 .el-message-box 用了 background 渐变简写；深色必须整段覆盖，否则仍带白色渐变 */
 html.dark .el-message-box {
-  background-color: var(--el-bg-color-overlay);
+  background: linear-gradient(185deg, #3d3d40 0%, #2c2c2e 48%, #252528 100%);
   border: 1px solid var(--el-border-color);
   box-shadow: var(--el-box-shadow);
+}
+
+html.dark .el-message-box__header {
+  padding-bottom: 0.5rem;
 }
 
 html.dark .el-message-box__title {
   color: var(--el-text-color-primary);
 }
 
+html.dark .el-message-box__content {
+  color: var(--el-text-color-regular);
+}
+
 html.dark .el-message-box__message {
   color: var(--el-text-color-regular);
+}
+
+html.dark .el-message-box__message p {
+  color: inherit;
+}
+
+html.dark .el-message-box__status {
+  color: var(--el-color-warning);
+}
+
+html.dark .el-message-box__headerbtn {
+  color: var(--el-text-color-secondary);
+}
+
+html.dark .el-message-box__headerbtn:hover {
+  color: var(--el-text-color-primary);
 }
 
 html.dark .el-message-box__btns .el-button--default {
   background-color: var(--el-fill-color-light);
   border-color: var(--el-border-color);
   color: var(--el-text-color-primary);
+}
+
+html.dark .el-message-box__btns .el-button--primary {
+  border-color: transparent;
 }
 
 /* Dark: loading mask */
@@ -1182,6 +1219,11 @@ html.dark .el-textarea__inner + .el-textarea__count {
   border: 0 !important;
 }
 
+/* 设置抽屉：宽度（深浅色共用，小屏用 vw 上限避免占半屏） */
+.settings-drawer.el-drawer {
+  width: min(360px, 90vw) !important;
+}
+
 /* 设置抽屉：深色模式 */
 html.dark .settings-drawer.el-drawer {
   background: linear-gradient(195deg, #3e3e42 0%, #2c2c2e 55%, #242426 100%);
@@ -1191,7 +1233,7 @@ html.dark .settings-drawer.el-drawer {
 
 html.dark .settings-drawer .el-drawer__header {
   margin-bottom: 0;
-  padding: 1rem 1.25rem 0.9rem;
+  padding: 1rem 1rem 0.85rem;
   border-bottom: 1px solid var(--app-separator);
 }
 
@@ -1201,7 +1243,7 @@ html.dark .settings-drawer .el-drawer__title {
 }
 
 html.dark .settings-drawer .el-drawer__body {
-  padding: 1rem 1.2rem 0.9rem;
+  padding: 0.9rem 1rem 0.85rem;
 }
 
 html.dark .settings-drawer .settings-panel {
@@ -1272,7 +1314,7 @@ html.dark .settings-drawer .settings-about-btn:hover {
 
 html.dark .settings-drawer .el-drawer__footer {
   border-top: 1px solid var(--app-separator);
-  padding: 0.85rem 1.2rem 1rem;
+  padding: 0.85rem 1rem 1rem;
   background: rgba(44, 44, 46, 0.92);
 }
 
