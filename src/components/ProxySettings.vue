@@ -57,6 +57,7 @@ async function handleSave() {
     :model-value="visible"
     title="代理设置"
     width="480px"
+    class="app-dialog"
     :close-on-click-modal="false"
     @update:model-value="(v: boolean) => !v && emit('close')"
   >

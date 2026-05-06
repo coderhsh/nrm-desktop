@@ -2,13 +2,39 @@ import { defineConfig, presetUno, presetAttributify } from "unocss";
 import transformerDirectives from "@unocss/transformer-directives";
 
 export default defineConfig({
-  presets: [presetUno(), presetAttributify()],
+  /* `dark:` utilities follow `html.dark` from useTheme (not only system prefers-color-scheme) */
+  presets: [presetUno({ dark: "class" }), presetAttributify()],
   transformers: [transformerDirectives()],
+  theme: {
+    colors: {
+      app: {
+        bg: "var(--app-bg)",
+        surface: "var(--app-surface)",
+        elevated: "var(--app-surface-elevated)",
+        separator: "var(--app-separator)",
+        text: "var(--app-text)",
+        muted: "var(--app-text-muted)",
+        track: "var(--app-bar-track)",
+      },
+    },
+  },
   shortcuts: {
     "flex-center": "flex items-center justify-center",
     "flex-between": "flex items-center justify-between",
-    "text-muted": "color-gray-400",
-    "text-secondary": "color-gray-500",
+    "text-muted": "text-app-muted",
+    "text-secondary": "text-app-muted",
+    "app-shell": "h-full flex flex-col min-h-0 bg-app-bg",
+    "app-shell-body": "flex flex-1 min-h-0 min-w-0 flex-row",
+    "app-sidebar":
+      "w-80 min-w-80 shrink-0 flex flex-col min-h-0 bg-app-bg border-r border-app-separator p-3 pb-4",
+    "app-main-area": "flex-1 flex flex-col min-w-0 min-h-0 bg-app-bg",
+    "app-statusbar":
+      "h-10 shrink-0 px-3 flex items-center gap-0.5 border-t border-app-separator",
+    "app-card":
+      "bg-app-surface border border-app-separator rounded-xl",
+    /* Grouped panel (forms, sections) */
+    "app-panel":
+      "rounded-xl border border-app-separator bg-app-surface p-4",
   },
   rules: [],
 });

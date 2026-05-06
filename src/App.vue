@@ -16,10 +16,16 @@ import ProxySettings from '@/components/ProxySettings.vue'
 import * as api from '@/api/tauri'
 import type { NodeNpmVersions } from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
+import { useShellIntro } from '@/composables/useShellIntro'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
 
 const store = useRegistryStore()
 const theme = useTheme()
+const { introPhase, scheduleIntro } = useShellIntro()
+const shellIntroClass = computed(() => ({
+  'app-shell-intro-prep': introPhase.value === 'prep',
+  'app-shell-intro-run': introPhase.value === 'run',
+}))
 const { t, language } = useI18n()
 const showProxySettings = ref(false)
 const showSettingsDialog = ref(false)
@@ -178,13 +184,11 @@ async function refreshAutostartState() {
 }
 
 onMounted(async () => {
+  scheduleIntro()
   await store.fetchRegistries()
   void api.getNodeNpmVersions().then(v => {
     nodeNpmVersions.value = v
   })
-  // 初始化时静默测速，在左侧源列表展示延迟
-  store.fetchLatency()
-
   const { listen } = await import('@tauri-apps/api/event')
   unlistenRegistryChanged = await listen<string>('registry-changed', event => {
     store.syncCurrentRegistryByName(event.payload)
@@ -348,21 +352,28 @@ async function handleCloseDialogClosed() {
 
 <template>
   <el-config-provider :locale="elementLocale">
-    <div class="h-full flex">
-      <!-- Sidebar -->
-      <aside class="w-80 min-w-80 bg-white border-r border-gray-200 flex flex-col">
-        <RegistryList />
-      </aside>
+    <div class="app-shell" :class="shellIntroClass">
+      <div class="app-shell-body">
+        <!-- Sidebar -->
+        <aside class="app-sidebar">
+          <div class="registry-sidebar-card">
+            <RegistryList />
+          </div>
+        </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 flex flex-col min-w-0 min-h-0">
-        <div class="flex-1 flex flex-col min-h-0 overflow-hidden p-6 gap-4">
-          <CurrentSource class="shrink-0" />
-          <SpeedTest class="min-h-0 flex-1 flex flex-col overflow-hidden" />
-        </div>
+        <!-- Main Content -->
+        <main class="app-main-area">
+          <div class="app-main-stage flex flex-1 flex-col min-h-0">
+            <div class="flex-1 flex flex-col min-h-0 overflow-hidden p-6 gap-4">
+              <CurrentSource class="shrink-0" />
+              <SpeedTest class="min-h-0 flex-1 flex flex-col overflow-hidden" />
+            </div>
+          </div>
+        </main>
+      </div>
 
-        <!-- Status Bar -->
-        <div class="h-10 px-3 border-t border-gray-200 bg-white flex items-center gap-0.5">
+      <!-- Status bar: full window width (below sidebar + main) -->
+      <div class="app-statusbar">
           <span
             v-if="nodeNpmVersionsLabel"
             class="text-xs text-gray-400 shrink-0 truncate max-w-[280px] mr-2"
@@ -406,18 +417,17 @@ async function handleCloseDialogClosed() {
           </el-button>
 
           <el-button text size="small" title="GitHub" @click="openGithubHome">
-            <svg aria-hidden="true" viewBox="0 0 24 24" class="w-4 h-4 text-gray-700 dark:text-gray-200" fill="currentColor">
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="w-4 h-4 text-gray-700" fill="currentColor">
               <path
                 d="M12 .5C5.65.5.5 5.66.5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.56 0-.28-.01-1.02-.01-2-3.2.7-3.88-1.55-3.88-1.55-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.78 1.2 1.78 1.2 1.03 1.78 2.7 1.27 3.36.97.1-.76.4-1.27.73-1.56-2.55-.29-5.24-1.29-5.24-5.73 0-1.26.45-2.3 1.18-3.11-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.19a10.9 10.9 0 0 1 5.76 0c2.2-1.5 3.16-1.2 3.16-1.2.63 1.59.24 2.76.12 3.05.74.81 1.18 1.85 1.18 3.11 0 4.45-2.69 5.44-5.25 5.73.41.35.78 1.04.78 2.1 0 1.52-.01 2.75-.01 3.12 0 .31.2.68.8.56A11.53 11.53 0 0 0 23.5 12C23.5 5.66 18.35.5 12 .5Z"
               />
             </svg>
           </el-button>
 
-          <el-button text size="small" type="danger" @click="handleReset" :title="t('app.resetDefaults')">
-            {{ t('common.reset') }}
-          </el-button>
-        </div>
-      </main>
+        <el-button text size="small" type="danger" @click="handleReset" :title="t('app.resetDefaults')">
+          {{ t('common.reset') }}
+        </el-button>
+      </div>
 
       <!-- Proxy Settings Dialog -->
       <ProxySettings v-if="isProxyFeatureVisible" v-model:visible="showProxySettings" @close="showProxySettings = false" />
@@ -455,7 +465,7 @@ async function handleCloseDialogClosed() {
               <span class="settings-note text-xs text-gray-400 leading-snug">{{ t('app.settings.autostartHint') }}</span>
               <span
                 v-if="!autostartSupported"
-                class="settings-note text-xs text-gray-500 dark:text-gray-400 leading-snug"
+                class="settings-note text-xs text-app-muted leading-snug"
               >
                 {{ t('app.settings.autostartUnsupported') }}
               </span>
@@ -530,7 +540,7 @@ async function handleCloseDialogClosed() {
         @closed="handleCloseDialogClosed"
       >
         <div class="close-confirm-content flex flex-col gap-4">
-          <div class="close-confirm-desc text-sm leading-6 text-gray-600 dark:text-gray-300">
+          <div class="close-confirm-desc text-sm leading-6 text-app-muted">
             {{ t('app.closeDialog.desc') }}
           </div>
           <el-radio-group v-model="closeActionDraft" class="close-action-group flex flex-col gap-2">
@@ -604,45 +614,45 @@ async function handleCloseDialogClosed() {
   border-radius: 0.7rem;
 }
 
-:global(.dark) .settings-item {
-  border-color: color-mix(in srgb, #334155 85%, transparent);
-  background: color-mix(in srgb, #111827 80%, #1e293b 20%);
-  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.28);
+:global(html.dark) .settings-item {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color-blank);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
-:global(.dark) .close-confirm-desc {
-  color: #dbe7ff;
+:global(html.dark) .close-confirm-desc {
+  color: var(--el-text-color-regular);
 }
 
-:global(.dark) .close-action-item {
-  color: #dbe7ff;
+:global(html.dark) .close-action-item {
+  color: var(--el-text-color-regular);
 }
 
-:global(.dark) .close-remember-wrap :deep(.el-checkbox__label) {
-  color: #c6d8ff;
+:global(html.dark) .close-remember-wrap :deep(.el-checkbox__label) {
+  color: var(--app-text-muted);
 }
 
-:global(.dark) .settings-section-title {
-  color: #9fb0c7 !important;
+:global(html.dark) .settings-section-title {
+  color: var(--app-text-muted) !important;
 }
 
-:global(.dark) .settings-item-label {
-  color: #d3deef !important;
+:global(html.dark) .settings-item-label {
+  color: var(--el-text-color-primary) !important;
 }
 
-:global(.dark) .settings-note {
-  color: #93a5be !important;
+:global(html.dark) .settings-note {
+  color: var(--app-text-muted) !important;
 }
 
-:global(.dark) .settings-danger-btn {
-  border-color: rgba(248, 113, 113, 0.38) !important;
-  color: #fca5a5 !important;
-  background: rgba(127, 29, 29, 0.18) !important;
+:global(html.dark) .settings-danger-btn {
+  border-color: rgba(255, 59, 48, 0.35) !important;
+  color: #ff6961 !important;
+  background: rgba(255, 59, 48, 0.12) !important;
 }
 
-:global(.dark) .settings-about-btn {
-  border-color: rgba(96, 165, 250, 0.28) !important;
-  color: #bfdbfe !important;
-  background: rgba(30, 58, 138, 0.2) !important;
+:global(html.dark) .settings-about-btn {
+  border-color: var(--el-border-color) !important;
+  color: var(--el-text-color-regular) !important;
+  background: var(--el-fill-color-blank) !important;
 }
 </style>

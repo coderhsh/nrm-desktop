@@ -5,6 +5,59 @@
   box-sizing: border-box;
 }
 
+/* Apple-style shell tokens + Element Plus light overrides (content below native title bar only) */
+:root {
+  color-scheme: light;
+  /* Standard UI motion + slightly “springy” ease for enter/hover */
+  --app-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --app-ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --app-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --app-duration: 0.22s;
+  --app-duration-mid: 0.28s;
+  --app-duration-slow: 0.36s;
+  --app-radius-sm: 8px;
+  --app-radius-md: 12px;
+  --app-radius-lg: 14px;
+  /* 略偏冷灰蓝，与右侧白卡 / 蓝条当前源更协调 */
+  --app-bg: #eef1f7;
+  --app-bg-elevated: #f4f6fb;
+  --app-surface: #ffffff;
+  /* 主列（测速 + 当前源背后）专用，比侧栏略深半阶 */
+  --app-main-bg-base: #e4e9f2;
+  --app-main-bg-image: linear-gradient(
+    168deg,
+    #eef2fa 0%,
+    #e6eaf3 42%,
+    #dfe5ef 100%
+  );
+  --app-surface-elevated: #ffffff;
+  --app-separator: rgba(60, 60, 67, 0.1);
+  --app-text: #1d1d1f;
+  --app-text-muted: rgba(60, 60, 67, 0.58);
+  --app-bar-track: #e8e8ed;
+
+  --el-color-primary: #007aff;
+  --el-color-primary-rgb: 0, 122, 255;
+  --el-color-primary-light-3: #4d9dff;
+  --el-color-primary-light-5: #7ab8ff;
+  --el-color-primary-light-7: #a8d0ff;
+  --el-color-primary-light-8: #c5e0ff;
+  --el-color-primary-light-9: #e8f2ff;
+  --el-color-primary-dark-2: #0062d6;
+  --el-border-radius-base: 10px;
+  --el-border-radius-small: 8px;
+  --el-transition-duration-fast: 0.22s;
+  --el-transition-duration: 0.3s;
+  --el-transition-function-ease-in-out-bezier: var(--app-ease-spring);
+  --el-transition-function-fast-bezier: var(--app-ease-spring);
+  --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Helvetica Neue", sans-serif;
+  /* Softer “sheet” shadows (Element popovers / overlays use --el-box-shadow*) */
+  --el-box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.03), 0 16px 48px rgba(0, 0, 0, 0.09), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --el-box-shadow-light: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --el-box-shadow-lighter: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
 html,
 body,
 #app {
@@ -12,22 +65,416 @@ body,
   overflow: hidden;
 }
 
+#app {
+  background-color: var(--app-bg);
+  background-image: linear-gradient(
+    165deg,
+    var(--app-bg) 0%,
+    color-mix(in srgb, var(--app-bg) 88%, #c8d2e6 12%) 52%,
+    var(--app-bg-elevated) 100%
+  );
+  background-attachment: fixed;
+}
+
 html {
   transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+    background-color var(--app-duration) var(--app-ease),
+    color var(--app-duration) var(--app-ease);
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--el-font-family);
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  background-color: var(--app-bg);
+  color: var(--app-text);
 }
 
-/* Element Plus 滚动条统一样式：左侧源列表与测速柱状图共用 */
+/* Light: frosted overlay behind modal / drawer (title bar unchanged) */
+html:not(.dark) .el-overlay:has(.el-dialog),
+html:not(.dark) .el-overlay:has(.el-drawer),
+html:not(.dark) .el-overlay:has(.el-message-box) {
+  backdrop-filter: saturate(1.06) blur(5px);
+  -webkit-backdrop-filter: saturate(1.06) blur(5px);
+  background-color: rgba(28, 28, 30, 0.32) !important;
+}
+
+html.dark .el-overlay:has(.el-dialog),
+html.dark .el-overlay:has(.el-drawer),
+html.dark .el-overlay:has(.el-message-box) {
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Light: dialog / message sheet */
+.el-dialog {
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--el-box-shadow);
+  background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, #ffffff 96%, var(--app-bg) 4%) 100%);
+  border: 0.5px solid color-mix(in srgb, var(--app-separator) 70%, transparent);
+}
+
+.el-message-box {
+  border-radius: var(--app-radius-lg);
+  box-shadow: var(--el-box-shadow);
+  background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, #ffffff 97%, var(--app-bg) 3%) 100%);
+  border: 0.5px solid color-mix(in srgb, var(--app-separator) 70%, transparent);
+}
+
+/* Drawer slide */
+.el-drawer {
+  transition:
+    transform var(--app-duration-slow) var(--app-ease-spring),
+    box-shadow var(--app-duration-mid) var(--app-ease-out) !important;
+}
+
+/* Primary / default buttons: subtle press */
+.el-button.el-button--primary,
+.el-button.el-button--default,
+.el-button.el-button--success {
+  transition:
+    background-color var(--app-duration-mid) var(--app-ease-spring),
+    border-color var(--app-duration-mid) var(--app-ease-spring),
+    color var(--app-duration) var(--app-ease-spring),
+    transform 0.14s var(--app-ease-spring),
+    box-shadow var(--app-duration-mid) var(--app-ease-out);
+}
+
+.el-button.el-button--primary:active:not(.is-disabled),
+.el-button.el-button--default:active:not(.is-disabled),
+.el-button.el-button--success:active:not(.is-disabled) {
+  transform: scale(0.98);
+}
+
+/* 浅色：仅用发丝线与主列分界，避免大扩散阴影在 app-bg 上像「毛玻璃灰板」 */
+.app-sidebar {
+  box-shadow: 1px 0 0 color-mix(in srgb, var(--app-separator) 90%, transparent);
+}
+
+html.dark .app-sidebar {
+  box-shadow:
+    1px 0 0 rgba(255, 255, 255, 0.06),
+    2px 0 12px rgba(0, 0, 0, 0.22);
+  /* 外槽与主窗 app-bg 一致，源列表本体在 .registry-sidebar-card 内用 surface */
+  background-color: var(--app-bg) !important;
+  background-image: none !important;
+  border-right-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* 左侧源列表：卡片容器，避免整列铺满后与通栏底栏视觉上「顶死」 */
+.registry-sidebar-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--app-radius-lg);
+  border: 0.5px solid color-mix(in srgb, var(--app-separator) 85%, transparent);
+  background-color: var(--app-surface);
+  /* 与测速卡同级，避免大模糊在侧栏槽底色上摊成半透明灰块 */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+html.dark .registry-sidebar-card {
+  border-color: color-mix(in srgb, var(--app-separator) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 3px 14px rgba(0, 0, 0, 0.32),
+    0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
+/* 测速卡片：仅静态层次阴影，不在悬停时变化（避免「整块动」） */
+.speed-test-card {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: border-color var(--app-duration-mid) var(--app-ease-spring);
+}
+
+html.dark .speed-test-card {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 3px 14px rgba(0, 0, 0, 0.32),
+    0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
+/* 深色 · 测速卡片内主按钮：略柔的实色 + 浅描边，少高光、与灰底更一体 */
+html.dark .speed-test-card .el-button--primary:not(.is-link):not(.is-text):not(.is-plain),
+html.dark .speed-test-card .el-button--success:not(.is-link):not(.is-text):not(.is-plain) {
+  transition:
+    background-color 0.22s var(--app-ease-out),
+    border-color 0.22s var(--app-ease-out),
+    box-shadow 0.22s var(--app-ease-out),
+    filter 0.22s var(--app-ease-out);
+}
+
+html.dark .speed-test-card .el-button--primary:not(.is-link):not(.is-text):not(.is-plain) {
+  background: linear-gradient(180deg, #355c7a 0%, #284560 100%) !important;
+  border: 1px solid rgba(120, 170, 220, 0.22) !important;
+  color: #eef4fb !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .speed-test-card .el-button--primary:not(.is-link):not(.is-text):not(.is-plain):hover,
+html.dark .speed-test-card .el-button--primary:not(.is-link):not(.is-text):not(.is-plain):focus {
+  background: linear-gradient(180deg, #3f6d8f 0%, #2f526e 100%) !important;
+  border-color: rgba(140, 190, 240, 0.28) !important;
+  color: #ffffff !important;
+  filter: brightness(1.03);
+}
+
+html.dark .speed-test-card .el-button--success:not(.is-link):not(.is-text):not(.is-plain) {
+  background: linear-gradient(180deg, #356545 0%, #264a33 100%) !important;
+  border: 1px solid rgba(120, 200, 140, 0.22) !important;
+  color: #eef6f0 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 1px 3px rgba(0, 0, 0, 0.38);
+}
+
+html.dark .speed-test-card .el-button--success:not(.is-link):not(.is-text):not(.is-plain):hover,
+html.dark .speed-test-card .el-button--success:not(.is-link):not(.is-text):not(.is-plain):focus {
+  background: linear-gradient(180deg, #3d7550 0%, #2d5639 100%) !important;
+  border-color: rgba(130, 210, 150, 0.3) !important;
+  color: #ffffff !important;
+  filter: brightness(1.03);
+}
+
+@keyframes speed-result-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.speed-result-row {
+  animation: speed-result-row-in 0.32s var(--app-ease-out) backwards;
+  animation-delay: calc(var(--speed-stagger, 0) * 1ms);
+}
+
+.speed-result-row .text-sm.font-semibold {
+  transition: color 0.36s var(--app-ease-out);
+}
+
+/* 柱状条：scaleX 从左展开；延迟用 --bar-stagger-ms 与行入场解耦，实现逐条出现 */
+@keyframes latency-bar-in {
+  from {
+    transform: scaleX(0.02);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.speed-test-card .latency-bar-fill {
+  transform-origin: left center;
+  animation: latency-bar-in 0.68s cubic-bezier(0.22, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--bar-stagger-ms, var(--speed-stagger, 0)) * 1ms);
+  transition:
+    width 0.52s var(--app-ease-out),
+    opacity 0.36s var(--app-ease-out),
+    background-color 0.32s var(--app-ease-spring),
+    transform 0.52s var(--app-ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speed-result-row {
+    animation: none;
+  }
+
+  .speed-test-card .latency-bar-fill {
+    animation: none;
+    transition:
+      width 0.22s ease,
+      opacity 0.2s ease,
+      background-color 0.2s ease;
+  }
+}
+
+/* 通栏底栏：略加重阴影 + 轻毛玻璃（磨砂底栏） */
+.app-statusbar {
+  position: relative;
+  z-index: 2;
+  background-color: color-mix(in srgb, var(--app-bg) 68%, rgba(255, 255, 255, 0.55) 32%);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--app-surface) 42%, transparent) 0%,
+    color-mix(in srgb, var(--app-bg) 58%, transparent) 100%
+  );
+  backdrop-filter: saturate(1.12) blur(10px);
+  -webkit-backdrop-filter: saturate(1.12) blur(10px);
+  border-top-color: color-mix(in srgb, var(--app-separator) 80%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    0 -4px 14px rgba(0, 0, 0, 0.07),
+    0 -10px 28px rgba(0, 0, 0, 0.045);
+}
+
+html.dark .app-statusbar {
+  background-color: color-mix(in srgb, var(--app-bg) 72%, rgba(40, 40, 44, 0.88) 28%);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--app-surface) 32%, transparent) 0%,
+    color-mix(in srgb, var(--app-bg) 62%, transparent) 100%
+  );
+  backdrop-filter: saturate(1.08) blur(12px);
+  -webkit-backdrop-filter: saturate(1.08) blur(12px);
+  border-top-color: color-mix(in srgb, var(--app-separator) 65%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 -4px 18px rgba(0, 0, 0, 0.42),
+    0 -12px 32px rgba(0, 0, 0, 0.28);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-statusbar,
+  html.dark .app-statusbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background-image: none;
+    background-color: var(--app-bg);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      0 -3px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  html.dark .app-statusbar {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 -3px 12px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* First launch: shell + main stage (classes toggled from App.vue) */
+.app-shell.app-shell-intro-prep .app-sidebar {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+.app-shell.app-shell-intro-prep .app-main-stage {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.app-shell.app-shell-intro-run .app-sidebar {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.48s var(--app-ease-spring),
+    transform 0.52s var(--app-ease-spring);
+}
+
+.app-shell.app-shell-intro-run .app-main-stage {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.5s var(--app-ease-spring),
+    transform 0.55s var(--app-ease-spring);
+  transition-delay: 0.06s;
+}
+
+/* First launch: left column header / search / list (RegistryList) */
+.registry-list-root.registry-list-intro-prep .rl-intro-header,
+.registry-list-root.registry-list-intro-prep .rl-intro-search,
+.registry-list-root.registry-list-intro-prep .rl-intro-body {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.registry-list-root.registry-list-intro-run .rl-intro-header {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s var(--app-ease-spring), transform 0.46s var(--app-ease-spring);
+}
+
+.registry-list-root.registry-list-intro-run .rl-intro-search {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s var(--app-ease-spring), transform 0.46s var(--app-ease-spring);
+  transition-delay: 0.07s;
+}
+
+.registry-list-root.registry-list-intro-run .rl-intro-body {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.44s var(--app-ease-spring), transform 0.5s var(--app-ease-spring);
+  transition-delay: 0.12s;
+}
+
+/* Category: 折叠用 grid 行高过渡，布局高度随动画变化，避免结束时整块「顶上去」 */
+.reg-category-fold-shell {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.42s var(--app-ease-out);
+  /* flex 子项默认 min-height:auto 会按内容卡住高度；0fr 时须允许收到 0，否则会「漏」出下面的源 */
+  min-height: 0;
+  overflow: hidden;
+}
+
+.reg-category-fold-shell--open {
+  grid-template-rows: 1fr;
+}
+
+.reg-category-fold-inner {
+  min-height: 0;
+  overflow: hidden;
+  /* 仅左右留白；上下 padding 在 0fr 时仍会占位，导致折叠后漏出条目（见列表区 el-scrollbar__view 的上下 padding） */
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+/* 分类内首末行上下呼吸，替代 fold-inner 的垂直 padding，避免干扰 0fr 收起 */
+.reg-category-fold-inner > .registry-item:first-child {
+  margin-top: 6px;
+}
+.reg-category-fold-inner > .registry-item:last-child {
+  margin-bottom: 6px;
+}
+
+/* 源列表滚动区：内边距让阴影落在 padding 内，不被 el-scrollbar__wrap 裁切 */
+.registry-list-root .app-scrollbar .el-scrollbar__view {
+  padding: 6px 6px 8px;
+  box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-category-fold-shell {
+    transition-duration: 0.01s;
+  }
+}
+
+.category-row-chevron {
+  display: inline-block;
+  width: 0.55rem;
+  text-align: center;
+  transition: transform 0.3s var(--app-ease-spring);
+  transform: rotate(0deg);
+}
+
+.category-row-chevron.is-expanded {
+  transform: rotate(90deg);
+}
+
+/* Dialog overlay fade (close-confirm overrides with higher specificity) */
+.dialog-fade-enter-active,
+.dialog-fade-leave-active {
+  transition-duration: var(--app-duration-mid) !important;
+  transition-timing-function: var(--app-ease-spring) !important;
+}
+
+/* Element Plus 滚动条统一样式：左侧源列表与测速柱状图共用（高度由使用处 h-full / flex-1+h-0 决定，避免全局 100% 压过 flex 收起） */
 .app-scrollbar.el-scrollbar {
-  height: 100%;
   width: 100%;
+  min-height: 0;
 }
 .app-scrollbar .el-scrollbar__wrap {
   overflow-x: hidden;
@@ -37,18 +484,18 @@ body {
   right: 0;
 }
 .app-scrollbar .el-scrollbar__thumb {
-  background-color: rgba(100, 116, 139, 0.45);
-  border-radius: 3px;
+  background-color: rgba(60, 60, 67, 0.28);
+  border-radius: 5px;
 }
 .app-scrollbar .el-scrollbar__thumb:hover {
-  background-color: rgba(71, 85, 105, 0.65);
+  background-color: rgba(60, 60, 67, 0.45);
 }
 
-.dark .app-scrollbar .el-scrollbar__thumb {
-  background-color: rgba(148, 163, 184, 0.35);
+html.dark .app-scrollbar .el-scrollbar__thumb {
+  background-color: rgba(235, 235, 245, 0.22);
 }
-.dark .app-scrollbar .el-scrollbar__thumb:hover {
-  background-color: rgba(148, 163, 184, 0.55);
+html.dark .app-scrollbar .el-scrollbar__thumb:hover {
+  background-color: rgba(235, 235, 245, 0.38);
 }
 
 /* @deprecated 命名保留，与同上类一致 */
@@ -59,555 +506,839 @@ body {
   height: 100%;
 }
 
-/* Registry list item hover & active */
+@keyframes app-skeleton-shimmer-move {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.registry-list-skeleton-shimmer {
+  background: linear-gradient(90deg, #e5e5ea 22%, #f8f8fa 50%, #e5e5ea 78%);
+  background-size: 200% 100%;
+  animation: app-skeleton-shimmer-move 1.35s ease-in-out infinite;
+}
+
+html.dark .registry-list-skeleton-shimmer {
+  background: linear-gradient(90deg, #34343a 22%, #4c4c56 50%, #34343a 78%);
+  background-size: 200% 100%;
+  animation: app-skeleton-shimmer-move 1.35s ease-in-out infinite;
+}
+
+/* Registry list item hover & active — 切换源时与左侧条、底色同频过渡，避免条「瞬切」 */
 .registry-item {
   transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.18s ease;
+    background-color 0.28s var(--app-ease-out),
+    border-left-color 0.38s var(--app-ease-out),
+    border-color 0.38s var(--app-ease-out),
+    box-shadow 0.28s var(--app-ease-out),
+    opacity 0.28s var(--app-ease-out);
 }
+
+.registry-item span.text-sm.font-semibold {
+  transition: color 0.36s var(--app-ease-out);
+}
+
+/* hover：外阴影略收扩散 + 内高光，配合列表区 padding，减少裁切感 */
 .registry-item:hover {
-  background-color: var(--el-fill-color-light);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 90%, var(--el-color-primary) 10%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--el-color-primary) 10%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 3px 10px rgba(0, 0, 0, 0.055);
 }
+
+.registry-item.is-active:hover {
+  background-color: color-mix(in srgb, var(--el-color-primary) 19%, #ffffff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 32%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--el-color-primary) 12%, transparent),
+    0 1px 3px color-mix(in srgb, var(--el-color-primary) 12%, transparent),
+    0 3px 10px color-mix(in srgb, var(--el-color-primary) 8%, transparent);
+}
+
 .registry-item.is-active {
-  background-color: var(--el-color-primary-light-9);
-  border-left: 3px solid var(--el-color-primary);
+  background-color: color-mix(in srgb, var(--el-color-primary) 14%, #ffffff);
+  border-left-color: var(--el-color-primary);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 28%, transparent),
+    0 1px 5px color-mix(in srgb, var(--el-color-primary) 18%, transparent);
 }
 
 .registry-item.is-idle {
-  background-color: #f8fafc;
+  background-color: #f2f2f7;
 }
 
-/* Current source card gradient */
+/* Current source card：浅色下加强落影，与下方测速白卡层次一致 */
 .current-source-card {
-  background: linear-gradient(135deg, #4f6ef7, #6d8aff);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(148deg, #004bad 0%, #0077ed 38%, #0a84ff 62%, #47a3ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 0.5px rgba(0, 55, 130, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 45, 100, 0.18),
+    0 12px 32px rgba(0, 40, 90, 0.12);
+  animation: current-source-card-in var(--app-duration-slow) var(--app-ease-out) both;
 }
 
-/* Dark mode overrides for UnoCSS classes not covered by dark: variant */
-.dark {
+.current-source-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.1) 42%, transparent 64%);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.current-source-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes current-source-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Dark mode: Uno utilities + Element (html.dark beats element-plus html.dark var specificity when later in cascade) */
+html.dark {
   color-scheme: dark;
+  --app-bg-elevated: #242428;
+  --app-bg: #161618;
+  /* 侧栏略偏冷灰紫，与主区拉开层次 */
+  --app-surface: #26262c;
+  /* 主列：略浅于 #app 底，带极弱冷调，托住灰卡 + 当前源块 */
+  --app-main-bg-base: #1a1b20;
+  --app-main-bg-image: linear-gradient(
+    172deg,
+    #202126 0%,
+    #1a1b20 48%,
+    #17181c 100%
+  );
+  --app-surface-elevated: #36363e;
+  --app-separator: rgba(84, 84, 88, 0.48);
+  --app-text: #f5f5f7;
+  --app-text-muted: rgba(235, 235, 245, 0.55);
+  --app-bar-track: rgba(118, 118, 128, 0.24);
+
+  --el-color-primary: #0a84ff;
+  --el-color-primary-rgb: 10, 132, 255;
+  --el-color-primary-light-3: #3388d4;
+  --el-color-primary-light-5: #2a6aa3;
+  --el-color-primary-light-7: #214d73;
+  --el-color-primary-light-8: #1c3f5d;
+  --el-color-primary-light-9: #18324a;
+  --el-color-primary-dark-2: #3d9eff;
+
+  --el-bg-color: #26262c;
+  --el-bg-color-page: #161618;
+  --el-bg-color-overlay: #38383f;
+  --el-text-color-primary: #f5f5f7;
+  --el-text-color-regular: #ebebf5;
+  --el-text-color-secondary: rgba(235, 235, 245, 0.55);
+  --el-border-color: #424245;
+  --el-border-color-light: #38383a;
+  --el-fill-color: #38383f;
+  --el-fill-color-light: #4a4a52;
+  --el-fill-color-lighter: #38383f;
+  --el-fill-color-blank: #26262c;
+  --el-fill-color-dark: #48484a;
+  --el-fill-color-darker: #545458;
+  --el-fill-color-extra-light: #252526;
+  --el-mask-color: rgba(0, 0, 0, 0.45);
+  --el-box-shadow: 0 24px 56px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.4);
+  --el-box-shadow-light: 0 12px 28px rgba(0, 0, 0, 0.35);
+  --el-box-shadow-lighter: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --el-text-color-placeholder: rgba(235, 235, 245, 0.32);
+  --el-text-color-disabled: rgba(235, 235, 245, 0.28);
+  --el-border-color-darker: #545458;
+  --el-border-color-dark: #4d4d50;
+  --el-border-color-extra-light: #2e2e30;
+  /* System semantic colors (dark) */
+  --el-color-success: #32d74b;
+  --el-color-success-light-3: #2bad45;
+  --el-color-success-light-5: #248a38;
+  --el-color-success-light-7: #1c662a;
+  --el-color-success-light-8: #185424;
+  --el-color-success-light-9: #143f1d;
+  --el-color-success-dark-2: #5cdf6f;
+  --el-color-warning: #ffd60a;
+  --el-color-warning-dark-2: #ffe066;
+  --el-color-danger: #ff453a;
+  --el-color-danger-light-3: #cf3a31;
+  --el-color-danger-light-5: #a32f28;
+  --el-color-danger-light-7: #77241f;
+  --el-color-danger-light-8: #611f1b;
+  --el-color-danger-light-9: #4a1815;
+  --el-color-danger-dark-2: #ff6961;
 }
 
-.dark body {
-  background-color: #0f172a;
-  color: #e5e7eb;
+html.dark body {
+  background-color: var(--app-bg);
+  color: var(--app-text);
 }
 
-.dark #app {
-  background-color: #0f172a;
+html.dark #app {
+  background-color: var(--app-bg);
+  background-image: linear-gradient(
+    168deg,
+    var(--app-bg) 0%,
+    color-mix(in srgb, var(--app-bg) 78%, #2a2d38 22%) 52%,
+    color-mix(in srgb, var(--app-bg) 88%, #000000 12%) 100%
+  );
+  background-attachment: fixed;
 }
 
-.dark {
-  --el-bg-color: #111827;
-  --el-bg-color-page: #0c111b;
-  --el-bg-color-overlay: #101827;
-  --el-text-color-primary: #e6edf8;
-  --el-text-color-regular: #c2d0e4;
-  --el-text-color-secondary: #8fa3c2;
-  --el-border-color: #2b374b;
-  --el-border-color-light: #233044;
-  --el-fill-color: #172334;
-  --el-fill-color-light: #1a293d;
-  --el-fill-color-lighter: #142033;
-  --el-fill-color-blank: #0f172a;
-  --el-mask-color: rgba(2, 6, 23, 0.8);
+html.dark .bg-white {
+  background-color: var(--app-surface);
+}
+html.dark .border-gray-200 {
+  border-color: var(--app-separator);
+}
+html.dark .border-gray-100 {
+  border-color: var(--app-separator);
+}
+html.dark .bg-gray-100 {
+  background-color: var(--app-surface-elevated);
+}
+html.dark .bg-gray-50 {
+  background-color: var(--el-fill-color-blank);
+}
+html.dark .text-gray-700 {
+  color: var(--app-text);
+}
+html.dark .text-gray-400 {
+  color: var(--app-text-muted);
+}
+html.dark .text-gray-500 {
+  color: var(--app-text-muted);
+}
+html.dark .from-gray-100 {
+  --un-gradient-from: #3a3a3c;
+}
+html.dark .via-gray-50 {
+  --un-gradient-via: #2c2c2e;
+}
+html.dark .to-gray-100 {
+  --un-gradient-to: #3a3a3c;
 }
 
-.dark .bg-white {
-  background-color: #101827;
-}
-.dark .border-gray-200 {
-  border-color: #2b374b;
-}
-.dark .border-gray-100 {
-  border-color: #233044;
-}
-.dark .bg-gray-100 {
-  background-color: #1a293d;
-}
-.dark .bg-gray-50 {
-  background-color: #142033;
-}
-.dark .text-gray-700 {
-  color: #cad8eb;
-}
-.dark .text-gray-400 {
-  color: #90a5c4;
-}
-.dark .text-gray-500 {
-  color: #9cafca;
-}
-.dark .from-gray-100 {
-  --un-gradient-from: #1e293b;
-}
-.dark .via-gray-50 {
-  --un-gradient-via: #172033;
-}
-.dark .to-gray-100 {
-  --un-gradient-to: #1e293b;
+html.dark .registry-item:hover {
+  background-color: rgba(255, 255, 255, 0.092);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    0 3px 11px rgba(0, 0, 0, 0.2);
 }
 
-.dark .registry-item:hover {
-  background-color: #1a293d;
-  box-shadow: 0 6px 14px rgba(2, 6, 23, 0.35);
+html.dark .registry-item.is-active {
+  background-color: rgba(10, 132, 255, 0.3);
+  border-left-color: #7ec5ff;
+  box-shadow:
+    inset 0 0 0 1px rgba(10, 132, 255, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.22),
+    0 2px 10px rgba(0, 0, 0, 0.28);
 }
 
-.dark .registry-item.is-active {
-  background-color: rgba(96, 138, 228, 0.22);
+html.dark .registry-item.is-active:hover {
+  background-color: rgba(10, 132, 255, 0.38);
+  border-left-color: #a8d4ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(10, 132, 255, 0.48),
+    0 0 0 1px rgba(10, 132, 255, 0.22),
+    0 1px 4px rgba(0, 0, 0, 0.28),
+    0 3px 12px rgba(0, 0, 0, 0.16);
 }
 
-.dark .registry-item.is-idle {
-  background-color: #132033;
+html.dark .registry-item.is-idle {
+  background-color: rgba(255, 255, 255, 0.045);
 }
 
-.dark .category-drop-overlay {
-  background-color: rgba(15, 23, 42, 0.58);
-  border-color: rgba(96, 165, 250, 0.4);
+html.dark .category-drop-overlay {
+  background-color: rgba(28, 28, 30, 0.45);
+  border-color: rgba(10, 132, 255, 0.35);
 }
 
-.dark .category-drop-hint {
-  color: #bfdbfe;
-  background-color: rgba(30, 41, 59, 0.92);
-  border-color: rgba(96, 165, 250, 0.32);
-  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.45);
+html.dark .category-drop-hint {
+  color: var(--el-color-primary);
+  background-color: rgba(58, 58, 60, 0.94);
+  border-color: rgba(10, 132, 255, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-.dark .current-source-card {
-  background: linear-gradient(135deg, #22375e, #2e4a73);
+/* 深色：当前源卡片 — 小阴影，与主列 #1a1b20 底色衔接 */
+html.dark .current-source-card {
+  background: linear-gradient(165deg, #252629 0%, #2c2e32 52%, #303236 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.07),
+    0 2px 10px rgba(0, 0, 0, 0.34),
+    0 8px 22px rgba(0, 0, 0, 0.16);
 }
 
-.dark .registry-add-btn {
-  background-color: #31568a;
-  border-color: #31568a;
-  color: #e7f0ff;
+html.dark .current-source-card::after {
+  background: linear-gradient(108deg, transparent 0%, rgba(255, 255, 255, 0.04) 48%, transparent 72%);
+  opacity: 0.45;
 }
 
-.dark .registry-add-btn:hover,
-.dark .registry-add-btn:focus {
-  background-color: #3a639a;
-  border-color: #3a639a;
-  color: #eef4ff;
+/* 深色：添加源 — 半透明主色底 + 描边，与侧栏表面更一体 */
+html.dark .registry-add-btn.el-button--primary {
+  --el-button-bg-color: rgba(10, 132, 255, 0.18);
+  --el-button-border-color: rgba(10, 132, 255, 0.42);
+  --el-button-text-color: #e8f2ff;
+  --el-button-hover-bg-color: rgba(10, 132, 255, 0.28);
+  --el-button-hover-border-color: rgba(10, 132, 255, 0.55);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: rgba(10, 132, 255, 0.22);
+  --el-button-active-border-color: rgba(10, 132, 255, 0.5);
+  --el-button-active-text-color: #ffffff;
+  background-color: var(--el-button-bg-color) !important;
+  border-color: var(--el-button-border-color) !important;
+  color: var(--el-button-text-color) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.dark .el-input__wrapper,
-.dark .el-textarea__inner {
-  background-color: #142033;
-  box-shadow: 0 0 0 1px #2b374b inset;
+html.dark .registry-add-btn.el-button--primary:hover,
+html.dark .registry-add-btn.el-button--primary:focus {
+  background-color: var(--el-button-hover-bg-color) !important;
+  border-color: var(--el-button-hover-border-color) !important;
+  color: var(--el-button-hover-text-color) !important;
 }
 
-.dark .el-input__wrapper.is-focus,
-.dark .el-textarea__inner:focus {
+html.dark .el-input__wrapper,
+html.dark .el-textarea__inner {
+  background-color: var(--el-fill-color-blank);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+
+html.dark .el-input__wrapper.is-focus,
+html.dark .el-textarea__inner:focus {
   box-shadow: 0 0 0 1px var(--el-color-primary) inset;
 }
 
-.dark .el-dialog {
-  background: linear-gradient(160deg, #101827, #121d2e);
-  border: 1px solid #2b374b;
-  box-shadow: 0 24px 50px rgba(2, 6, 23, 0.62);
+html.dark .el-dialog {
+  border-radius: var(--app-radius-lg);
+  background: linear-gradient(185deg, #3d3d40 0%, #2c2c2e 48%, #252528 100%);
+  border: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
+  box-shadow: var(--el-box-shadow);
 }
 
-.dark .el-dialog__header {
-  border-bottom: 1px solid rgba(43, 55, 75, 0.85);
+html.dark .el-dialog__header {
+  border-bottom: 1px solid var(--app-separator);
   padding-bottom: 0.75rem;
 }
 
-.dark .el-dialog__title {
-  color: #e7eefb;
-  font-weight: 650;
+html.dark .el-dialog__title {
+  color: var(--el-text-color-primary);
+  font-weight: 600;
 }
 
-.dark .el-dialog__body {
-  color: #c9d6ea;
+html.dark .el-dialog__body {
+  color: var(--el-text-color-regular);
 }
 
-.dark .el-popper,
-.dark .el-select__popper.el-popper {
-  background-color: #101827;
-  border-color: #2b374b;
-  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.55);
+html.dark .el-popper,
+html.dark .el-select__popper.el-popper {
+  background-color: var(--el-bg-color-overlay);
+  border-color: var(--el-border-color);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
 }
 
-.dark .el-select-dropdown__item {
-  color: #cbd5e1;
+html.dark .el-select-dropdown__item {
+  color: var(--el-text-color-regular);
 }
 
-.dark .el-select-dropdown__item.hover,
-.dark .el-select-dropdown__item:hover {
-  background-color: #1a293d;
+html.dark .el-select-dropdown__item.hover,
+html.dark .el-select-dropdown__item:hover {
+  background-color: var(--el-fill-color-light);
 }
-.dark .el-select-dropdown__item.is-hovering {
-  background-color: #1a293d;
+html.dark .el-select-dropdown__item.is-hovering {
+  background-color: var(--el-fill-color-light);
 }
-.dark .el-popper.is-light > .el-popper__arrow:before {
-  background: #121826;
+html.dark .el-popper.is-light > .el-popper__arrow:before {
+  background: var(--el-bg-color-overlay);
 }
-.dark .el-button.is-text:not(.is-disabled) {
-  color: #a9bddb;
+html.dark .el-button.is-text:not(.is-disabled) {
+  color: var(--app-text-muted);
 }
-.dark .el-button.is-text:not(.is-disabled):hover {
-  background-color: rgba(76, 108, 165, 0.16);
-  color: #c2d4ef;
-}
-
-.dark .el-switch__core {
-  background-color: #1f2d43;
-  border-color: #2b3b53;
+html.dark .el-button.is-text:not(.is-disabled):hover {
+  background-color: rgba(235, 235, 245, 0.08);
+  color: var(--app-text);
 }
 
-.dark .el-switch.is-checked .el-switch__core {
-  background-color: #355a98;
-  border-color: #355a98;
+html.dark .el-switch__core {
+  background-color: #39393a;
+  border-color: #48484a;
 }
 
-.dark .el-button--primary {
-  background-color: #345b8f;
-  border-color: #345b8f;
-  color: #eaf2ff;
+html.dark .el-switch.is-checked .el-switch__core {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
 }
 
-.dark .el-button--primary:hover,
-.dark .el-button--primary:focus {
-  background-color: #3f69a1;
-  border-color: #3f69a1;
-  color: #f3f8ff;
+html.dark .el-button--primary {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: #ffffff;
 }
 
-.dark .el-button--danger.is-plain {
-  background-color: rgba(127, 29, 29, 0.14);
-  border-color: rgba(248, 113, 113, 0.28);
-  color: #fca5a5;
+html.dark .el-button--primary:hover,
+html.dark .el-button--primary:focus {
+  background-color: var(--el-color-primary-dark-2);
+  border-color: var(--el-color-primary-dark-2);
+  color: #ffffff;
 }
 
-.dark .el-button--danger.is-plain:hover,
-.dark .el-button--danger.is-plain:focus {
-  background-color: rgba(127, 29, 29, 0.22);
-  border-color: rgba(248, 113, 113, 0.38);
-  color: #fecaca;
+html.dark .el-button--danger.is-plain {
+  background-color: rgba(255, 69, 58, 0.12);
+  border-color: rgba(255, 69, 58, 0.38);
+  color: #ff6961;
 }
 
-/* 添加源弹窗：避免纯黑发闷，改为蓝灰分层 */
-.dark .registry-dialog .el-dialog {
-  background: linear-gradient(160deg, #111a2b, #122038);
-  border-color: #32425b;
+html.dark .el-button--danger.is-plain:hover,
+html.dark .el-button--danger.is-plain:focus {
+  background-color: rgba(255, 69, 58, 0.2);
+  border-color: rgba(255, 69, 58, 0.5);
+  color: #ff8a82;
 }
 
-.dark .registry-dialog .el-dialog__header {
-  border-bottom: 1px solid rgba(68, 88, 116, 0.45);
+/* Dark: default / success / warning buttons (e.g. 测速「切换到最快」) */
+html.dark .el-button--success {
+  background-color: rgba(50, 215, 75, 0.22);
+  border-color: rgba(50, 215, 75, 0.55);
+  color: #5cdf6f;
 }
 
-.dark .registry-dialog .el-input__wrapper {
-  background-color: #17263d !important;
-  box-shadow: 0 0 0 1px #355074 inset !important;
+html.dark .el-button--success:hover,
+html.dark .el-button--success:focus {
+  background-color: rgba(50, 215, 75, 0.3);
+  border-color: rgba(50, 215, 75, 0.65);
+  color: #7ae88a;
 }
 
-.dark .registry-dialog .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px #42608a inset !important;
+html.dark .el-button--default {
+  background-color: var(--el-fill-color-light);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-regular);
 }
 
-.dark .registry-dialog .el-input__wrapper.is-focus {
-  box-shadow: 0 0 0 1px #5d86c4 inset !important;
+html.dark .el-button--default:hover,
+html.dark .el-button--default:focus {
+  background-color: var(--el-fill-color);
+  border-color: var(--el-border-color-light);
+  color: var(--el-text-color-primary);
 }
 
-.dark .registry-dialog .el-input__count,
-.dark .registry-dialog .el-input__count-inner {
-  background-color: #122033 !important;
-  color: #a8bfdc !important;
+/* Dark: toast — 与浅色一致用实心底，不用半透明镂空 */
+html.dark .el-message {
+  background-color: #38383f !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.dark .registry-dialog .el-select__wrapper {
-  background-color: #17263d !important;
-  box-shadow: 0 0 0 1px #355074 inset !important;
+html.dark .el-message__content {
+  color: var(--el-text-color-primary) !important;
 }
 
-.dark .registry-dialog .el-button:not(.el-button--primary) {
-  background-color: #1a2a43;
-  border-color: #3a5276;
-  color: #c9daef;
+html.dark .el-message--info {
+  background-color: #38383f !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.dark .registry-dialog .el-button:not(.el-button--primary):hover {
-  background-color: #223654;
-  border-color: #4b6692;
-  color: #dbe8f9;
+html.dark .el-message--success {
+  background-color: #1e3a28 !important;
+  border-color: rgba(50, 215, 75, 0.55) !important;
 }
 
-.dark .registry-dialog .el-button--primary {
-  background-color: #3f66a0;
-  border-color: #3f66a0;
-  color: #f2f7ff;
+html.dark .el-message--error {
+  background-color: #3a2424 !important;
+  border-color: rgba(255, 69, 58, 0.55) !important;
 }
 
-.dark .registry-dialog .el-button--primary:hover,
-.dark .registry-dialog .el-button--primary:focus {
-  background-color: #4a76b8;
-  border-color: #4a76b8;
+html.dark .el-message--warning {
+  background-color: #3a3420 !important;
+  border-color: rgba(255, 214, 10, 0.5) !important;
 }
 
-/* 分类管理弹窗（Teleport）使用全局高优先级覆盖，避免 scoped 权重不足 */
-.dark .category-manage-dialog .category-create-row {
-  border-color: rgba(78, 100, 132, 0.52) !important;
-  background: linear-gradient(160deg, #152338, #182842) !important;
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.36) !important;
+html.dark .el-message-box {
+  background-color: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color);
+  box-shadow: var(--el-box-shadow);
 }
 
-.dark .category-manage-dialog .category-list-row {
-  border-color: rgba(70, 90, 118, 0.62) !important;
-  background: linear-gradient(160deg, #131f32, #16243a) !important;
-  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.06) !important;
+html.dark .el-message-box__title {
+  color: var(--el-text-color-primary);
 }
 
-.dark .category-manage-dialog .category-list-row:hover {
-  border-color: rgba(97, 123, 160, 0.68) !important;
-  background: linear-gradient(160deg, #17263d, #1b2c46) !important;
+html.dark .el-message-box__message {
+  color: var(--el-text-color-regular);
 }
 
-.dark .category-manage-dialog .category-create-row .el-input__wrapper,
-.dark .category-manage-dialog .category-input .el-input__wrapper {
-  background-color: #1a2a43 !important;
-  box-shadow: 0 0 0 1px #3c5377 inset !important;
+html.dark .el-message-box__btns .el-button--default {
+  background-color: var(--el-fill-color-light);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-primary);
 }
 
-.dark .category-manage-dialog .category-create-row .el-input__wrapper:hover,
-.dark .category-manage-dialog .category-input .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px #4a6591 inset !important;
+/* Dark: loading mask */
+html.dark .el-loading-mask {
+  background-color: rgba(28, 28, 30, 0.72) !important;
 }
 
-.dark .category-manage-dialog .category-create-row .el-input__wrapper.is-focus,
-.dark .category-manage-dialog .category-input .el-input__wrapper.is-focus {
-  box-shadow: 0 0 0 1px #5f83ba inset !important;
+/* Dark: form labels & radios */
+html.dark .el-form-item__label {
+  color: var(--el-text-color-regular);
 }
 
-.dark .category-manage-dialog .category-create-btn,
-.dark .category-manage-dialog .category-row-actions .el-button--primary {
-  background-color: #3b629b !important;
-  border-color: #3b629b !important;
-  color: #eef4ff !important;
+html.dark .el-radio__label,
+html.dark .el-checkbox__label {
+  color: var(--el-text-color-regular);
 }
 
-.dark .category-manage-dialog .category-create-btn:hover,
-.dark .category-manage-dialog .category-row-actions .el-button--primary:hover {
-  background-color: #4873b4 !important;
-  border-color: #4873b4 !important;
+/* 添加源弹窗 */
+html.dark .registry-dialog .el-dialog {
+  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+  border-color: var(--el-border-color);
 }
 
-.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger) {
-  background-color: #1c2c45 !important;
-  border-color: #445d84 !important;
-  color: #cddcf1 !important;
+html.dark .registry-dialog .el-dialog__header {
+  border-bottom: 1px solid var(--app-separator);
 }
 
-.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
-  background-color: #253b5b !important;
-  border-color: #5473a1 !important;
-  color: #e2ecfb !important;
+html.dark .registry-dialog .el-input__wrapper {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
 }
 
-.dark .category-manage-dialog .category-row-actions .el-button--danger {
-  background-color: rgba(185, 58, 76, 0.22) !important;
-  border-color: rgba(244, 114, 133, 0.5) !important;
-  color: #ffd0d8 !important;
+html.dark .registry-dialog .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
 }
 
-.dark .category-manage-dialog .category-row-actions .el-button--danger:hover {
-  background-color: rgba(185, 58, 76, 0.3) !important;
-  border-color: rgba(251, 146, 168, 0.62) !important;
+html.dark .registry-dialog .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
+}
+
+html.dark .registry-dialog .el-input__count,
+html.dark .registry-dialog .el-input__count-inner {
+  background-color: transparent !important;
+  color: var(--app-text-muted) !important;
+}
+
+html.dark .registry-dialog .el-select__wrapper {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+}
+
+html.dark .registry-dialog .el-button:not(.el-button--primary) {
+  background-color: var(--el-fill-color-light);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-regular);
+}
+
+html.dark .registry-dialog .el-button:not(.el-button--primary):hover {
+  background-color: var(--el-fill-color);
+  border-color: var(--el-border-color-light);
+  color: var(--el-text-color-primary);
+}
+
+html.dark .registry-dialog .el-button--primary {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: #ffffff;
+}
+
+html.dark .registry-dialog .el-button--primary:hover,
+html.dark .registry-dialog .el-button--primary:focus {
+  background-color: var(--el-color-primary-dark-2);
+  border-color: var(--el-color-primary-dark-2);
+}
+
+/* 分类管理弹窗（Teleport） */
+html.dark .category-manage-dialog .category-create-row {
+  border-color: var(--el-border-color) !important;
+  background: var(--el-bg-color-overlay) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .category-manage-dialog .category-list-row {
+  border-color: var(--el-border-color) !important;
+  background: var(--el-fill-color-blank) !important;
+  box-shadow: 0 1px 0 var(--app-separator) !important;
+}
+
+html.dark .category-manage-dialog .category-list-row:hover {
+  border-color: var(--el-border-color-light) !important;
+  background: var(--el-fill-color-light) !important;
+}
+
+html.dark .category-manage-dialog .category-create-row .el-input__wrapper,
+html.dark .category-manage-dialog .category-input .el-input__wrapper {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+}
+
+html.dark .category-manage-dialog .category-create-row .el-input__wrapper:hover,
+html.dark .category-manage-dialog .category-input .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
+}
+
+html.dark .category-manage-dialog .category-create-row .el-input__wrapper.is-focus,
+html.dark .category-manage-dialog .category-input .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
+}
+
+html.dark .category-manage-dialog .category-create-btn,
+html.dark .category-manage-dialog .category-row-actions .el-button--primary {
+  background-color: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+  color: #ffffff !important;
+}
+
+html.dark .category-manage-dialog .category-create-btn:hover,
+html.dark .category-manage-dialog .category-row-actions .el-button--primary:hover {
+  background-color: var(--el-color-primary-dark-2) !important;
+  border-color: var(--el-color-primary-dark-2) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger) {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color) !important;
+  color: var(--el-text-color-regular) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background-color: var(--el-fill-color) !important;
+  border-color: var(--el-border-color-light) !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button--danger {
+  background-color: rgba(255, 59, 48, 0.15) !important;
+  border-color: rgba(255, 59, 48, 0.45) !important;
+  color: #ff6961 !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button--danger:hover {
+  background-color: rgba(255, 59, 48, 0.22) !important;
+  border-color: rgba(255, 59, 48, 0.55) !important;
 }
 
 /* 分类管理弹窗底部“关闭”按钮 */
-.dark .category-manage-dialog .el-dialog__footer .el-button {
-  background-color: #1c2c45 !important;
-  border-color: #445d84 !important;
-  color: #d3e1f3 !important;
+html.dark .category-manage-dialog .el-dialog__footer .el-button {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color) !important;
+  color: var(--el-text-color-regular) !important;
 }
 
-.dark .category-manage-dialog .el-dialog__footer .el-button:hover,
-.dark .category-manage-dialog .el-dialog__footer .el-button:focus {
-  background-color: #274264 !important;
-  border-color: #5a79a6 !important;
-  color: #e6effd !important;
+html.dark .category-manage-dialog .el-dialog__footer .el-button:hover,
+html.dark .category-manage-dialog .el-dialog__footer .el-button:focus {
+  background-color: var(--el-fill-color) !important;
+  border-color: var(--el-border-color-light) !important;
+  color: var(--el-text-color-primary) !important;
 }
 
 /* 全局：深色模式下输入框字数统计去掉黑色背景块 */
-.dark .el-input__count,
-.dark .el-input__count-inner {
+html.dark .el-input__count,
+html.dark .el-input__count-inner {
   background-color: transparent !important;
-  color: #9ab0cc !important;
+  color: var(--app-text-muted) !important;
 }
 
-.dark .el-textarea__count {
+html.dark .el-textarea__count {
   background-color: transparent !important;
-  color: #9ab0cc !important;
+  color: var(--app-text-muted) !important;
 }
 
-.dark .el-input .el-input__count,
-.dark .el-input .el-input__count-inner,
-.dark .el-input__wrapper .el-input__count,
-.dark .el-input__wrapper .el-input__count-inner,
-.dark .el-input__inner + .el-input__count,
-.dark .el-input__inner + .el-input__count .el-input__count-inner,
-.dark .el-textarea .el-textarea__count,
-.dark .el-textarea__inner + .el-textarea__count {
+html.dark .el-input .el-input__count,
+html.dark .el-input .el-input__count-inner,
+html.dark .el-input__wrapper .el-input__count,
+html.dark .el-input__wrapper .el-input__count-inner,
+html.dark .el-input__inner + .el-input__count,
+html.dark .el-input__inner + .el-input__count .el-input__count-inner,
+html.dark .el-textarea .el-textarea__count,
+html.dark .el-textarea__inner + .el-textarea__count {
   background: transparent !important;
   background-color: transparent !important;
   box-shadow: none !important;
   border: 0 !important;
 }
 
-/* 设置抽屉：深色模式视觉重构 */
-.dark .settings-drawer.el-drawer {
-  background: linear-gradient(160deg, #16253b, #1b2d47);
-  color: #d7e3f6;
+/* 设置抽屉：深色模式 */
+html.dark .settings-drawer.el-drawer {
+  background: linear-gradient(195deg, #3e3e42 0%, #2c2c2e 55%, #242426 100%);
+  color: var(--el-text-color-regular);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
 }
 
-.dark .settings-drawer .el-drawer__header {
+html.dark .settings-drawer .el-drawer__header {
   margin-bottom: 0;
   padding: 1rem 1.25rem 0.9rem;
-  border-bottom: 1px solid rgba(63, 84, 114, 0.65);
+  border-bottom: 1px solid var(--app-separator);
 }
 
-.dark .settings-drawer .el-drawer__title {
-  color: #ebf2ff;
-  font-weight: 650;
+html.dark .settings-drawer .el-drawer__title {
+  color: var(--el-text-color-primary);
+  font-weight: 600;
 }
 
-.dark .settings-drawer .el-drawer__body {
+html.dark .settings-drawer .el-drawer__body {
   padding: 1rem 1.2rem 0.9rem;
 }
 
-.dark .settings-drawer .settings-panel {
+html.dark .settings-drawer .settings-panel {
   gap: 0.85rem !important;
 }
 
-.dark .settings-drawer .settings-section-title {
-  color: #9db3d3 !important;
+html.dark .settings-drawer .settings-section-title {
+  color: var(--app-text-muted) !important;
 }
 
-.dark .settings-drawer .settings-item-label {
-  color: #d4e1f5 !important;
+html.dark .settings-drawer .settings-item-label {
+  color: var(--el-text-color-primary) !important;
 }
 
-.dark .settings-drawer .settings-note {
-  color: #93a9c8 !important;
+html.dark .settings-drawer .settings-note {
+  color: var(--app-text-muted) !important;
 }
 
-.dark .settings-drawer .el-select__wrapper,
-.dark .settings-drawer .el-input__wrapper {
-  background-color: #17263d !important;
-  box-shadow: 0 0 0 1px #3b5278 inset !important;
+html.dark .settings-drawer .el-select__wrapper,
+html.dark .settings-drawer .el-input__wrapper {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
 }
 
-.dark .settings-drawer .el-select__wrapper:hover,
-.dark .settings-drawer .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px #4a6694 inset !important;
+html.dark .settings-drawer .el-select__wrapper:hover,
+html.dark .settings-drawer .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
 }
 
-.dark .settings-drawer .el-select__wrapper.is-focused,
-.dark .settings-drawer .el-input__wrapper.is-focus {
-  box-shadow: 0 0 0 1px #6088c2 inset !important;
+html.dark .settings-drawer .el-select__wrapper.is-focused,
+html.dark .settings-drawer .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
 }
 
-.dark .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger) {
-  background-color: #1a2a43;
-  border-color: #3e567c;
-  color: #d3e1f4;
+html.dark .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger) {
+  background-color: var(--el-fill-color-light);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-regular);
 }
 
-.dark .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger):hover {
-  background-color: #243a5b;
-  border-color: #4f6f9f;
-  color: #e4eefb;
+html.dark .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background-color: var(--el-fill-color);
+  border-color: var(--el-border-color-light);
+  color: var(--el-text-color-primary);
 }
 
-.dark .settings-drawer .settings-danger-btn {
-  background-color: rgba(141, 39, 54, 0.22) !important;
-  border-color: rgba(234, 109, 130, 0.4) !important;
-  color: #ffc2cf !important;
+html.dark .settings-drawer .settings-danger-btn {
+  background-color: rgba(255, 59, 48, 0.12) !important;
+  border-color: rgba(255, 59, 48, 0.35) !important;
+  color: #ff6961 !important;
 }
 
-.dark .settings-drawer .settings-danger-btn:hover {
-  background-color: rgba(141, 39, 54, 0.3) !important;
-  border-color: rgba(250, 146, 165, 0.55) !important;
+html.dark .settings-drawer .settings-danger-btn:hover {
+  background-color: rgba(255, 59, 48, 0.18) !important;
+  border-color: rgba(255, 59, 48, 0.48) !important;
 }
 
-.dark .settings-drawer .settings-about-btn {
-  background-color: #17263d !important;
-  border-color: #3d557b !important;
-  color: #d7e5f8 !important;
+html.dark .settings-drawer .settings-about-btn {
+  background-color: var(--el-fill-color-blank) !important;
+  border-color: var(--el-border-color) !important;
+  color: var(--el-text-color-regular) !important;
 }
 
-.dark .settings-drawer .settings-about-btn:hover {
-  background-color: #223654 !important;
-  border-color: #5273a3 !important;
+html.dark .settings-drawer .settings-about-btn:hover {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color-light) !important;
 }
 
-.dark .settings-drawer .el-drawer__footer {
-  border-top: 1px solid rgba(63, 84, 114, 0.55);
+html.dark .settings-drawer .el-drawer__footer {
+  border-top: 1px solid var(--app-separator);
   padding: 0.85rem 1.2rem 1rem;
-  background: rgba(23, 37, 59, 0.5);
+  background: rgba(44, 44, 46, 0.92);
 }
 
-.dark .settings-drawer .el-drawer__footer .el-button--primary {
-  background-color: #3e66a3 !important;
-  border-color: #3e66a3 !important;
-  color: #f2f7ff !important;
+html.dark .settings-drawer .el-drawer__footer .el-button--primary {
+  background-color: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+  color: #ffffff !important;
 }
 
-.dark .settings-drawer .el-drawer__footer .el-button--primary:hover {
-  background-color: #4c78bb !important;
-  border-color: #4c78bb !important;
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:hover {
+  background-color: var(--el-color-primary-dark-2) !important;
+  border-color: var(--el-color-primary-dark-2) !important;
 }
 
 /* 右键菜单（源列表）深色模式 hover：使用更低亮度并强制覆盖 */
 .context-menu-item {
   transition:
-    background-color 0.18s ease,
-    color 0.18s ease;
+    background-color var(--app-duration) var(--app-ease),
+    color var(--app-duration) var(--app-ease);
 }
 
 .context-menu-item:hover {
-  background-color: #f8fafc;
+  background-color: #f2f2f7;
 }
 
 .context-menu-item--danger:hover {
   background-color: #fee2e2;
 }
 
-.dark .context-menu-item:hover {
-  background-color: #141c2b !important;
+html.dark .context-menu-item:hover {
+  background-color: #3a3a3c !important;
 }
 
-.dark .context-menu-item--danger:hover {
-  background-color: rgba(239, 68, 68, 0.12) !important;
-  color: #fda4af !important;
+html.dark .context-menu-item--danger:hover {
+  background-color: rgba(255, 59, 48, 0.14) !important;
+  color: #ff6961 !important;
 }
 
 /* close confirm dialog: targeted dark-only control colors */
-.dark .el-overlay .close-confirm-dialog .el-radio__input:not(.is-checked) .el-radio__inner {
-  background-color: #3e618f !important;
-  border-color: #aac6ea !important;
+html.dark .el-overlay .close-confirm-dialog .el-radio__input:not(.is-checked) .el-radio__inner {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color-light) !important;
 }
 
-.dark .el-overlay .close-confirm-dialog .el-checkbox__input:not(.is-checked):not(.is-indeterminate) .el-checkbox__inner {
-  background-color: #3e618f !important;
-  border-color: #aac6ea !important;
+html.dark .el-overlay .close-confirm-dialog .el-checkbox__input:not(.is-checked):not(.is-indeterminate) .el-checkbox__inner {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color-light) !important;
 }
 
-.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button {
-  background-color: #4f76a7 !important;
-  border-color: #aac6ea !important;
-  color: #f4f8ff !important;
+html.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color) !important;
+  color: var(--el-text-color-primary) !important;
 }
 
-.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:hover,
-.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:focus {
-  background-color: #5f87ba !important;
-  border-color: #c1d7f2 !important;
-  color: #ffffff !important;
+html.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:hover,
+html.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:focus {
+  background-color: var(--el-fill-color) !important;
+  border-color: var(--el-border-color-light) !important;
+  color: var(--el-text-color-primary) !important;
 }
 
-/* close confirm dialog: disable fade transition to avoid visible linger */
+/*
+ * Close confirm: keep transition disabled — a short opacity fade was causing
+ * a visible linger/flicker with this dialog on tray-restore paths; instant hide is safer.
+ */
 .close-confirm-dialog.dialog-fade-enter-active,
 .close-confirm-dialog.dialog-fade-leave-active {
   transition: none !important;

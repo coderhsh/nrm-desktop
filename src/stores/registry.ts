@@ -86,6 +86,11 @@ export const useRegistryStore = defineStore("registry", () => {
     }
   }
 
+  /** 由测速面板驱动左侧列表的「延迟加载中」指示，与全量测速生命周期对齐 */
+  function setLatencyLoading(next: boolean) {
+    latencyLoading.value = next;
+  }
+
   async function switchRegistry(name: string) {
     try {
       await api.setRegistry(name);
@@ -170,8 +175,52 @@ export const useRegistryStore = defineStore("registry", () => {
     newUrl: string
   ) {
     try {
-      await api.updateRegistry(name, newName, newUrl);
       const idx = registries.value.findIndex((r) => r.name === name);
+      const previous = idx !== -1 ? registries.value[idx] : null;
+      const previousUrl = previous?.url ?? "";
+
+      await api.updateRegistry(name, newName, newUrl);
+
+      /**
+       * 必须先迁移 latency 再改 registries，否则 SpeedTest 等对 registries 的 watch
+       * 会用新名去读仍为旧键的 latencyResults，把该行写成 null，侧栏/测速都会丢延迟。
+       */
+      const lr = latencyResults.value;
+      if (name !== newName) {
+        let hit = lr[name];
+        const keysToDelete = new Set<string>([name]);
+        if (!hit && previousUrl) {
+          const found = Object.entries(lr).find(([, v]) => v.url === previousUrl);
+          if (found) {
+            hit = found[1];
+            keysToDelete.add(found[0]);
+          }
+        }
+        const next = { ...lr };
+        for (const k of keysToDelete) delete next[k];
+        if (hit) {
+          next[newName] = {
+            ...hit,
+            name: newName,
+            url: newUrl,
+            is_custom: true,
+          };
+        }
+        latencyResults.value = next;
+      } else {
+        const hit = lr[name];
+        if (hit) {
+          latencyResults.value = {
+            ...lr,
+            [name]: {
+              ...hit,
+              url: newUrl,
+              is_custom: true,
+            },
+          };
+        }
+      }
+
       if (idx !== -1) {
         registries.value[idx] = { name: newName, url: newUrl, is_custom: true };
       }
@@ -198,6 +247,7 @@ export const useRegistryStore = defineStore("registry", () => {
     setSingleLatencyResult,
     fetchRegistries,
     fetchLatency,
+    setLatencyLoading,
     syncCurrentRegistryByName,
     switchRegistry,
     addRegistry,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { RefreshRight } from "@element-plus/icons-vue";
 import { useRegistryStore } from "@/stores/registry";
@@ -7,12 +7,14 @@ import { useI18n } from "@/composables/useI18n";
 import type { LatencyResult } from "@/api/speedtest";
 import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from "@/utils/latency-error-i18n";
+import { latencyBarColor } from "@/utils/latency-bar-color";
 
 const store = useRegistryStore();
 const { t } = useI18n();
 
 const results = ref<LatencyResult[]>([]);
-const testing = ref(false);
+/** 首屏为 true，避免挂载前出现「请点击测速」空态；与重新测速时的 loading 一致 */
+const testing = ref(true);
 const singleTesting = ref<Set<string>>(new Set());
 
 const hasResults = computed(() => results.value.length > 0);
@@ -43,18 +45,37 @@ function syncSingleLatencyResult(item: LatencyResult) {
   };
 }
 
+const speedRevealStepMs = 76;
+
 async function runAllTests() {
   testing.value = true;
+  store.setLatencyLoading(true);
   results.value = [];
   try {
-    results.value = await testAllSpeed();
-    syncAllLatencyResults(results.value);
+    const items = await testAllSpeed();
+    syncAllLatencyResults(items);
+
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+    if (reduceMotion || items.length === 0) {
+      results.value = items;
+    } else {
+      for (let i = 0; i < items.length; i++) {
+        results.value.push(items[i]);
+        if (i < items.length - 1) {
+          await new Promise((r) => setTimeout(r, speedRevealStepMs));
+        }
+      }
+    }
   } catch (e) {
     ElMessage.error(
       t("speedTest.runError", { detail: truncateSpeedTestRunError(String(e)) }),
     );
   } finally {
     testing.value = false;
+    store.setLatencyLoading(false);
   }
 }
 
@@ -97,12 +118,7 @@ function latencyRowFailText(error: string | null | undefined): string {
 }
 
 function getBarColor(ms: number | null): string {
-  if (ms === null) return "#94a3b8";
-  if (ms < 200) return "#22c55e";
-  if (ms < 500) return "#84cc16";
-  if (ms < 1000) return "#eab308";
-  if (ms < 3000) return "#f97316";
-  return "#ef4444";
+  return latencyBarColor(ms);
 }
 
 function getBarWidth(ms: number | null, maxMs: number): string {
@@ -117,33 +133,52 @@ const maxLatency = computed(() => {
     .filter((v): v is number => v !== null);
   return vals.length > 0 ? Math.max(...vals, 100) : 100;
 });
+
+onMounted(() => {
+  void runAllTests();
+});
+
+/** 源重命名后 store 已迁移 latency 键，本地 results 仍带旧 name，需与 registries 对齐 */
+watch(
+  () => store.registries.map((r) => r.name).join("\n"),
+  (nextKey, prevKey) => {
+    if (prevKey === undefined || nextKey === prevKey || testing.value) return;
+    if (results.value.length === 0) return;
+    const map = store.latencyResults;
+    results.value = store.registries.map((reg) => {
+      const hit = map[reg.name];
+      if (hit) return { ...hit };
+      return {
+        name: reg.name,
+        url: reg.url,
+        latency_ms: null,
+        error: null,
+        is_custom: !!reg.is_custom,
+      };
+    });
+  },
+);
 </script>
 
 <template>
-  <div class="speed-test-card bg-white rounded-xl border border-gray-200 p-5 flex flex-col min-h-0 flex-1 overflow-hidden">
+  <div class="speed-test-card app-card p-5 flex flex-col min-h-0 flex-1 overflow-hidden">
     <div class="flex items-center justify-between mb-4 shrink-0">
-      <div class="flex items-center gap-2">
-        <h3 class="text-base font-bold">{{ t("speedTest.title") }}</h3>
-        <span
-          v-if="results.length > 0"
-          class="text-xs text-gray-400"
-        >
-          {{ t("speedTest.lastTested", { count: results.length }) }}
-        </span>
-      </div>
-      <div class="flex items-center gap-2">
+      <h3 class="text-base font-bold">{{ t("speedTest.title") }}</h3>
+      <div class="flex items-center gap-2 shrink-0">
         <el-button
           v-if="hasResults && fastestResult"
           type="success"
           size="small"
+          class="shrink-0"
           :disabled="testing"
           @click="switchToFastest"
         >
-          {{ t("speedTest.switchFastest", { latency: fastestResult.latency_ms ?? "-" }) }}
+          {{ t("speedTest.switchFastest") }}
         </el-button>
         <el-button
           type="primary"
           size="small"
+          class="speed-test-retest-btn shrink-0"
           :loading="testing"
           @click="runAllTests"
         >
@@ -173,9 +208,14 @@ const maxLatency = computed(() => {
       <el-scrollbar class="app-scrollbar h-full">
         <div class="flex flex-col gap-2 pe-1">
           <div
-            v-for="result in results"
+            v-for="(result, index) in results"
             :key="result.name"
-            class="flex items-center gap-3 py-1.5"
+            class="speed-result-row flex items-center gap-3 py-1.5"
+            :style="{
+              '--speed-stagger': String(index * 18),
+              /* 全部测速逐条入场时，行已错开时间轴，柱条仅用短阶梯即可 */
+              '--bar-stagger-ms': String(32 + index * 14),
+            }"
           >
             <!-- Name -->
             <div class="w-20 flex-shrink-0">
@@ -193,14 +233,14 @@ const maxLatency = computed(() => {
 
             <!-- Bar -->
             <div class="flex-1 h-5 relative">
-              <div class="absolute inset-0 bg-gray-100 rounded-full overflow-hidden">
+              <div class="absolute inset-0 bg-app-track rounded-full overflow-hidden">
                 <div
                   v-if="result.latency_ms !== null"
-                  class="h-full rounded-full transition-all duration-500 ease-out"
+                  class="latency-bar-fill h-full rounded-full"
                   :style="{
                     width: getBarWidth(result.latency_ms, maxLatency),
                     background: getBarColor(result.latency_ms),
-                    opacity: store.currentRegistry?.name === result.name ? 0.9 : 0.6,
+                    opacity: store.currentRegistry?.name === result.name ? 0.92 : 0.62,
                   }"
                 ></div>
               </div>
@@ -246,6 +286,17 @@ const maxLatency = computed(() => {
 </template>
 
 <style scoped>
+/* 固定宽度，loading 时避免左侧「切换到最快」被挤动 */
+/* 固定宽度：loading 与文案切换时不挤动「切换到最快」 */
+.speed-test-retest-btn.el-button--small {
+  width: 7rem;
+  min-width: 7rem;
+  max-width: 7rem;
+  justify-content: center;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
 .speed-retest-btn.el-button.is-link {
   background-color: transparent !important;
 }

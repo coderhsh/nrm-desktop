@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useShellIntro } from "@/composables/useShellIntro";
 import { onClickOutside, useLocalStorage } from "@vueuse/core";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Rank, RefreshRight, Search, Setting } from "@element-plus/icons-vue";
@@ -9,10 +10,17 @@ import { storeToRefs } from "pinia";
 import type { Registry } from "@/types";
 import { testSingleSpeed } from "@/api/speedtest";
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from "@/utils/latency-error-i18n";
+import { latencyBarColor } from "@/utils/latency-bar-color";
 import RegistryDialog from "./RegistryDialog.vue";
 
 const store = useRegistryStore();
 const { t, language } = useI18n();
+const { introPhase } = useShellIntro();
+const registryListIntroClass = computed(() => {
+  if (introPhase.value === "prep") return "registry-list-intro-prep";
+  if (introPhase.value === "run") return "registry-list-intro-run";
+  return "";
+});
 const { filteredRegistries, currentRegistry, searchQuery, loading, latencyResults, latencyLoading } =
   storeToRefs(store);
 
@@ -375,7 +383,9 @@ function moveRegistryToCategory(registryName: string, label: string) {
     next[registry.name] = label;
   }
   categoryByRegistry.value = next;
-  ElMessage.success(`已将 "${registry.name}" 移动到分类 "${label}"`);
+  if (label !== uncategorizedLabel.value) {
+    ElMessage.success(`已将 "${registry.name}" 移动到分类 "${label}"`);
+  }
 }
 
 function onRegistryMouseDown(registry: Registry, event: MouseEvent) {
@@ -546,9 +556,8 @@ function saveCategoryFromDialog(payload: { oldName: string; newName: string; cat
     ensureCategoryLabel(normalized);
     nextMapping[payload.newName] = normalized;
     ElMessage.success(t("categoryDialog.registryCategoryUpdated"));
-  } else {
-    ElMessage.success(t("categoryDialog.registrySetUncategorized"));
   }
+  /* 归入未分类时不弹 Toast：新增/编辑的成功提示已在 RegistryDialog 中给出，避免「已设为未分类」叠在「已添加」上 */
   categoryByRegistry.value = nextMapping;
 }
 
@@ -743,15 +752,6 @@ async function deleteCategoryLabel(label: string) {
   ElMessage.success(t("categoryDialog.deleted"));
 }
 
-function getLatencyColor(ms: number | null): string {
-  if (ms === null) return "#94a3b8";
-  if (ms < 200) return "#22c55e";
-  if (ms < 500) return "#84cc16";
-  if (ms < 1000) return "#eab308";
-  if (ms < 3000) return "#f97316";
-  return "#ef4444";
-}
-
 function getLatencyText(name: string): string {
   const latency = latencyResults.value[name];
   if (!latency) return t("speedTest.notTested");
@@ -803,9 +803,9 @@ function copyAllDetails() {
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="registry-list-root flex flex-col h-full min-h-0" :class="registryListIntroClass">
     <!-- Header -->
-    <div class="flex items-center gap-2 px-5 pt-7 pb-4">
+    <div class="rl-intro-header flex items-center gap-2 px-4 pt-4 pb-2">
       <h2 class="text-lg font-bold">{{ t("registryList.title") }}</h2>
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">
         {{ filteredRegistries.length }}
@@ -820,7 +820,7 @@ function copyAllDetails() {
     </div>
 
     <!-- Search -->
-    <div class="px-4 pb-3">
+    <div class="rl-intro-search px-4 pb-1">
       <el-input
         v-model="searchQuery"
         :placeholder="t('registryList.searchPlaceholder')"
@@ -833,15 +833,14 @@ function copyAllDetails() {
     </div>
 
     <!-- List -->
-    <div class="flex-1 overflow-hidden px-3">
-      <el-scrollbar class="app-scrollbar h-full">
+    <div class="rl-intro-body flex flex-col flex-1 min-h-0 overflow-hidden px-2 mb-2">
+      <el-scrollbar class="app-scrollbar min-h-0 flex-1 h-0 w-full">
         <!-- Loading Skeleton -->
         <div v-if="loading" class="flex flex-col gap-2 p-2">
           <div
             v-for="i in 6"
             :key="i"
-            class="h-16 rounded-lg animate-pulse"
-            style="background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%); background-size: 200% 100%;"
+            class="registry-list-skeleton-shimmer h-14 rounded-lg animate-pulse"
           ></div>
         </div>
 
@@ -851,12 +850,12 @@ function copyAllDetails() {
         </div>
 
         <!-- Items -->
-        <div v-else class="flex flex-col gap-3 p-1">
+        <div v-else class="flex flex-col gap-2 p-1">
           <div
             v-for="group in groupedRegistries"
             :key="group.label"
             :class="[
-              'relative flex flex-col gap-1 rounded border border-transparent transition-colors',
+              'relative flex flex-col gap-2 rounded border border-transparent transition-colors',
               {
                 'bg-gray-50 border-primary/60 shadow-sm': dragOverCategoryLabel === group.label && isPointerDragging,
               },
@@ -865,13 +864,17 @@ function copyAllDetails() {
           >
             <div
               :class="[
-                'px-2 pt-1 text-xs font-semibold text-gray-400 cursor-pointer select-none flex items-center gap-1 rounded',
+                'px-1.5 pt-0.5 text-xs font-semibold text-gray-400 cursor-pointer select-none flex items-center gap-1 rounded',
                 { 'bg-gray-100': dragOverCategoryLabel === group.label },
               ]"
               @click="toggleCategoryExpanded(group.label)"
               @contextmenu="onCategoryContextMenu($event, group.label)"
             >
-              <span>{{ isCategoryExpanded(group.label) ? "▾" : "▸" }}</span>
+              <span
+                class="category-row-chevron text-gray-400"
+                :class="{ 'is-expanded': isCategoryExpanded(group.label) }"
+                aria-hidden="true"
+              >▸</span>
               <span>{{ group.label }} ({{ group.items.length }})</span>
             </div>
             <div
@@ -884,22 +887,26 @@ function copyAllDetails() {
               </div>
             </div>
             <div
-              v-if="isCategoryExpanded(group.label)"
-              v-for="registry in group.items"
-              :key="registry.name"
-              :class="[
-                'registry-item flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer border-l-3 border-transparent select-none cursor-grab',
-                {
-                  'is-active': currentRegistry?.name === registry.name,
-                  'is-idle': currentRegistry?.name !== registry.name,
-                  'opacity-40 cursor-grabbing': pointerDragRegistryName === registry.name && isPointerDragging,
-                },
-              ]"
-              @click="handleSwitch(registry)"
-              @mousedown.left="onRegistryMouseDown(registry, $event)"
-              @dblclick.stop="openEdit(registry)"
-              @contextmenu="onContextMenu($event, registry)"
+              class="reg-category-fold-shell"
+              :class="{ 'reg-category-fold-shell--open': isCategoryExpanded(group.label) }"
             >
+              <div class="reg-category-fold-inner flex flex-col gap-2.5">
+                <div
+                  v-for="registry in group.items"
+                  :key="registry.name"
+                  :class="[
+                    'registry-item flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer border-l-3 border-transparent select-none cursor-grab',
+                    {
+                      'is-active': currentRegistry?.name === registry.name,
+                      'is-idle': currentRegistry?.name !== registry.name,
+                      'opacity-40 cursor-grabbing': pointerDragRegistryName === registry.name && isPointerDragging,
+                    },
+                  ]"
+                  @click="handleSwitch(registry)"
+                  @mousedown.left="onRegistryMouseDown(registry, $event)"
+                  @dblclick.stop="openEdit(registry)"
+                  @contextmenu="onContextMenu($event, registry)"
+                >
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
                   <span
@@ -920,7 +927,7 @@ function copyAllDetails() {
                 <template v-if="latencyResults[registry.name]">
                   <span
                     class="text-xs font-mono font-medium"
-                    :style="{ color: getLatencyColor(latencyResults[registry.name].latency_ms) }"
+                    :style="{ color: latencyBarColor(latencyResults[registry.name].latency_ms) }"
                   >
                     <template v-if="latencyResults[registry.name].latency_ms !== null">
                       {{ latencyResults[registry.name].latency_ms }}ms
@@ -931,7 +938,7 @@ function copyAllDetails() {
                   </span>
                   <span
                     class="w-2 h-2 rounded-full flex-shrink-0"
-                    :style="{ backgroundColor: getLatencyColor(latencyResults[registry.name].latency_ms) }"
+                    :style="{ backgroundColor: latencyBarColor(latencyResults[registry.name].latency_ms) }"
                   ></span>
                 </template>
                 <div
@@ -954,6 +961,8 @@ function copyAllDetails() {
                   </el-button>
                 </div>
               </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -961,7 +970,7 @@ function copyAllDetails() {
     </div>
 
     <!-- Footer -->
-    <div class="px-4 py-4 border-t border-gray-100">
+    <div class="px-4 py-2.5 border-t border-gray-100">
       <el-button type="primary" class="w-full registry-add-btn" @click="openAdd">
         {{ t("registryList.addSource") }}
       </el-button>
@@ -1152,7 +1161,7 @@ function copyAllDetails() {
             <div
               class="text-sm font-mono"
               :style="{
-                color: getLatencyColor(latencyResults[selectedRegistry.name]?.latency_ms ?? null),
+                color: latencyBarColor(latencyResults[selectedRegistry.name]?.latency_ms ?? null),
               }"
             >
               {{ getLatencyText(selectedRegistry.name) }}
@@ -1179,7 +1188,7 @@ function copyAllDetails() {
     <Teleport to="body">
       <div
         v-if="isPointerDragging && draggingRegistry"
-        class="fixed z-[9999] pointer-events-none registry-item flex items-center justify-between px-3 py-2.5 rounded-lg border-l-3 border-primary bg-white shadow-lg min-w-62 max-w-88"
+        class="fixed z-[9999] pointer-events-none registry-item flex items-center justify-between px-3 py-3 rounded-lg border-l-3 border-primary bg-white shadow-lg min-w-62 max-w-88"
         :style="{
           left: '0px',
           top: '0px',
@@ -1201,7 +1210,7 @@ function copyAllDetails() {
           <template v-if="latencyResults[draggingRegistry.name]">
             <span
               class="text-xs font-mono font-medium"
-              :style="{ color: getLatencyColor(latencyResults[draggingRegistry.name].latency_ms) }"
+              :style="{ color: latencyBarColor(latencyResults[draggingRegistry.name].latency_ms) }"
             >
               <template v-if="latencyResults[draggingRegistry.name].latency_ms !== null">
                 {{ latencyResults[draggingRegistry.name].latency_ms }}ms
@@ -1212,7 +1221,7 @@ function copyAllDetails() {
             </span>
             <span
               class="w-2 h-2 rounded-full flex-shrink-0"
-              :style="{ backgroundColor: getLatencyColor(latencyResults[draggingRegistry.name].latency_ms) }"
+              :style="{ backgroundColor: latencyBarColor(latencyResults[draggingRegistry.name].latency_ms) }"
             ></span>
           </template>
           <div
@@ -1292,7 +1301,7 @@ function copyAllDetails() {
     color-mix(in srgb, var(--el-fill-color-blank) 92%, #ffffff 8%),
     color-mix(in srgb, var(--el-fill-color) 72%, var(--el-fill-color-blank) 28%)
   );
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .category-create-btn {
@@ -1328,14 +1337,17 @@ function copyAllDetails() {
   border: 1px solid color-mix(in srgb, var(--el-border-color-lighter) 84%, transparent);
   border-radius: 0.875rem;
   background: var(--el-fill-color-blank);
-  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  transition:
+    border-color var(--app-duration) var(--app-ease),
+    background-color var(--app-duration) var(--app-ease),
+    box-shadow var(--app-duration) var(--app-ease);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
 .category-list-row:hover {
   border-color: color-mix(in srgb, var(--el-border-color) 88%, transparent);
   background: color-mix(in srgb, var(--el-fill-color-lighter) 84%, var(--el-fill-color-blank));
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .category-list-row--drag-over {
@@ -1386,94 +1398,96 @@ function copyAllDetails() {
   border-radius: 0.625rem;
 }
 
-:global(.dark) .category-create-row {
-  border-color: rgba(78, 100, 132, 0.52);
-  background: linear-gradient(160deg, #152338, #182842);
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.36);
+:global(html.dark) .category-create-row {
+  border-color: var(--el-border-color);
+  background: var(--el-bg-color-overlay);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
 }
 
-:global(.dark) .category-list-row {
-  border-color: rgba(70, 90, 118, 0.62);
-  background: linear-gradient(160deg, #131f32, #16243a);
-  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.06);
+:global(html.dark) .category-list-row {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color-blank);
+  box-shadow: 0 1px 0 var(--app-separator);
 }
 
-:global(.dark) .category-list-row:hover {
-  border-color: rgba(97, 123, 160, 0.68);
-  background: linear-gradient(160deg, #17263d, #1b2c46);
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.5);
+:global(html.dark) .category-list-row:hover {
+  border-color: var(--el-border-color-light);
+  background: var(--el-fill-color-light);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
 }
 
-:global(.dark) .category-create-row :deep(.el-input__wrapper),
-:global(.dark) .category-input :deep(.el-input__wrapper) {
-  background-color: #1a2a43 !important;
-  box-shadow: 0 0 0 1px #3c5377 inset !important;
+:global(html.dark) .category-create-row :deep(.el-input__wrapper),
+:global(html.dark) .category-input :deep(.el-input__wrapper) {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
 }
 
-:global(.dark) .category-create-row :deep(.el-input__wrapper:hover),
-:global(.dark) .category-input :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #4a6591 inset !important;
+:global(html.dark) .category-create-row :deep(.el-input__wrapper:hover),
+:global(html.dark) .category-input :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
 }
 
-:global(.dark) .category-create-row :deep(.el-input__wrapper.is-focus),
-:global(.dark) .category-input :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #5f83ba inset !important;
+:global(html.dark) .category-create-row :deep(.el-input__wrapper.is-focus),
+:global(html.dark) .category-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
 }
 
-:global(.dark) .category-create-btn,
-:global(.dark) .category-row-actions :deep(.el-button--primary) {
-  background-color: #3b629b;
-  border-color: #3b629b;
-  color: #eef4ff;
+:global(html.dark) .category-create-btn,
+:global(html.dark) .category-row-actions :deep(.el-button--primary) {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: #ffffff;
 }
 
-:global(.dark) .category-create-btn:hover,
-:global(.dark) .category-row-actions :deep(.el-button--primary:hover) {
-  background-color: #4873b4;
-  border-color: #4873b4;
+:global(html.dark) .category-create-btn:hover,
+:global(html.dark) .category-row-actions :deep(.el-button--primary:hover) {
+  background-color: var(--el-color-primary-dark-2);
+  border-color: var(--el-color-primary-dark-2);
 }
 
-:global(.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger)) {
-  background-color: #1c2c45;
-  border-color: #445d84;
-  color: #cddcf1;
+:global(html.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger)) {
+  background-color: var(--el-fill-color-light);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-regular);
 }
 
-:global(.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):hover) {
-  background-color: #253b5b;
-  border-color: #5473a1;
-  color: #e2ecfb;
+:global(html.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):hover) {
+  background-color: var(--el-fill-color);
+  border-color: var(--el-border-color-light);
+  color: var(--el-text-color-primary);
 }
 
-:global(.dark) .category-row-actions :deep(.el-button--danger) {
-  background-color: rgba(185, 58, 76, 0.22);
-  border-color: rgba(244, 114, 133, 0.5);
-  color: #ffd0d8;
+:global(html.dark) .category-row-actions :deep(.el-button--danger) {
+  background-color: rgba(255, 59, 48, 0.15);
+  border-color: rgba(255, 59, 48, 0.45);
+  color: #ff6961;
 }
 
-:global(.dark) .category-row-actions :deep(.el-button--danger:hover) {
-  background-color: rgba(185, 58, 76, 0.3);
-  border-color: rgba(251, 146, 168, 0.62);
+:global(html.dark) .category-row-actions :deep(.el-button--danger:hover) {
+  background-color: rgba(255, 59, 48, 0.22);
+  border-color: rgba(255, 59, 48, 0.55);
 }
 
 .context-menu-item {
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition:
+    background-color var(--app-duration) var(--app-ease),
+    color var(--app-duration) var(--app-ease);
 }
 
 .context-menu-item:hover {
-  background-color: #f8fafc;
+  background-color: #f2f2f7;
 }
 
 .context-menu-item--danger:hover {
   background-color: #fee2e2;
 }
 
-:global(.dark) .context-menu-item:hover {
-  background-color: #1b2435;
+:global(html.dark) .context-menu-item:hover {
+  background-color: #3a3a3c;
 }
 
-:global(.dark) .context-menu-item--danger:hover {
-  background-color: rgba(239, 68, 68, 0.14);
-  color: #fda4af;
+:global(html.dark) .context-menu-item--danger:hover {
+  background-color: rgba(255, 59, 48, 0.14);
+  color: #ff6961;
 }
 </style>
