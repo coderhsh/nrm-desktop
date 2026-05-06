@@ -33,6 +33,29 @@ fn run_cli_version(bin: &str, version_flag: &str) -> Option<String> {
     }
     let output = cmd.output().ok()?;
     if !output.status.success() {
+        #[cfg(target_os = "macos")]
+        {
+            return run_cli_version_via_login_shell(bin, version_flag);
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            return None;
+        }
+    }
+    trim_cli_version_output(&output.stdout).or_else(|| trim_cli_version_output(&output.stderr))
+}
+
+/// macOS 图形应用通常拿不到用户终端 PATH（如 nvm / Homebrew 注入），
+/// 回退到登录交互 shell 读取版本，尽量与用户终端行为保持一致。
+#[cfg(target_os = "macos")]
+fn run_cli_version_via_login_shell(bin: &str, version_flag: &str) -> Option<String> {
+    let shell = std::env::var("SHELL").ok().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| "/bin/zsh".to_string());
+    let command_line = format!("{bin} {version_flag}");
+    let output = std::process::Command::new(shell)
+        .args(["-lic", &command_line])
+        .output()
+        .ok()?;
+    if !output.status.success() {
         return None;
     }
     trim_cli_version_output(&output.stdout).or_else(|| trim_cli_version_output(&output.stderr))
