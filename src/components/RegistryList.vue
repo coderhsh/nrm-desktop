@@ -921,70 +921,78 @@ function copyAllDetails() {
       v-model="showCategoryManageDialog"
       :title="t('categoryDialog.title')"
       width="520px"
+      class="category-manage-dialog"
       :close-on-click-modal="false"
     >
-      <div class="flex items-center gap-2 mb-3">
-        <el-input
-          v-model="newCategoryLabel"
-          :placeholder="t('categoryDialog.newPlaceholder')"
-          :maxlength="categoryLabelMaxLength"
-          show-word-limit
-          clearable
-          @keyup.enter="addCategoryLabel"
-        />
-        <el-button type="primary" @click="addCategoryLabel">{{ t("categoryDialog.add") }}</el-button>
-      </div>
-      <div v-if="categoryLabels.length === 0" class="text-sm text-gray-400 py-6 text-center">
-        {{ t("categoryDialog.empty") }}
-      </div>
-      <div v-else class="flex flex-col gap-2">
-        <div
-          v-for="label in categoryLabels"
-          :key="label"
-          :class="[
-            'flex items-center gap-2 rounded',
-            {
-              'bg-primary/8': dragOverManageCategoryLabel === label,
-              'opacity-70': isManageDragging && manageDragLabel === label,
-            },
-          ]"
-          @mouseenter="onManageRowEnter(label)"
-        >
-          <div
-            class="w-7 h-8 flex items-center justify-center text-gray-400 cursor-grab active:cursor-grabbing"
-            @mousedown.left.stop.prevent="startManageDrag(label, $event)"
-            :title="t('categoryDialog.dragSort')"
-          >
-            <el-icon><Rank /></el-icon>
-          </div>
+      <div class="category-manage-content">
+        <div class="category-create-row">
           <el-input
-            v-model="categoryRenameInputs[label]"
+            v-model="newCategoryLabel"
+            :placeholder="t('categoryDialog.newPlaceholder')"
             :maxlength="categoryLabelMaxLength"
             show-word-limit
-            :disabled="editingCategoryLabel !== label"
+            clearable
+            @keyup.enter="addCategoryLabel"
           />
-          <el-button
-            size="small"
-            :disabled="editingCategoryLabel !== null && editingCategoryLabel !== label"
-            @click="
-              editingCategoryLabel === label
-                ? cancelRenameCategory(label)
-                : startRenameCategory(label)
-            "
+          <el-button type="primary" class="category-create-btn" @click="addCategoryLabel">
+            {{ t("categoryDialog.add") }}
+          </el-button>
+        </div>
+        <div v-if="categoryLabels.length === 0" class="category-empty-state">
+          {{ t("categoryDialog.empty") }}
+        </div>
+        <div v-else class="category-list-wrap">
+          <div
+            v-for="label in categoryLabels"
+            :key="label"
+            :class="[
+              'category-list-row',
+              {
+                'category-list-row--drag-over': dragOverManageCategoryLabel === label,
+                'opacity-70': isManageDragging && manageDragLabel === label,
+              },
+            ]"
+            @mouseenter="onManageRowEnter(label)"
           >
-            {{ editingCategoryLabel === label ? t("common.cancel") : t("categoryDialog.rename") }}
-          </el-button>
-          <el-button
-            v-if="editingCategoryLabel === label"
-            size="small"
-            type="primary"
-            @click="saveRenamedCategory(label)"
-          >
-            {{ t("common.save") }}
-          </el-button>
-          <el-button size="small" type="danger" @click="deleteCategoryLabel(label)">
-            {{ t("categoryDialog.delete") }}
-          </el-button>
+            <div
+              class="category-drag-handle"
+              @mousedown.left.stop.prevent="startManageDrag(label, $event)"
+              :title="t('categoryDialog.dragSort')"
+            >
+              <el-icon><Rank /></el-icon>
+            </div>
+            <el-input
+              v-model="categoryRenameInputs[label]"
+              class="category-input"
+              :maxlength="categoryLabelMaxLength"
+              show-word-limit
+              :disabled="editingCategoryLabel !== label"
+            />
+            <div class="category-row-actions">
+              <el-button
+                size="small"
+                :disabled="editingCategoryLabel !== null && editingCategoryLabel !== label"
+                @click="
+                  editingCategoryLabel === label
+                    ? cancelRenameCategory(label)
+                    : startRenameCategory(label)
+                "
+              >
+                {{ editingCategoryLabel === label ? t("common.cancel") : t("categoryDialog.rename") }}
+              </el-button>
+              <el-button
+                v-if="editingCategoryLabel === label"
+                size="small"
+                type="primary"
+                @click="saveRenamedCategory(label)"
+              >
+                {{ t("common.save") }}
+              </el-button>
+              <el-button size="small" type="danger" @click="deleteCategoryLabel(label)">
+                {{ t("categoryDialog.delete") }}
+              </el-button>
+            </div>
+          </div>
         </div>
       </div>
       <template #footer>
@@ -1142,5 +1150,99 @@ function copyAllDetails() {
 }
 .registry-speed-btn-fixed.is-loading :deep(.el-icon) {
   font-size: 1rem;
+}
+
+.category-manage-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.category-create-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 0.75rem;
+  background: var(--el-fill-color-blank);
+}
+
+.category-create-btn {
+  min-width: 4.5rem;
+}
+
+.category-empty-state {
+  font-size: 0.875rem;
+  color: var(--el-text-color-secondary);
+  text-align: center;
+  padding: 2rem 1rem;
+  border: 1px dashed var(--el-border-color);
+  border-radius: 0.75rem;
+  background: var(--el-fill-color-lighter);
+}
+
+.category-list-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 19rem;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.category-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 0.75rem;
+  background: var(--el-fill-color-blank);
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.category-list-row:hover {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color-lighter);
+}
+
+.category-list-row--drag-over {
+  background: color-mix(in srgb, var(--el-color-primary) 10%, var(--el-fill-color-blank));
+  border-color: color-mix(in srgb, var(--el-color-primary) 45%, var(--el-border-color));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 30%, transparent);
+}
+
+.category-drag-handle {
+  width: 1.75rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-text-color-secondary);
+  border-radius: 0.5rem;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.category-drag-handle:active {
+  cursor: grabbing;
+}
+
+.category-drag-handle:hover {
+  color: var(--el-text-color-primary);
+  background: var(--el-fill-color);
+}
+
+.category-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
 }
 </style>
