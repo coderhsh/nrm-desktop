@@ -289,6 +289,7 @@ body {
   border-bottom: 1px solid rgba(68, 88, 116, 0.45);
 }
 
+
 .dark .registry-dialog .el-input__wrapper {
   background-color: #17263d !important;
   box-shadow: 0 0 0 1px #355074 inset !important;
@@ -572,3 +573,28 @@ body {
   background-color: rgba(239, 68, 68, 0.12) !important;
   color: #fda4af !important;
 }
+
+/* close confirm dialog: targeted dark-only control colors */
+.dark .el-overlay .close-confirm-dialog .el-radio__input:not(.is-checked) .el-radio__inner {
+  background-color: #3e618f !important;
+  border-color: #aac6ea !important;
+}
+
+.dark .el-overlay .close-confirm-dialog .el-checkbox__input:not(.is-checked):not(.is-indeterminate) .el-checkbox__inner {
+  background-color: #3e618f !important;
+  border-color: #aac6ea !important;
+}
+
+.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button {
+  background-color: #4f76a7 !important;
+  border-color: #aac6ea !important;
+  color: #f4f8ff !important;
+}
+
+.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:hover,
+.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:focus {
+  background-color: #5f87ba !important;
+  border-color: #c1d7f2 !important;
+  color: #ffffff !important;
+}
+

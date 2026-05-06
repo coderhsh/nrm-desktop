@@ -89,6 +89,7 @@ watch(showSettingsDialog, visible => {
   })
 })
 
+
 /**
  * 将语言、主题与自启动（草稿）一并提交；自启动仅在保存时调用系统 API。
  */
@@ -476,6 +477,7 @@ async function applyCloseAction() {
       <el-dialog
         v-model="showCloseConfirmDialog"
         :title="t('app.closeDialog.title')"
+        class="close-confirm-dialog"
         width="420px"
         :close-on-click-modal="false"
         :show-close="false"
@@ -494,7 +496,7 @@ async function applyCloseAction() {
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <el-button @click="closeCloseConfirmDialog">{{ t('common.cancel') }}</el-button>
+            <el-button class="close-confirm-cancel-btn" @click="closeCloseConfirmDialog">{{ t('common.cancel') }}</el-button>
             <el-button type="primary" @click="applyCloseAction">{{ t('common.confirm') }}</el-button>
           </div>
         </template>
@@ -559,6 +561,18 @@ async function applyCloseAction() {
   border-color: color-mix(in srgb, #334155 85%, transparent);
   background: color-mix(in srgb, #111827 80%, #1e293b 20%);
   box-shadow: 0 8px 20px rgba(2, 6, 23, 0.28);
+}
+
+:global(.dark) .close-confirm-desc {
+  color: #dbe7ff;
+}
+
+:global(.dark) .close-action-item {
+  color: #dbe7ff;
+}
+
+:global(.dark) .close-remember-wrap :deep(.el-checkbox__label) {
+  color: #c6d8ff;
 }
 
 :global(.dark) .settings-section-title {
