@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "nrm-desktop - A lightweight desktop GUI for npm registry management, built with Tauri + Vue.",
   "author": "coderhsh",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "nrm",
     "npm",
@@ -28,7 +28,8 @@
   "type": "module",
   "scripts": {
     "dev": "node ./scripts/tauri-dev-auto-port.mjs",
-    "build": "node ./scripts/tauri-build-with-output.mjs",
+    "build": "CI=true node ./scripts/tauri-build-with-output.mjs",
+    "build:pretty": "node ./scripts/tauri-build-with-output.mjs",
     "build:win": "node ./scripts/tauri-build-win.mjs",
     "ui:build": "vue-tsc --noEmit && vite build",
     "ui:dev": "vite",
