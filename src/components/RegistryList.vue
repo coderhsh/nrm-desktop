@@ -895,13 +895,13 @@ function copyAllDetails() {
         class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-36"
         :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
       >
-        <div class="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50" @click="openDetail(contextMenu!.registry); contextMenu = null">
+        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openDetail(contextMenu!.registry); contextMenu = null">
           {{ t("registryList.context.viewDetail") }}
         </div>
-        <div class="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50" @click="openEdit(contextMenu!.registry)">
+        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openEdit(contextMenu!.registry)">
           {{ t("registryList.context.edit") }}
         </div>
-        <div class="px-3 py-2 text-sm cursor-pointer hover:bg-red-50 text-red-500" @click="handleDelete(contextMenu!.registry)">
+        <div class="context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer text-red-500" @click="handleDelete(contextMenu!.registry)">
           {{ t("registryList.context.delete") }}
         </div>
       </div>
@@ -1244,5 +1244,26 @@ function copyAllDetails() {
   align-items: center;
   gap: 0.375rem;
   flex-shrink: 0;
+}
+
+.context-menu-item {
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.context-menu-item:hover {
+  background-color: #f8fafc;
+}
+
+.context-menu-item--danger:hover {
+  background-color: #fee2e2;
+}
+
+:global(.dark) .context-menu-item:hover {
+  background-color: #1b2435;
+}
+
+:global(.dark) .context-menu-item--danger:hover {
+  background-color: rgba(239, 68, 68, 0.14);
+  color: #fda4af;
 }
 </style>

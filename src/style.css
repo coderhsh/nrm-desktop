@@ -216,3 +216,25 @@ body {
 .dark .el-select-dropdown__item:hover {
   background-color: #1e293b;
 }
+
+/* 右键菜单（源列表）深色模式 hover：使用更低亮度并强制覆盖 */
+.context-menu-item {
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.context-menu-item:hover {
+  background-color: #f8fafc;
+}
+
+.context-menu-item--danger:hover {
+  background-color: #fee2e2;
+}
+
+.dark .context-menu-item:hover {
+  background-color: #141c2b !important;
+}
+
+.dark .context-menu-item--danger:hover {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  color: #fda4af !important;
+}
