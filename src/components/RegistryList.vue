@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useShellIntro } from "@/composables/useShellIntro";
 import { onClickOutside, useLocalStorage } from "@vueuse/core";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Rank, RefreshRight, Search, Setting } from "@element-plus/icons-vue";
+import { Expand, Fold, Rank, RefreshRight, Search, Setting } from "@element-plus/icons-vue";
 import { useRegistryStore } from "@/stores/registry";
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from "@/composables/useI18n";
 import { storeToRefs } from "pinia";
@@ -229,6 +229,28 @@ function toggleCategoryExpanded(label: string) {
     [label]: !isCategoryExpanded(label),
   };
 }
+
+function expandAllCategories() {
+  const groups = groupedRegistries.value;
+  if (groups.length === 0) return;
+  const next = { ...categoryExpanded.value };
+  for (const g of groups) {
+    next[g.label] = true;
+  }
+  categoryExpanded.value = next;
+}
+
+function collapseAllCategories() {
+  const groups = groupedRegistries.value;
+  if (groups.length === 0) return;
+  const next = { ...categoryExpanded.value };
+  for (const g of groups) {
+    next[g.label] = false;
+  }
+  categoryExpanded.value = next;
+}
+
+const categoryFoldActionsDisabled = computed(() => loading.value);
 
 function openEdit(registry: Registry) {
   editingRegistry.value = registry;
@@ -819,17 +841,48 @@ function copyAllDetails() {
       </div>
     </div>
 
-    <!-- Search -->
+    <!-- Search + 分类全部展开/折叠 -->
     <div class="rl-intro-search px-4 pb-1">
-      <el-input
-        v-model="searchQuery"
-        :placeholder="t('registryList.searchPlaceholder')"
-        clearable
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
+      <div class="flex items-center gap-2 min-w-0">
+        <el-input
+          v-model="searchQuery"
+          class="registry-search-field flex-1 min-w-0"
+          :placeholder="t('registryList.searchPlaceholder')"
+          clearable
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <div
+          class="registry-fold-toolbar inline-flex shrink-0 items-stretch rounded-md overflow-hidden"
+          role="group"
+        >
+          <el-tooltip :content="t('registryList.expandAllCategories')" placement="top" :show-after="280">
+            <el-button
+              text
+              class="registry-fold-btn"
+              :disabled="categoryFoldActionsDisabled"
+              :aria-label="t('registryList.expandAllCategories')"
+              @click="expandAllCategories"
+            >
+              <el-icon class="text-[17px]"><Expand /></el-icon>
+            </el-button>
+          </el-tooltip>
+          <span class="registry-fold-split" aria-hidden="true" />
+          <el-tooltip :content="t('registryList.collapseAllCategories')" placement="top" :show-after="280">
+            <el-button
+              text
+              class="registry-fold-btn"
+              :disabled="categoryFoldActionsDisabled"
+              :aria-label="t('registryList.collapseAllCategories')"
+              @click="collapseAllCategories"
+            >
+              <el-icon class="text-[17px]"><Fold /></el-icon>
+            </el-button>
+          </el-tooltip>
+        </div>
+      </div>
     </div>
 
     <!-- List -->
@@ -1255,6 +1308,54 @@ function copyAllDetails() {
 </template>
 
 <style scoped>
+.registry-fold-toolbar {
+  border: 1px solid color-mix(in srgb, var(--el-border-color-lighter) 88%, transparent);
+  background: color-mix(in srgb, var(--el-fill-color-lighter) 50%, var(--el-fill-color-blank) 50%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.registry-fold-split {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.1rem;
+  margin: 0.2rem 0;
+  background: color-mix(in srgb, var(--el-border-color-lighter) 90%, transparent);
+  flex-shrink: 0;
+}
+
+.registry-fold-btn.el-button.is-text {
+  margin: 0;
+  padding: 0.2rem 0.45rem;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 0;
+  color: var(--el-text-color-secondary);
+}
+
+.registry-fold-btn.el-button.is-text:not(.is-disabled):hover {
+  color: var(--el-color-primary);
+  background: color-mix(in srgb, var(--el-color-primary) 9%, transparent);
+}
+
+.registry-fold-btn.el-button.is-text:not(.is-disabled):focus-visible {
+  color: var(--el-color-primary);
+  background: color-mix(in srgb, var(--el-color-primary) 11%, transparent);
+}
+
+:global(html.dark) .registry-fold-toolbar {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color-blank);
+  box-shadow: 0 1px 0 var(--app-separator);
+}
+
+:global(html.dark) .registry-fold-split {
+  background: var(--app-separator);
+}
+
+:global(html.dark) .registry-fold-btn.el-button.is-text:not(.is-disabled):hover {
+  background: color-mix(in srgb, var(--el-color-primary) 14%, var(--el-fill-color-blank));
+}
+
 .registry-speed-btn.el-button.is-link {
   background-color: transparent !important;
 }
