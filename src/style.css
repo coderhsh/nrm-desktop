@@ -598,3 +598,15 @@ body {
   color: #ffffff !important;
 }
 
+/* close confirm dialog: disable fade transition to avoid visible linger */
+.close-confirm-dialog.dialog-fade-enter-active,
+.close-confirm-dialog.dialog-fade-leave-active {
+  transition: none !important;
+}
+
+.close-confirm-dialog.dialog-fade-enter-from,
+.close-confirm-dialog.dialog-fade-leave-to {
+  opacity: 0 !important;
+  transform: none !important;
+}
+

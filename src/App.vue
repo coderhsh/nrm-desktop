@@ -45,6 +45,7 @@ const draftAutostartEnabled = ref(false)
 const autostartSupported = ref(true)
 const closeBehavior = useLocalStorage<'ask' | 'minimize' | 'exit'>('nrm-desktop-close-behavior', 'ask')
 const closeActionDraft = ref<'minimize' | 'exit'>('minimize')
+const pendingCloseAction = ref<'minimize' | 'exit' | null>(null)
 const rememberCloseChoice = ref(false)
 const isClosingByChoice = ref(false)
 const isProxyFeatureVisible = false
@@ -71,6 +72,14 @@ const nextThemeLabel = computed(() => {
 })
 let unlistenCloseRequested: null | (() => void) = null
 let unlistenRegistryChanged: null | (() => void) = null
+let unlistenTrayRestored: null | (() => void) = null
+let suppressCloseConfirmUntilUserInteraction = false
+let lastTrayRestoreAt = 0
+
+function clearTrayRestoreGuard() {
+  if (!suppressCloseConfirmUntilUserInteraction) return
+  suppressCloseConfirmUntilUserInteraction = false
+}
 
 watch(
   language,
@@ -88,7 +97,6 @@ watch(showSettingsDialog, visible => {
     draftAutostartEnabled.value = autostartEnabled.value
   })
 })
-
 
 /**
  * 将语言、主题与自启动（草稿）一并提交；自启动仅在保存时调用系统 API。
@@ -181,12 +189,26 @@ onMounted(async () => {
   unlistenRegistryChanged = await listen<string>('registry-changed', event => {
     store.syncCurrentRegistryByName(event.payload)
   })
+  unlistenTrayRestored = await listen('window-restored-from-tray', () => {
+    // Tray restore can trigger an immediate close-request callback on macOS.
+    // Suppress close confirm until first real user interaction.
+    suppressCloseConfirmUntilUserInteraction = true
+    lastTrayRestoreAt = Date.now()
+    showCloseConfirmDialog.value = false
+  })
 
   const { getCurrentWindow } = await import('@tauri-apps/api/window')
   const appWindow = getCurrentWindow()
   unlistenCloseRequested = await appWindow.onCloseRequested(async event => {
+    const sinceRestoreMs = lastTrayRestoreAt > 0 ? Date.now() - lastTrayRestoreAt : null
     if (isClosingByChoice.value) return
     event.preventDefault()
+    if (suppressCloseConfirmUntilUserInteraction && sinceRestoreMs !== null && sinceRestoreMs > 800) {
+      suppressCloseConfirmUntilUserInteraction = false
+    }
+    if (suppressCloseConfirmUntilUserInteraction) {
+      return
+    }
 
     if (closeBehavior.value === 'minimize') {
       try {
@@ -207,6 +229,9 @@ onMounted(async () => {
     rememberCloseChoice.value = false
     showCloseConfirmDialog.value = true
   })
+
+  window.addEventListener('pointerdown', clearTrayRestoreGuard, true)
+  window.addEventListener('keydown', clearTrayRestoreGuard, true)
 })
 
 onBeforeUnmount(() => {
@@ -218,6 +243,12 @@ onBeforeUnmount(() => {
     unlistenCloseRequested()
     unlistenCloseRequested = null
   }
+  if (unlistenTrayRestored) {
+    unlistenTrayRestored()
+    unlistenTrayRestored = null
+  }
+  window.removeEventListener('pointerdown', clearTrayRestoreGuard, true)
+  window.removeEventListener('keydown', clearTrayRestoreGuard, true)
 })
 
 async function handleExport() {
@@ -290,11 +321,19 @@ function closeCloseConfirmDialog() {
 }
 
 async function applyCloseAction() {
+  pendingCloseAction.value = closeActionDraft.value
   showCloseConfirmDialog.value = false
   if (rememberCloseChoice.value) {
     closeBehavior.value = closeActionDraft.value
   }
-  if (closeActionDraft.value === 'minimize') {
+}
+
+async function handleCloseDialogClosed() {
+  const action = pendingCloseAction.value
+  pendingCloseAction.value = null
+  if (!action) return
+
+  if (action === 'minimize') {
     try {
       await invoke('hide_main_window')
     } catch {
@@ -481,6 +520,8 @@ async function applyCloseAction() {
         width="420px"
         :close-on-click-modal="false"
         :show-close="false"
+        :destroy-on-close="true"
+        @closed="handleCloseDialogClosed"
       >
         <div class="close-confirm-content flex flex-col gap-4">
           <div class="close-confirm-desc text-sm leading-6 text-gray-600 dark:text-gray-300">

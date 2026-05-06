@@ -78,6 +78,7 @@ fn build_managed_tray(app: &tauri::AppHandle<Wry>) -> tauri::Result<()> {
             match id {
                 "show" => {
                     if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.emit("window-restored-from-tray", ());
                         let _ = window.show();
                         let _ = window.set_focus();
                     }
@@ -120,6 +121,7 @@ fn build_managed_tray(app: &tauri::AppHandle<Wry>) -> tauri::Result<()> {
             {
                 let app = tray.app_handle();
                 if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.emit("window-restored-from-tray", ());
                     let _ = window.show();
                     let _ = window.set_focus();
                 }
