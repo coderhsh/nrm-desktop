@@ -13,12 +13,13 @@ body,
 }
 
 html {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
@@ -60,7 +61,10 @@ body {
 
 /* Registry list item hover & active */
 .registry-item {
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.18s ease;
 }
 .registry-item:hover {
   background-color: var(--el-fill-color-light);
@@ -233,11 +237,15 @@ body {
 .dark .el-select-dropdown__item:hover {
   background-color: #1a293d;
 }
-
+.dark .el-select-dropdown__item.is-hovering {
+  background-color: #1a293d;
+}
+.dark .el-popper.is-light > .el-popper__arrow:before {
+  background: #121826;
+}
 .dark .el-button.is-text:not(.is-disabled) {
   color: #a9bddb;
 }
-
 .dark .el-button.is-text:not(.is-disabled):hover {
   background-color: rgba(76, 108, 165, 0.16);
   color: #c2d4ef;
@@ -288,7 +296,6 @@ body {
 .dark .registry-dialog .el-dialog__header {
   border-bottom: 1px solid rgba(68, 88, 116, 0.45);
 }
-
 
 .dark .registry-dialog .el-input__wrapper {
   background-color: #17263d !important;
@@ -554,7 +561,9 @@ body {
 
 /* 右键菜单（源列表）深色模式 hover：使用更低亮度并强制覆盖 */
 .context-menu-item {
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .context-menu-item:hover {
@@ -609,4 +618,3 @@ body {
   opacity: 0 !important;
   transform: none !important;
 }
-
