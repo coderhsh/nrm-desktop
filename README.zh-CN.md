@@ -62,6 +62,36 @@
 参考文档：  
 [Tauri v2 Prerequisites](https://v2.tauri.app/start/prerequisites/)
 
+### Windows 运行与打包环境
+
+Windows 场景建议区分「运行环境」与「打包环境」：
+
+- 运行环境（给最终用户）：
+  - Microsoft Edge WebView2 Runtime（新版本 Windows 通常自带，缺失时需手动安装）
+- 打包环境（给开发者）：
+  - Microsoft Visual Studio C++ Build Tools（MSVC 工具链）
+  - Windows 10/11 SDK
+  - NSIS（用于生成 `nsis` 安装包）
+  - WiX Toolset（用于生成 `msi` 安装包；`pnpm build:win` 在 Windows 上会产出 MSI+NSIS）
+
+#### 常见安装命令与官方下载链接
+
+- WebView2 Runtime
+  - 常见安装命令（Chocolatey）：
+    - `choco install microsoft-edge-webview2-runtime -y`
+  - 官方下载：
+    - [Microsoft Edge WebView2](https://developer.microsoft.com/microsoft-edge/webview2/)
+- NSIS
+  - 常见安装命令（Chocolatey）：
+    - `choco install nsis -y`
+  - 官方下载：
+    - [NSIS Download](https://nsis.sourceforge.io/Download)
+- WiX Toolset
+  - 常见安装命令（Chocolatey）：
+    - `choco install wixtoolset -y`
+  - 官方下载：
+    - [WiX Toolset](https://wixtoolset.org/)
+
 ## 快速开始 ⚡
 
 安装依赖：
@@ -129,11 +159,6 @@ pnpm build
 - `pnpm dev` 默认使用自动端口脚本
 - 若仍冲突，先停止旧 dev 任务后重启
 
-### 3）构建时报 `TS6133`
-
-- 这是未使用符号告警（某些配置会视为错误）
-- 删除未使用函数/变量或接入实际调用后重新构建
-
 ## 参与贡献 🤝
 
 1. 新建功能分支
@@ -148,7 +173,3 @@ pnpm build
 - 增强导入/导出的兼容与校验
 - 支持更多预设源模板管理
 
-## License 📄
-
-当前仓库尚未包含明确 License 文件。  
-如果计划公开分发，建议先补充 `LICENSE`。

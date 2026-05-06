@@ -62,6 +62,36 @@ Install the following before running locally:
 Reference:
 [Tauri v2 Prerequisites](https://v2.tauri.app/start/prerequisites/)
 
+### Windows packaging/runtime requirements
+
+For Windows users, separate runtime requirements from packaging requirements:
+
+- Runtime (for end users):
+  - Microsoft Edge WebView2 Runtime (usually preinstalled on modern Windows; install manually if missing)
+- Packaging (for developers):
+  - Microsoft Visual Studio C++ Build Tools (MSVC toolchain)
+  - Windows 10/11 SDK
+  - NSIS (required for `nsis` installer output)
+  - WiX Toolset (required for `msi` output; `pnpm build:win` generates MSI+NSIS on Windows)
+
+#### Common install commands and official links
+
+- WebView2 Runtime
+  - Common install command (Chocolatey):
+    - `choco install microsoft-edge-webview2-runtime -y`
+  - Official download:
+    - [Microsoft Edge WebView2](https://developer.microsoft.com/microsoft-edge/webview2/)
+- NSIS
+  - Common install command (Chocolatey):
+    - `choco install nsis -y`
+  - Official download:
+    - [NSIS Download](https://nsis.sourceforge.io/Download)
+- WiX Toolset
+  - Common install command (Chocolatey):
+    - `choco install wixtoolset -y`
+  - Official download:
+    - [WiX Toolset](https://wixtoolset.org/)
+
 ## Quick Start ⚡
 
 Install dependencies:
@@ -132,11 +162,6 @@ Icon mapping reference:
 - `pnpm dev` uses auto-port script and should pick an available port
 - If stale processes remain, stop the existing dev task and restart
 
-### 3) Build fails with TypeScript `TS6133`
-
-- There may be existing unused function warnings in frontend files
-- Remove unused symbols or connect them to actual handlers, then rebuild
-
 ## Contribution 🤝
 
 1. Create a feature branch
@@ -151,7 +176,3 @@ Icon mapping reference:
 - Improve export/import compatibility checks
 - Add optional registry presets sync
 
-## License 📄
-
-No explicit license file is currently included.  
-If this project will be distributed publicly, add a `LICENSE` file first.
