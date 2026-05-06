@@ -1124,6 +1124,10 @@ function copyAllDetails() {
 .registry-speed-btn.el-button.is-link:focus {
   background-color: transparent !important;
 }
+/* Element Plus loading 态会绘制 ::before 蒙层，这里强制透明避免黑底闪现 */
+.registry-speed-btn.el-button.is-link.is-loading::before {
+  background-color: transparent !important;
+}
 /* 与 loading 动画占位一致，避免切换时布局抖动 */
 .registry-speed-btn-fixed.el-button.is-link {
   width: 2rem;
