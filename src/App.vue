@@ -55,10 +55,10 @@ const categoryByRegistry = useLocalStorage<Record<string, string>>(
   {}
 )
 const draftTheme = ref<'light' | 'dark' | 'auto'>('auto')
-const languageOptions = [
-  { label: '简体中文', value: 'zh-CN' as const },
-  { label: 'English', value: 'en' as const },
-]
+const languageOptions = computed(() => [
+  { label: t('app.settings.languageZhCn'), value: 'zh-CN' as const },
+  { label: t('app.settings.languageEn'), value: 'en' as const },
+])
 const themeOptions = computed(() => [
   { label: t('app.settings.themeAuto'), value: 'auto' as const },
   { label: t('app.settings.themeLight'), value: 'light' as const },
@@ -126,10 +126,10 @@ async function handleSaveSettings() {
   language.value = draftLanguage.value
   theme.theme.value = draftTheme.value
   void invoke('set_app_language', { lang: nextLanguage }).catch(() => {
-    ElMessage.error('托盘菜单语言更新失败，请重试')
+    ElMessage.error(t('app.settings.trayLanguageUpdateFailed'))
   })
   showSettingsDialog.value = false
-  ElMessage.success(nextLanguage === 'en' ? 'Settings saved' : '设置已保存')
+  ElMessage.success(t('app.settings.saveSuccess'))
 }
 
 /**
@@ -261,9 +261,9 @@ async function handleExport() {
     })
     if (!path) return
     await api.writeTextFile(path, json)
-    ElMessage.success('配置已导出')
+    ElMessage.success(t('app.export.success'))
   } catch (e) {
-    ElMessage.error(`导出失败: ${e}`)
+    ElMessage.error(t('app.export.failed', { error: String(e) }))
   }
 }
 
@@ -276,10 +276,10 @@ async function handleImport() {
     if (!path) return
     const json = await api.readTextFile(path as string)
     await api.importConfig(json)
-    ElMessage.success('配置已导入')
+    ElMessage.success(t('app.import.success'))
     store.fetchRegistries()
   } catch (e) {
-    ElMessage.error(`导入失败: ${e}`)
+    ElMessage.error(t('app.import.failed', { error: String(e) }))
   }
 }
 
@@ -337,7 +337,7 @@ async function handleCloseDialogClosed() {
     try {
       await invoke('hide_main_window')
     } catch {
-      ElMessage.error('缩小到托盘失败，请重试')
+      ElMessage.error(t('app.closeDialog.minimizeFailed'))
     }
     return
   }
@@ -387,7 +387,13 @@ async function handleCloseDialogClosed() {
             {{ t('common.settings') }}
           </el-button>
 
-          <el-button v-if="isProxyFeatureVisible" text size="small" @click="showProxySettings = true" title="代理设置">
+          <el-button
+            v-if="isProxyFeatureVisible"
+            text
+            size="small"
+            @click="showProxySettings = true"
+            :title="t('app.proxySettings')"
+          >
             {{ t('app.proxy') }}
           </el-button>
 

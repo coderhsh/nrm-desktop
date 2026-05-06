@@ -29,6 +29,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
 
     // app
     "app.proxy": "代理",
+    "app.proxySettings": "代理设置",
     "app.exportConfig": "导出配置",
     "app.importConfig": "导入配置",
     "app.resetDefaults": "恢复默认",
@@ -47,6 +48,8 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.about.tauriVersion": "Tauri 版本",
     "app.about.loading": "加载中…",
     "app.settings.language": "语言",
+    "app.settings.languageZhCn": "简体中文",
+    "app.settings.languageEn": "English",
     "app.settings.theme": "主题",
     "app.settings.themeAuto": "自动",
     "app.settings.themeLight": "浅色",
@@ -57,6 +60,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.settings.autostartUnsupported": "开发构建无法使用开机启动（需正式安装版）；浏览器预览等环境也不可用。",
     "app.themeTooltip": "主题：切换到 {mode}",
     "app.settings.saveSuccess": "设置已保存",
+    "app.settings.trayLanguageUpdateFailed": "托盘菜单语言更新失败，请重试",
     "app.settings.switchToZh": "语言已切换为简体中文",
     "app.settings.switchToEn": "Language switched to English",
     "app.closeDialog.title": "关闭应用",
@@ -67,6 +71,10 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.closeDialog.minimizeFailed": "缩小到托盘失败，请重试",
     "app.closeDialog.githubOpenFailed": "打开 GitHub 失败: {error}",
     "app.envVersions": "Node {nodeVersion} · npm {npmVersion}",
+    "app.export.success": "配置已导出",
+    "app.export.failed": "导出失败: {error}",
+    "app.import.success": "配置已导入",
+    "app.import.failed": "导入失败: {error}",
 
     // current-source
     "currentSource.title": "当前源",
@@ -198,6 +206,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "common.delete": "Delete",
 
     "app.proxy": "Proxy",
+    "app.proxySettings": "Proxy settings",
     "app.exportConfig": "Export config",
     "app.importConfig": "Import config",
     "app.resetDefaults": "Reset defaults",
@@ -216,6 +225,8 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.about.tauriVersion": "Tauri version",
     "app.about.loading": "Loading…",
     "app.settings.language": "Language",
+    "app.settings.languageZhCn": "Simplified Chinese",
+    "app.settings.languageEn": "English",
     "app.settings.theme": "Theme",
     "app.settings.themeAuto": "Auto",
     "app.settings.themeLight": "Light",
@@ -226,6 +237,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.settings.autostartUnsupported": "Unavailable in dev build (use installed app). Also unavailable in browser preview.",
     "app.themeTooltip": "Theme: switch to {mode}",
     "app.settings.saveSuccess": "Settings saved",
+    "app.settings.trayLanguageUpdateFailed": "Failed to update tray menu language, please try again",
     "app.settings.switchToZh": "语言已切换为简体中文",
     "app.settings.switchToEn": "Language switched to English",
     "app.closeDialog.title": "Close App",
@@ -236,6 +248,10 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     "app.closeDialog.minimizeFailed": "Failed to minimize to tray, please try again",
     "app.closeDialog.githubOpenFailed": "Failed to open GitHub: {error}",
     "app.envVersions": "Node {nodeVersion} · npm {npmVersion}",
+    "app.export.success": "Configuration exported",
+    "app.export.failed": "Export failed: {error}",
+    "app.import.success": "Configuration imported",
+    "app.import.failed": "Import failed: {error}",
 
     "currentSource.title": "Current Source",
     "currentSource.unset": "Not Set",
