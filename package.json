@@ -27,6 +27,7 @@
   },
   "type": "module",
   "scripts": {
+    "sync:version": "node ./scripts/sync-app-version.mjs",
     "dev": "node ./scripts/tauri-dev-auto-port.mjs",
     "build": "CI=true node ./scripts/tauri-build-with-output.mjs",
     "build:pretty": "node ./scripts/tauri-build-with-output.mjs",
@@ -34,7 +35,8 @@
     "ui:build": "vue-tsc --noEmit && vite build",
     "ui:dev": "vite",
     "tauri": "tauri",
-    "update:logo": "node ./scripts/generate-icons.cjs"
+    "update:logo": "node ./scripts/generate-icons.cjs",
+    "version": "node ./scripts/sync-app-version.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",

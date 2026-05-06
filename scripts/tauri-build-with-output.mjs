@@ -1,15 +1,15 @@
 /* @desc 构建并输出产物路径 */
 import { spawn } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
-const appVersion = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf8')).version
 const cargoTargetDir = path.join(rootDir, 'src-tauri', 'target')
 const releaseDir = path.join(rootDir, 'src-tauri', 'target', 'release')
 const bundleDir = path.join(releaseDir, 'bundle')
@@ -175,9 +175,10 @@ function runTauriBuildWithBundles(bundles) {
 
 /**
  * Create a plain DMG from generated .app without Finder automation.
+ * @param {string} appVersion semver from package.json (after sync)
  * @returns {Promise<void>}
  */
-async function createNonInteractiveMacDmg() {
+async function createNonInteractiveMacDmg(appVersion) {
   const appBundlePath = path.join(bundleDir, 'macos', 'nrm-desktop.app')
   if (!(await pathExists(appBundlePath))) {
     throw new Error(`未找到 .app 产物，无法生成 dmg: ${appBundlePath}`)
@@ -353,13 +354,14 @@ async function printArtifacts() {
 }
 
 async function main() {
+  const appVersion = syncAppVersionFromPackageJson()
   const startedAt = Date.now()
   const isCi = String(process.env.CI || '').toLowerCase() === 'true'
   const shouldUseNonInteractiveMacDmg = process.platform === 'darwin' && isCi
 
   if (shouldUseNonInteractiveMacDmg) {
     await runTauriBuildWithBundles(['app'])
-    await createNonInteractiveMacDmg()
+    await createNonInteractiveMacDmg(appVersion)
   } else {
     await runTauriBuild()
   }

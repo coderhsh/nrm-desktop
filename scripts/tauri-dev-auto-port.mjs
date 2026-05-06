@@ -5,6 +5,8 @@ import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
@@ -86,6 +88,7 @@ async function cleanupTempConfig() {
 }
 
 async function main() {
+  syncAppVersionFromPackageJson()
   const port = await findAvailablePort(basePort, maxAttempts)
   await writeTempConfig(port)
 

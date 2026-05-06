@@ -4,6 +4,8 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
@@ -366,6 +368,7 @@ async function runTauriBuildWinWithRetry() {
 }
 
 async function main() {
+  syncAppVersionFromPackageJson()
   const startedAt = Date.now()
   await preflightChecks()
   await runTauriBuildWinWithRetry()
