@@ -577,9 +577,8 @@ function saveCategoryFromDialog(payload: { oldName: string; newName: string; cat
   if (normalized) {
     ensureCategoryLabel(normalized);
     nextMapping[payload.newName] = normalized;
-    ElMessage.success(t("categoryDialog.registryCategoryUpdated"));
   }
-  /* 归入未分类时不弹 Toast：新增/编辑的成功提示已在 RegistryDialog 中给出，避免「已设为未分类」叠在「已添加」上 */
+  /* 成功提示仅在 RegistryDialog 中展示一次，此处不再弹 Toast，避免与「已更新/已添加」重复 */
   categoryByRegistry.value = nextMapping;
 }
 

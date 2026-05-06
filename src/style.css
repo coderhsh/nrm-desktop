@@ -18,17 +18,17 @@
   --app-radius-sm: 8px;
   --app-radius-md: 12px;
   --app-radius-lg: 14px;
-  /* 略偏冷灰蓝，与右侧白卡 / 蓝条当前源更协调 */
-  --app-bg: #eef1f7;
-  --app-bg-elevated: #f4f6fb;
+  /* 明显偏冷蓝灰，与系统标题栏常见浅中性灰拉开色差，避免「一整块同色」 */
+  --app-bg: #dfe8f4;
+  --app-bg-elevated: #edf2fa;
   --app-surface: #ffffff;
   /* 主列（测速 + 当前源背后）专用，比侧栏略深半阶 */
-  --app-main-bg-base: #e4e9f2;
+  --app-main-bg-base: #d4e0ef;
   --app-main-bg-image: linear-gradient(
     168deg,
-    #eef2fa 0%,
-    #e6eaf3 42%,
-    #dfe5ef 100%
+    #e8eef8 0%,
+    #dde6f2 42%,
+    #d5e0ec 100%
   );
   --app-surface-elevated: #ffffff;
   --app-separator: rgba(60, 60, 67, 0.1);
@@ -70,13 +70,14 @@ body,
   background-image: linear-gradient(
     165deg,
     var(--app-bg) 0%,
-    color-mix(in srgb, var(--app-bg) 88%, #c8d2e6 12%) 52%,
+    color-mix(in srgb, var(--app-bg) 82%, #b8c8e0 18%) 52%,
     var(--app-bg-elevated) 100%
   );
   background-attachment: fixed;
 }
 
 html {
+  background-color: var(--app-bg);
   transition:
     background-color var(--app-duration) var(--app-ease),
     color var(--app-duration) var(--app-ease);
