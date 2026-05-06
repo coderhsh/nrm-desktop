@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useRegistryStore } from "@/stores/registry";
 import { useI18n } from "@/composables/useI18n";
@@ -30,11 +30,6 @@ const useCustomCategoryInput = ref(false);
 const selectedCategoryLabel = ref("");
 const categoryInput = ref("");
 const isEdit = () => props.registry !== null && props.registry !== undefined;
-const isPresetEdit = () => isEdit() && !props.registry?.is_custom;
-const isCustomEdit = () => isEdit() && !!props.registry?.is_custom;
-
-/** 新增自定义源与编辑自定义源时展示分类（与编辑预设源区分）。 */
-const showCategoryField = computed(() => !isEdit() || isCustomEdit());
 
 watch(
   () => props.visible,
@@ -116,16 +111,14 @@ async function handleSubmit() {
         newName,
         url.value.trim()
       );
-      if (isCustomEdit()) {
-        const category = useCustomCategoryInput.value
-          ? normalizeCategoryLabel(categoryInput.value)
-          : normalizeCategoryLabel(selectedCategoryLabel.value);
-        emit("save-category", {
-          oldName,
-          newName,
-          category: category || null,
-        });
-      }
+      const category = useCustomCategoryInput.value
+        ? normalizeCategoryLabel(categoryInput.value)
+        : normalizeCategoryLabel(selectedCategoryLabel.value);
+      emit("save-category", {
+        oldName,
+        newName,
+        category: category || null,
+      });
       ElMessage.success(t("registryDialog.success.updated", { name: newName }));
     } else {
       const newName = name.value.trim();
@@ -217,46 +210,41 @@ function validateUrl(_rule: any, value: string, callback: any) {
       >
         <el-input v-model="url" :placeholder="t('registryDialog.placeholder.url')" />
       </el-form-item>
-      <div v-if="isPresetEdit()" class="text-xs text-gray-400 -mt-1 mb-2">
-        {{ t("registryDialog.presetHint") }}
-      </div>
-      <template v-if="showCategoryField">
-        <el-form-item :label="t('registryDialog.label.category')">
-          <div class="flex items-center gap-2 w-full">
-            <el-select
-              v-if="!useCustomCategoryInput"
-              v-model="selectedCategoryLabel"
-              class="flex-1"
-              :placeholder="t('registryDialog.category.selectPlaceholder')"
-              clearable
-              filterable
-            >
-              <el-option
-                v-for="label in categoryLabels ?? []"
-                :key="label"
-                :label="label"
-                :value="label"
-              />
-            </el-select>
-            <el-input
-              v-else
-              v-model="categoryInput"
-              class="flex-1"
-              :placeholder="t('registryDialog.category.inputPlaceholder')"
-              :maxlength="categoryLabelMaxLength"
-              show-word-limit
-              clearable
+      <el-form-item :label="t('registryDialog.label.category')">
+        <div class="flex items-center gap-2 w-full">
+          <el-select
+            v-if="!useCustomCategoryInput"
+            v-model="selectedCategoryLabel"
+            class="flex-1"
+            :placeholder="t('registryDialog.category.selectPlaceholder')"
+            clearable
+            filterable
+          >
+            <el-option
+              v-for="label in categoryLabels ?? []"
+              :key="label"
+              :label="label"
+              :value="label"
             />
-            <el-button @click="toggleCategoryInputMode">
-              {{
-                useCustomCategoryInput
-                  ? t("registryDialog.category.usePreset")
-                  : t("registryDialog.category.useCustom")
-              }}
-            </el-button>
-          </div>
-        </el-form-item>
-      </template>
+          </el-select>
+          <el-input
+            v-else
+            v-model="categoryInput"
+            class="flex-1"
+            :placeholder="t('registryDialog.category.inputPlaceholder')"
+            :maxlength="categoryLabelMaxLength"
+            show-word-limit
+            clearable
+          />
+          <el-button @click="toggleCategoryInputMode">
+            {{
+              useCustomCategoryInput
+                ? t("registryDialog.category.usePreset")
+                : t("registryDialog.category.useCustom")
+            }}
+          </el-button>
+        </div>
+      </el-form-item>
     </el-form>
     <template #footer>
       <el-button @click="handleClose">{{ t("common.cancel") }}</el-button>
