@@ -73,21 +73,24 @@ pnpm install
 Run desktop app in development:
 
 ```bash
-pnpm tauri:dev
+pnpm dev
 ```
 
 Build production bundles:
 
 ```bash
-pnpm tauri:build
+pnpm build
 ```
 
 ## Available Scripts 📜
 
-- `pnpm dev` - run Vite frontend only
-- `pnpm build` - type-check and build frontend
-- `pnpm tauri:dev` - run desktop app in dev mode
-- `pnpm tauri:build` - build desktop binaries/installers
+- `pnpm dev` - run desktop app in dev mode (auto port selection)
+- `pnpm build` - build desktop binaries/installers with output summary
+- `pnpm build:win` - build Windows-only installer/binaries
+- `pnpm ui:dev` - run Vite frontend only
+- `pnpm ui:build` - type-check and build frontend only
+- `pnpm tauri` - pass-through Tauri CLI command
+- `pnpm update:logo` - generate desktop icon set from `src-tauri/icons/logo.png`
 
 ## Configuration and Data 🗂️
 
@@ -121,12 +124,12 @@ Icon mapping reference:
   - tray is created only in Rust (`TrayIconBuilder`)
   - `app.trayIcon` is removed from generated dev config
 - Fully stop old processes before restarting:
-  - stop `pnpm tauri:dev`
+  - stop `pnpm dev`
   - restart the app
 
 ### 2) Dev port already in use
 
-- `pnpm tauri:dev` uses auto-port script and should pick an available port
+- `pnpm dev` uses auto-port script and should pick an available port
 - If stale processes remain, stop the existing dev task and restart
 
 ### 3) Build fails with TypeScript `TS6133`

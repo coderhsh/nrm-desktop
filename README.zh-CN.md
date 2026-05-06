@@ -73,21 +73,24 @@ pnpm install
 开发模式运行桌面应用：
 
 ```bash
-pnpm tauri:dev
+pnpm dev
 ```
 
 构建发布包：
 
 ```bash
-pnpm tauri:build
+pnpm build
 ```
 
 ## 可用脚本 📜
 
-- `pnpm dev`：仅启动 Vite 前端
-- `pnpm build`：前端类型检查 + 构建
-- `pnpm tauri:dev`：启动 Tauri 开发模式
-- `pnpm tauri:build`：构建桌面安装包/可执行文件
+- `pnpm dev`：启动桌面开发模式（自动选择可用端口）
+- `pnpm build`：构建桌面安装包/可执行文件，并输出构建产物信息
+- `pnpm build:win`：仅构建 Windows 安装包/可执行文件
+- `pnpm ui:dev`：仅启动 Vite 前端开发服务
+- `pnpm ui:build`：仅执行前端类型检查与构建
+- `pnpm tauri`：透传调用 Tauri CLI
+- `pnpm update:logo`：基于 `src-tauri/icons/logo.png` 生成桌面图标集
 
 ## 配置与数据位置 🗂️
 
@@ -118,12 +121,12 @@ pnpm tauri:build
 ### 1）Windows 右下角出现双托盘图标
 
 - 确认已使用最新代码（托盘只由 Rust 侧创建）
-- 停掉旧的 `pnpm tauri:dev` 进程后重新启动
+- 停掉旧的 `pnpm dev` 进程后重新启动
 - 如仍出现，检查是否有旧进程残留并清理后重启
 
 ### 2）开发模式端口被占用
 
-- `pnpm tauri:dev` 默认使用自动端口脚本
+- `pnpm dev` 默认使用自动端口脚本
 - 若仍冲突，先停止旧 dev 任务后重启
 
 ### 3）构建时报 `TS6133`
