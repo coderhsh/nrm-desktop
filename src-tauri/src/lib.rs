@@ -9,7 +9,7 @@ mod speedtest;
 
 use std::path::PathBuf;
 use tauri::{
-    menu::{Menu, MenuBuilder, MenuItemBuilder},
+    menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItemBuilder},
     tray::TrayIconBuilder,
     Emitter, Manager, Wry,
 };
@@ -42,13 +42,10 @@ fn build_tray_context_menu(app: &tauri::AppHandle<Wry>) -> tauri::Result<Menu<Wr
     for reg in &all_regs {
         let is_current = current_name.as_deref() == Some(&reg.name);
         let label = escape_menu_mnemonic(&reg.name);
-        let text = if is_current {
-            format!("✓ {}", label)
-        } else {
-            label
-        };
         let menu_id = format!("{REGISTRY_MENU_ID_PREFIX}{}", reg.name);
-        let item = MenuItemBuilder::with_id(menu_id, text).build(app)?;
+        let item = CheckMenuItemBuilder::with_id(menu_id, label)
+            .checked(is_current)
+            .build(app)?;
         menu_builder = menu_builder.item(&item);
     }
 
