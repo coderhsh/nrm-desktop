@@ -85,7 +85,7 @@ fn build_managed_tray(app: &tauri::AppHandle<Wry>) -> tauri::Result<()> {
                 }
                 _ if id.starts_with(REGISTRY_MENU_ID_PREFIX) => {
                     let name = &id[REGISTRY_MENU_ID_PREFIX.len()..];
-                    match commands::set_registry(name) {
+                    match commands::set_registry_npmrc_only(name) {
                         Ok(()) => {
                             // 勿在 on_menu_event 内同步 refresh_tray；勿在同一线程直接 run_on_main_thread（会立刻执行并死锁）。先 spawn 再起线程安全地 schedule。
                             let ah = app.clone();

@@ -87,8 +87,9 @@ fn registry_url_key(url: &str) -> String {
     url.trim().trim_end_matches('/').to_string()
 }
 
-/// 切换到指定名称的源并刷新托盘、通知前端（与 `set_registry` 行为一致，供自动选源复用）。
-fn switch_to_registry_named(app: &tauri::AppHandle, name: &str) -> Result<(), String> {
+/// 仅写入 `.npmrc` 的 registry（备份 + 设置 URL）。不刷新托盘菜单。
+/// 托盘 `on_menu_event` 内必须调用本函数而非带刷新的 `set_registry`，否则同步 `set_menu` 可能死锁。
+pub(crate) fn set_registry_npmrc_only(name: &str) -> Result<(), String> {
     let all = registries::get_all().map_err(|e| e.to_string())?;
     let registry = all
         .iter()
@@ -98,6 +99,12 @@ fn switch_to_registry_named(app: &tauri::AppHandle, name: &str) -> Result<(), St
     npmrc::backup_npmrc().map_err(|e| format!("备份失败: {}", e))?;
     npmrc::set_registry(&registry.url).map_err(|e| format!("设置失败: {}", e))?;
 
+    Ok(())
+}
+
+/// 切换到指定名称的源并刷新托盘、通知前端（供自动选源、删除后回切等复用）。
+fn switch_to_registry_named(app: &tauri::AppHandle, name: &str) -> Result<(), String> {
+    set_registry_npmrc_only(name)?;
     crate::refresh_tray_menu(app).map_err(|e| e.to_string())?;
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.emit("registry-changed", name);
@@ -162,16 +169,9 @@ pub fn get_current_registry() -> Result<Option<Registry>, String> {
 }
 
 #[tauri::command]
-pub fn set_registry(name: &str) -> Result<(), String> {
-    let all = registries::get_all().map_err(|e| e.to_string())?;
-    let registry = all
-        .iter()
-        .find(|r| r.name == name)
-        .ok_or_else(|| format!("未找到源: {}", name))?;
-
-    npmrc::backup_npmrc().map_err(|e| format!("备份失败: {}", e))?;
-    npmrc::set_registry(&registry.url).map_err(|e| format!("设置失败: {}", e))?;
-
+pub fn set_registry(app: tauri::AppHandle, name: &str) -> Result<(), String> {
+    set_registry_npmrc_only(name)?;
+    crate::refresh_tray_menu(&app).map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -209,11 +209,18 @@ pub async fn delete_registry(app: tauri::AppHandle, name: String) -> Result<(), 
 }
 
 #[tauri::command]
-pub fn update_registry(name: &str, new_name: &str, new_url: &str) -> Result<(), String> {
+pub fn update_registry(
+    app: tauri::AppHandle,
+    name: &str,
+    new_name: &str,
+    new_url: &str,
+) -> Result<(), String> {
     if !new_url.starts_with("http://") && !new_url.starts_with("https://") {
         return Err("URL 必须以 http:// 或 https:// 开头".to_string());
     }
-    registries::update(name, new_name, new_url).map_err(|e| e.to_string())
+    registries::update(name, new_name, new_url).map_err(|e| e.to_string())?;
+    crate::refresh_tray_menu(&app).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]

@@ -19,9 +19,29 @@ const singleTesting = ref<Set<string>>(new Set());
 
 const hasResults = computed(() => results.value.length > 0);
 
+/** 与后端 `test_all`、单次重测一致：成功项按延迟升序，失败置底 */
+function sortLatencyResults(items: LatencyResult[]): LatencyResult[] {
+  return [...items].sort((a, b) => {
+    if (a.latency_ms !== null && b.latency_ms !== null) {
+      return a.latency_ms - b.latency_ms;
+    }
+    if (a.latency_ms !== null) return -1;
+    if (b.latency_ms !== null) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 const fastestResult = computed(() => {
-  const success = results.value.filter((r) => r.latency_ms !== null);
-  return success.length > 0 ? success[0] : null;
+  let best: LatencyResult | null = null;
+  let bestMs = Infinity;
+  for (const r of results.value) {
+    if (r.latency_ms === null) continue;
+    if (r.latency_ms < bestMs) {
+      bestMs = r.latency_ms;
+      best = r;
+    }
+  }
+  return best;
 });
 
 /**
@@ -60,7 +80,7 @@ async function runAllTests() {
       window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
 
     if (reduceMotion || items.length === 0) {
-      results.value = items;
+      results.value = sortLatencyResults(items);
     } else {
       for (let i = 0; i < items.length; i++) {
         results.value.push(items[i]);
@@ -87,15 +107,9 @@ async function runSingleTest(name: string) {
     const idx = results.value.findIndex((r) => r.name === name);
     if (idx !== -1) {
       results.value[idx] = result;
+      results.value = sortLatencyResults(results.value);
     } else {
-      results.value.push(result);
-      results.value.sort((a, b) => {
-        if (a.latency_ms !== null && b.latency_ms !== null)
-          return a.latency_ms - b.latency_ms;
-        if (a.latency_ms !== null) return -1;
-        if (b.latency_ms !== null) return 1;
-        return 0;
-      });
+      results.value = sortLatencyResults([...results.value, result]);
     }
   } catch (e) {
     ElMessage.error(
@@ -145,7 +159,7 @@ watch(
     if (prevKey === undefined || nextKey === prevKey || testing.value) return;
     if (results.value.length === 0) return;
     const map = store.latencyResults;
-    results.value = store.registries.map((reg) => {
+    const rebuilt = store.registries.map((reg) => {
       const hit = map[reg.name];
       if (hit) return { ...hit };
       return {
@@ -156,6 +170,7 @@ watch(
         is_custom: !!reg.is_custom,
       };
     });
+    results.value = sortLatencyResults(rebuilt);
   },
 );
 </script>
