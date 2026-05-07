@@ -441,7 +441,9 @@ function moveRegistryToCategory(registryName: string, label: string) {
   }
   categoryByRegistry.value = next;
   if (label !== uncategorizedLabel.value) {
-    ElMessage.success(`已将 "${registry.name}" 移动到分类 "${label}"`);
+    ElMessage.success(
+      t("registryList.moveToCategorySuccess", { name: registry.name, label }),
+    );
   }
 }
 
