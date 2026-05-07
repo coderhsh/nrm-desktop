@@ -1392,3 +1392,54 @@ html.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:
   opacity: 0 !important;
   transform: none !important;
 }
+
+/* Dark mode: remove Element Plus loading mask black background globally */
+html.dark .el-button.is-loading::before {
+  background-color: transparent !important;
+}
+
+/* Dark mode: tooltip / popover visual polish（高优先级兜底） */
+html.dark .el-popper.is-dark,
+html.dark .el-tooltip__popper.el-popper,
+html.dark .el-popover.el-popper {
+  background: linear-gradient(160deg, #222733, #2a3040) !important;
+  border: 1px solid rgba(108, 124, 150, 0.34) !important;
+  color: #e3e9f4 !important;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.42),
+    0 2px 6px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .el-popper.is-dark:not(.registry-fold-tooltip) > .el-popper__arrow:before,
+html.dark .el-popper.is-dark:not(.registry-fold-tooltip) > .el-popper__arrow::before,
+html.dark .el-tooltip__popper.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow:before,
+html.dark .el-tooltip__popper.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow::before,
+html.dark .el-popover.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow:before,
+html.dark .el-popover.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow::before {
+  background: #252b3a !important;
+  border: 1px solid rgba(108, 124, 150, 0.34) !important;
+}
+
+/* registry-fold tooltip：去掉小三角描边，避免深色模式下出现双层边框感 */
+html.dark .registry-fold-tooltip.el-popper {
+  --el-tooltip-bg-color: #31384a !important;
+  --el-tooltip-text-color: #f5f7fa !important;
+  --el-tooltip-border-color: transparent !important;
+}
+
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow:before,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::before,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow:after,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::after {
+  background: #31384a !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow:before,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::before {
+  background: #252b3a !important;
+  border: 1px solid rgba(108, 124, 150, 0.34) !important;
+}
