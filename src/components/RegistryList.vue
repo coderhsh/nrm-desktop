@@ -1480,38 +1480,52 @@ function copyAllDetails() {
 
 :global(html.dark) .category-create-btn,
 :global(html.dark) .category-row-actions :deep(.el-button--primary) {
-  background-color: var(--el-color-primary);
-  border-color: var(--el-color-primary);
-  color: #ffffff;
+  background: linear-gradient(180deg, #3f78bd 0%, #2f68ac 100%);
+  border-color: rgba(137, 193, 255, 0.44);
+  color: #eaf3ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 4px rgba(0, 0, 0, 0.32);
 }
 
 :global(html.dark) .category-create-btn:hover,
 :global(html.dark) .category-row-actions :deep(.el-button--primary:hover) {
-  background-color: var(--el-color-primary-dark-2);
-  border-color: var(--el-color-primary-dark-2);
+  background: linear-gradient(180deg, #4b85cc 0%, #3873ba 100%);
+  border-color: rgba(160, 210, 255, 0.56);
+  color: #f5f9ff;
+}
+
+:global(html.dark) .category-row-actions :deep(.el-button) {
+  transition:
+    background-color 0.24s var(--app-ease-out),
+    border-color 0.24s var(--app-ease-out),
+    color 0.24s var(--app-ease-out),
+    box-shadow 0.24s var(--app-ease-out);
 }
 
 :global(html.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger)) {
-  background-color: var(--el-fill-color-light);
-  border-color: var(--el-border-color);
-  color: var(--el-text-color-regular);
+  background: linear-gradient(180deg, #4b505a 0%, #434852 100%);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(236, 238, 244, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 :global(html.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):hover) {
-  background-color: var(--el-fill-color);
-  border-color: var(--el-border-color-light);
-  color: var(--el-text-color-primary);
+  background: linear-gradient(180deg, #565c67 0%, #4d5460 100%);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
 }
 
 :global(html.dark) .category-row-actions :deep(.el-button--danger) {
-  background-color: rgba(255, 59, 48, 0.15);
-  border-color: rgba(255, 59, 48, 0.45);
-  color: #ff6961;
+  background: rgba(255, 69, 58, 0.14);
+  border-color: rgba(255, 69, 58, 0.42);
+  color: #ff7b72;
 }
 
 :global(html.dark) .category-row-actions :deep(.el-button--danger:hover) {
-  background-color: rgba(255, 59, 48, 0.22);
-  border-color: rgba(255, 59, 48, 0.55);
+  background: rgba(255, 69, 58, 0.2);
+  border-color: rgba(255, 69, 58, 0.52);
+  color: #ff918a;
 }
 
 .context-menu-item {

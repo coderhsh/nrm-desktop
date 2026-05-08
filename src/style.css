@@ -24,12 +24,7 @@
   --app-surface: #ffffff;
   /* 主列（测速 + 当前源背后）专用，比侧栏略深半阶 */
   --app-main-bg-base: #d4e0ef;
-  --app-main-bg-image: linear-gradient(
-    168deg,
-    #e8eef8 0%,
-    #dde6f2 42%,
-    #d5e0ec 100%
-  );
+  --app-main-bg-image: linear-gradient(168deg, #e8eef8 0%, #dde6f2 42%, #d5e0ec 100%);
   --app-surface-elevated: #ffffff;
   --app-separator: rgba(60, 60, 67, 0.1);
   --app-text: #1d1d1f;
@@ -50,10 +45,9 @@
   --el-transition-duration: 0.3s;
   --el-transition-function-ease-in-out-bezier: var(--app-ease-spring);
   --el-transition-function-fast-bezier: var(--app-ease-spring);
-  --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Helvetica Neue", sans-serif;
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Helvetica Neue', sans-serif;
   /* Softer “sheet” shadows (Element popovers / overlays use --el-box-shadow*) */
-  --el-box-shadow:
-    0 4px 6px rgba(0, 0, 0, 0.03), 0 16px 48px rgba(0, 0, 0, 0.09), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --el-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03), 0 16px 48px rgba(0, 0, 0, 0.09), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
   --el-box-shadow-light: 0 4px 20px rgba(0, 0, 0, 0.06);
   --el-box-shadow-lighter: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
@@ -67,12 +61,7 @@ body,
 
 #app {
   background-color: var(--app-bg);
-  background-image: linear-gradient(
-    165deg,
-    var(--app-bg) 0%,
-    color-mix(in srgb, var(--app-bg) 82%, #b8c8e0 18%) 52%,
-    var(--app-bg-elevated) 100%
-  );
+  background-image: linear-gradient(165deg, var(--app-bg) 0%, color-mix(in srgb, var(--app-bg) 82%, #b8c8e0 18%) 52%, var(--app-bg-elevated) 100%);
   background-attachment: fixed;
 }
 
@@ -396,11 +385,7 @@ html.dark .speed-test-card .speed-retest-pill.el-button.is-link:focus {
   position: relative;
   z-index: 2;
   background-color: color-mix(in srgb, var(--app-bg) 68%, rgba(255, 255, 255, 0.55) 32%);
-  background-image: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--app-surface) 42%, transparent) 0%,
-    color-mix(in srgb, var(--app-bg) 58%, transparent) 100%
-  );
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--app-surface) 42%, transparent) 0%, color-mix(in srgb, var(--app-bg) 58%, transparent) 100%);
   backdrop-filter: saturate(1.12) blur(10px);
   -webkit-backdrop-filter: saturate(1.12) blur(10px);
   border-top-color: color-mix(in srgb, var(--app-separator) 80%, transparent);
@@ -412,11 +397,7 @@ html.dark .speed-test-card .speed-retest-pill.el-button.is-link:focus {
 
 html.dark .app-statusbar {
   background-color: color-mix(in srgb, var(--app-bg) 72%, rgba(40, 40, 44, 0.88) 28%);
-  background-image: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--app-surface) 32%, transparent) 0%,
-    color-mix(in srgb, var(--app-bg) 62%, transparent) 100%
-  );
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--app-surface) 32%, transparent) 0%, color-mix(in srgb, var(--app-bg) 62%, transparent) 100%);
   backdrop-filter: saturate(1.08) blur(12px);
   -webkit-backdrop-filter: saturate(1.08) blur(12px);
   border-top-color: color-mix(in srgb, var(--app-separator) 65%, transparent);
@@ -484,20 +465,26 @@ html.dark .app-statusbar {
 .registry-list-root.registry-list-intro-run .rl-intro-header {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.4s var(--app-ease-spring), transform 0.46s var(--app-ease-spring);
+  transition:
+    opacity 0.4s var(--app-ease-spring),
+    transform 0.46s var(--app-ease-spring);
 }
 
 .registry-list-root.registry-list-intro-run .rl-intro-search {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.4s var(--app-ease-spring), transform 0.46s var(--app-ease-spring);
+  transition:
+    opacity 0.4s var(--app-ease-spring),
+    transform 0.46s var(--app-ease-spring);
   transition-delay: 0.07s;
 }
 
 .registry-list-root.registry-list-intro-run .rl-intro-body {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.44s var(--app-ease-spring), transform 0.5s var(--app-ease-spring);
+  transition:
+    opacity 0.44s var(--app-ease-spring),
+    transform 0.5s var(--app-ease-spring);
   transition-delay: 0.12s;
 }
 
@@ -545,7 +532,9 @@ html.dark .app-statusbar {
 
 .category-row-chevron {
   display: inline-block;
-  width: 0.55rem;
+  width: 0.8rem;
+  font-size: 0.9rem;
+  line-height: 1;
   text-align: center;
   transition: transform 0.3s var(--app-ease-spring);
   transform: rotate(0deg);
@@ -689,7 +678,7 @@ html.dark .registry-list-skeleton-shimmer {
 }
 
 .current-source-card::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -781,12 +770,7 @@ html.dark {
   --app-surface: #26262c;
   /* 主列：略浅于 #app 底，带极弱冷调，托住灰卡 + 当前源块 */
   --app-main-bg-base: #1a1b20;
-  --app-main-bg-image: linear-gradient(
-    172deg,
-    #202126 0%,
-    #1a1b20 48%,
-    #17181c 100%
-  );
+  --app-main-bg-image: linear-gradient(172deg, #202126 0%, #1a1b20 48%, #17181c 100%);
   --app-surface-elevated: #36363e;
   --app-separator: rgba(84, 84, 88, 0.48);
   --app-text: #f5f5f7;
@@ -852,12 +836,7 @@ html.dark body {
 
 html.dark #app {
   background-color: var(--app-bg);
-  background-image: linear-gradient(
-    168deg,
-    var(--app-bg) 0%,
-    color-mix(in srgb, var(--app-bg) 78%, #2a2d38 22%) 52%,
-    color-mix(in srgb, var(--app-bg) 88%, #000000 12%) 100%
-  );
+  background-image: linear-gradient(168deg, var(--app-bg) 0%, color-mix(in srgb, var(--app-bg) 78%, #2a2d38 22%) 52%, color-mix(in srgb, var(--app-bg) 88%, #000000 12%) 100%);
   background-attachment: fixed;
 }
 
@@ -998,6 +977,46 @@ html.dark .current-source-copy-btn.el-button:focus {
   color: #f4f8ff !important;
   background: rgba(126, 197, 255, 0.2) !important;
   border-color: rgba(126, 197, 255, 0.42) !important;
+}
+
+/* 浅色：添加源按钮（苹果风） */
+.registry-add-btn.el-button--primary {
+  --el-button-bg-color: linear-gradient(180deg, #f5f8fb 0%, #edf2f7 100%);
+  --el-button-border-color: rgba(173, 184, 201, 0.72);
+  --el-button-text-color: #475468;
+  --el-button-hover-bg-color: linear-gradient(180deg, #f9fbff 0%, #f1f5fb 100%);
+  --el-button-hover-border-color: rgba(157, 171, 192, 0.82);
+  --el-button-active-bg-color: linear-gradient(180deg, #e9eff6 0%, #e2e9f2 100%);
+  --el-button-active-border-color: rgba(150, 164, 186, 0.82);
+  background: var(--el-button-bg-color) !important;
+  border-color: var(--el-button-border-color) !important;
+  color: var(--el-button-text-color) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 1px 2px rgba(29, 41, 60, 0.08),
+    0 8px 18px rgba(29, 41, 60, 0.08);
+  transition:
+    background 0.26s var(--app-ease-out),
+    border-color 0.26s var(--app-ease-out),
+    box-shadow 0.26s var(--app-ease-out),
+    transform 0.16s var(--app-ease-spring);
+}
+
+.registry-add-btn.el-button--primary:hover,
+.registry-add-btn.el-button--primary:focus {
+  background: var(--el-button-hover-bg-color) !important;
+  border-color: var(--el-button-hover-border-color) !important;
+  color: #3e4b5f !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 2px 5px rgba(29, 41, 60, 0.1),
+    0 10px 22px rgba(29, 41, 60, 0.1);
+}
+
+.registry-add-btn.el-button--primary:active {
+  background: var(--el-button-active-bg-color) !important;
+  border-color: var(--el-button-active-border-color) !important;
+  transform: scale(0.985);
 }
 
 /* 深色：添加源 — 半透明主色底 + 描边，与侧栏表面更一体 */
@@ -1254,9 +1273,94 @@ html.dark .el-checkbox__label {
 }
 
 /* 添加源弹窗 */
+html:not(.dark) .registry-dialog .el-dialog {
+  background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
+  border: 1px solid rgba(193, 203, 218, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 40px rgba(30, 42, 60, 0.18);
+}
+
+html:not(.dark) .registry-dialog .el-dialog__header {
+  border-bottom: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+  padding-bottom: 0.8rem;
+}
+
+html:not(.dark) .registry-dialog .el-dialog__title {
+  color: #1f2632;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+html:not(.dark) .registry-dialog .el-form-item__label {
+  color: #667083;
+  font-weight: 600;
+}
+
+/* 与必填项红色星号占位对齐，避免「分类」标签左移 */
+html:not(.dark) .registry-dialog .el-form-item:not(.is-required) .el-form-item__label {
+  padding-left: 0.72em;
+}
+
+html:not(.dark) .registry-dialog .el-input__wrapper,
+html:not(.dark) .registry-dialog .el-select__wrapper {
+  border-radius: 0.72rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fd 100%) !important;
+  box-shadow: 0 0 0 1px rgba(188, 198, 214, 0.76) inset !important;
+  transition:
+    box-shadow 0.2s var(--app-ease-out),
+    background-color 0.2s var(--app-ease-out);
+}
+
+html:not(.dark) .registry-dialog .el-input__wrapper:hover,
+html:not(.dark) .registry-dialog .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(167, 180, 201, 0.9) inset !important;
+}
+
+html:not(.dark) .registry-dialog .el-input__wrapper.is-focus,
+html:not(.dark) .registry-dialog .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px rgba(10, 132, 255, 0.6) inset,
+    0 0 0 3px rgba(10, 132, 255, 0.14) !important;
+}
+
+html:not(.dark) .registry-dialog .el-button:not(.el-button--primary) {
+  border-radius: 0.72rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%);
+  border-color: rgba(187, 197, 213);
+  color: #5c677a;
+}
+
+html:not(.dark) .registry-dialog .el-button:not(.el-button--primary):hover {
+  background: linear-gradient(180deg, #ffffff 0%, #edf2f9 100%);
+  border-color: rgba(166, 179, 201);
+  color: #404c60;
+}
+
+html:not(.dark) .registry-dialog .el-button--primary {
+  border-radius: 0.72rem;
+  background: linear-gradient(180deg, #3a9dff 0%, #0a84ff 100%);
+  border-color: rgba(33, 117, 220, 0.58);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 8px 18px rgba(10, 132, 255, 0.26);
+}
+
+html:not(.dark) .registry-dialog .el-button--primary:hover,
+html:not(.dark) .registry-dialog .el-button--primary:focus {
+  background: linear-gradient(180deg, #4aa6ff 0%, #1b8fff 100%);
+  border-color: rgba(44, 129, 230, 0.64);
+}
+
 html.dark .registry-dialog .el-dialog {
   background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
   border-color: var(--el-border-color);
+}
+
+/* 与必填项红色星号占位对齐，避免「分类」标签左移 */
+html.dark .registry-dialog .el-form-item:not(.is-required) .el-form-item__label {
+  padding-left: 0.72em;
 }
 
 html.dark .registry-dialog .el-dialog__header {
@@ -1347,38 +1451,49 @@ html.dark .category-manage-dialog .category-input .el-input__wrapper.is-focus {
 
 html.dark .category-manage-dialog .category-create-btn,
 html.dark .category-manage-dialog .category-row-actions .el-button--primary {
-  background-color: var(--el-color-primary) !important;
-  border-color: var(--el-color-primary) !important;
-  color: #ffffff !important;
+  background: linear-gradient(180deg, #3f78bd 0%, #2f68ac 100%) !important;
+  border-color: rgba(137, 193, 255, 0.44) !important;
+  color: #eaf3ff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 4px rgba(0, 0, 0, 0.32) !important;
 }
 
 html.dark .category-manage-dialog .category-create-btn:hover,
 html.dark .category-manage-dialog .category-row-actions .el-button--primary:hover {
-  background-color: var(--el-color-primary-dark-2) !important;
-  border-color: var(--el-color-primary-dark-2) !important;
+  background: linear-gradient(180deg, #4b85cc 0%, #3873ba 100%) !important;
+  border-color: rgba(160, 210, 255, 0.56) !important;
+  color: #f5f9ff !important;
 }
 
 html.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger) {
-  background-color: var(--el-fill-color-light) !important;
-  border-color: var(--el-border-color) !important;
-  color: var(--el-text-color-regular) !important;
+  background: linear-gradient(180deg, #4b505a 0%, #434852 100%) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: rgba(236, 238, 244, 0.88) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  transition:
+    background-color 0.24s var(--app-ease-out),
+    border-color 0.24s var(--app-ease-out),
+    color 0.24s var(--app-ease-out),
+    box-shadow 0.24s var(--app-ease-out) !important;
 }
 
 html.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
-  background-color: var(--el-fill-color) !important;
-  border-color: var(--el-border-color-light) !important;
-  color: var(--el-text-color-primary) !important;
+  background: linear-gradient(180deg, #565c67 0%, #4d5460 100%) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
 }
 
 html.dark .category-manage-dialog .category-row-actions .el-button--danger {
-  background-color: rgba(255, 59, 48, 0.15) !important;
-  border-color: rgba(255, 59, 48, 0.45) !important;
-  color: #ff6961 !important;
+  background-color: rgba(255, 69, 58, 0.14) !important;
+  border-color: rgba(255, 69, 58, 0.42) !important;
+  color: #ff7b72 !important;
 }
 
 html.dark .category-manage-dialog .category-row-actions .el-button--danger:hover {
-  background-color: rgba(255, 59, 48, 0.22) !important;
-  border-color: rgba(255, 59, 48, 0.55) !important;
+  background-color: rgba(255, 69, 58, 0.2) !important;
+  border-color: rgba(255, 69, 58, 0.52) !important;
+  color: #ff918a !important;
 }
 
 /* 分类管理弹窗底部“关闭”按钮 */
