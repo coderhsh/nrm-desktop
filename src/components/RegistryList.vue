@@ -174,14 +174,25 @@ function getCategoryRenameRefCallback(label: string) {
   return cb
 }
 const draggingCategoryLabel = ref<string | null>(null)
-const dragOverManageCategoryLabel = ref<string | null>(null)
 const manageDragLabel = ref<string | null>(null)
 const manageDragStart = ref<{ x: number; y: number } | null>(null)
 const isManageDragging = ref(false)
-const manageDragSourceRect = ref<{ x: number; y: number } | null>(null)
-const manageDragPointerOffset = ref({ x: 0, y: 0 })
+/** 插入槽位：在「去掉当前拖拽项」后的数组中的下标 0..rest.length */
+const manageDropIndex = ref(0)
+
+/** 分类列表滚动容器（用于松手后恢复 scrollTop，减轻布局切换时的跳动） */
+const categoryManageScrollRef = ref<HTMLElement | null>(null)
+
+/** 分类拖拽：跟随指针的分身位置（左上角屏幕坐标）与抓取偏移 */
 const manageGhostPosition = ref({ x: 0, y: 0 })
-const manageGhostTransition = ref('none')
+const manageDragPointerOffset = ref({ x: 0, y: 0 })
+
+/** 分类排序拖拽全程（含未过移动阈值）：body 挂类名以屏蔽 teleport 出去的对话框内 hover */
+watch(manageDragLabel, v => {
+  if (typeof document === 'undefined') return
+  document.body.classList.toggle('category-manage-sort-dragging', Boolean(v))
+})
+
 const dragOverCategoryLabel = ref<string | null>(null)
 const pointerDragRegistryName = ref<string | null>(null)
 const isPointerDragging = ref(false)
@@ -552,37 +563,21 @@ function clearPointerDragState() {
 
 function onWindowMouseMove(event: MouseEvent) {
   if (manageDragLabel.value && manageDragStart.value) {
-    if (isManageDragging.value) {
-      manageGhostTransition.value = 'none'
-      manageGhostPosition.value = {
-        x: event.clientX - manageDragPointerOffset.value.x,
-        y: event.clientY - manageDragPointerOffset.value.y,
-      }
-      return
-    }
-
     if (!isManageDragging.value) {
       const dx = Math.abs(event.clientX - manageDragStart.value.x)
       const dy = Math.abs(event.clientY - manageDragStart.value.y)
       if (dx + dy >= 4) {
         isManageDragging.value = true
+        window.getSelection()?.removeAllRanges()
         document.documentElement.style.setProperty('cursor', 'grabbing', 'important')
         document.body.style.setProperty('cursor', 'grabbing', 'important')
-        if (manageDragSourceRect.value) {
-          manageGhostTransition.value = 'transform 120ms ease-out'
-          requestAnimationFrame(() => {
-            manageGhostPosition.value = {
-              x: event.clientX - manageDragPointerOffset.value.x,
-              y: event.clientY - manageDragPointerOffset.value.y,
-            }
-          })
-          return
-        }
-        manageGhostPosition.value = {
-          x: event.clientX - manageDragPointerOffset.value.x,
-          y: event.clientY - manageDragPointerOffset.value.y,
-        }
       }
+    } else {
+      manageGhostPosition.value = {
+        x: event.clientX - manageDragPointerOffset.value.x,
+        y: event.clientY - manageDragPointerOffset.value.y,
+      }
+      updateManageDropIndexFromPointerY(event.clientY)
     }
     return
   }
@@ -601,6 +596,7 @@ function onWindowMouseMove(event: MouseEvent) {
   const dy = Math.abs(event.clientY - pointerStart.value.y)
   if (dx + dy >= 6) {
     isPointerDragging.value = true
+    window.getSelection()?.removeAllRanges()
     document.documentElement.style.setProperty('cursor', 'grabbing', 'important')
     document.body.style.setProperty('cursor', 'grabbing', 'important')
     if (dragSourceRect.value) {
@@ -652,6 +648,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('mouseup', onWindowMouseUp)
   document.documentElement.style.removeProperty('cursor')
   document.body.style.removeProperty('cursor')
+  document.body.classList.remove('category-manage-sort-dragging')
 })
 
 function normalizeCategoryLabel(label: string | null | undefined): string {
@@ -679,6 +676,115 @@ function saveCategoryFromDialog(payload: { oldName: string; newName: string; cat
   categoryByRegistry.value = nextMapping
 }
 
+type ManageCategorySlot = { kind: 'row'; label: string; isDragPreview?: boolean }
+
+/** 拖拽时在目标位置渲染半透明本体行；松手后写回 draft，配合 TransitionGroup 做 FLIP */
+const manageCategoryListSlots = computed((): ManageCategorySlot[] => {
+  const labels = categoryManageDraftLabels.value
+  const drag = manageDragLabel.value
+  if (!isManageDragging.value || !drag) {
+    return labels.map(label => ({ kind: 'row' as const, label }))
+  }
+  const rest = labels.filter(l => l !== drag)
+  const k = Math.min(Math.max(manageDropIndex.value, 0), rest.length)
+  const ordered = [...rest.slice(0, k), drag, ...rest.slice(k)]
+  return ordered.map(label => ({
+    kind: 'row' as const,
+    label,
+    isDragPreview: label === drag,
+  }))
+})
+
+/** 行间空隙 + 行顶/行底外侧窄带（像素）；行身中间区域不触发换位 */
+const MANAGE_DROP_STRIP_PX = 14
+
+/** 间隙「落在 visual row i 之下、row i+1 之上」时，插入下标 = visual 序中前 i+1 行里非拖拽项个数（与 manageDropIndex 语义一致） */
+function manageDropKAfterGapFollowingVisualRow(i: number, labelsVis: string[], drag: string): number {
+  let k = 0
+  for (let j = 0; j <= i; j++) {
+    if (labelsVis[j] !== drag) k++
+  }
+  return k
+}
+
+/**
+ * 仅用指针 Y 与当前 DOM 几何判定：必须在「目标分支正上/正下」窄带或两行之间的空隙内才更新插入下标，
+ * 避免此前用 rest 静态下标与预览重排后视觉顺序不一致导致的错位。
+ */
+function pickManageDropIndexFromPointerY(
+  clientY: number,
+  rects: DOMRect[],
+  labelsVis: string[],
+  drag: string,
+  restLen: number,
+): { k: number } | null {
+  const n = rects.length
+  if (n === 0 || labelsVis.length !== n) return null
+
+  const strip = MANAGE_DROP_STRIP_PX
+
+  // 行身中部：不换位置
+  for (let i = 0; i < n; i++) {
+    const r = rects[i]
+    if (r.height <= strip * 2 + 10) continue
+    const innerLo = r.top + strip
+    const innerHi = r.bottom - strip
+    if (clientY > innerLo && clientY < innerHi) return null
+  }
+
+  // 第一个分支「正上方」：列表顶部 + 第一行顶边的窄带 → 插在 rest 最前
+  if (clientY <= rects[0].top + strip) {
+    return { k: 0 }
+  }
+
+  // 相邻两行之间的空隙 + 上行底边/下行顶边外侧窄带（正上/正下合一为缝）
+  for (let i = 0; i < n - 1; i++) {
+    const lo = rects[i].bottom - strip
+    const hi = rects[i + 1].top + strip
+    if (clientY >= lo && clientY <= hi) {
+      const k = manageDropKAfterGapFollowingVisualRow(i, labelsVis, drag)
+      return { k }
+    }
+  }
+
+  // 最后一个分支「正下方」：最后一行底边以下的窄带 → 插在 rest 最后
+  if (clientY >= rects[n - 1].bottom - strip) {
+    return { k: restLen }
+  }
+
+  return null
+}
+
+function updateManageDropIndexFromPointerY(clientY: number) {
+  if (!isManageDragging.value || !manageDragLabel.value) return
+
+  const drag = manageDragLabel.value
+  const scrollEl = categoryManageScrollRef.value
+  if (!scrollEl) return
+
+  const wrap = scrollEl.querySelector('.category-list-wrap')
+  if (!wrap) return
+
+  const itemEls = wrap.querySelectorAll(':scope > .category-manage-flip-item')
+  const rects: DOMRect[] = []
+  const labelsVis: string[] = []
+
+  itemEls.forEach(item => {
+    const el = item as HTMLElement
+    const lab = el.dataset.manageRowLabel
+    const row = el.querySelector('.category-list-row')
+    if (!lab || !row) return
+    rects.push(row.getBoundingClientRect())
+    labelsVis.push(lab)
+  })
+
+  const restLen = categoryManageDraftLabels.value.filter(l => l !== drag).length
+  const picked = pickManageDropIndexFromPointerY(clientY, rects, labelsVis, drag, restLen)
+  if (!picked) return
+
+  manageDropIndex.value = picked.k
+}
+
 function openCategoryManageDialog() {
   categoryManageDraftLabels.value = [...categoryLabels.value]
   draftPresetCategoryLabel.value = presetCategoryLabel.value
@@ -691,10 +797,10 @@ function openCategoryManageDialog() {
   categoryRenameInputs.value = inputs
   editingCategoryLabel.value = null
   draggingCategoryLabel.value = null
-  dragOverManageCategoryLabel.value = null
   manageDragLabel.value = null
   manageDragStart.value = null
   isManageDragging.value = false
+  manageDropIndex.value = 0
   contextMenu.value = null
   newCategoryLabel.value = ''
   showCategoryManageDialog.value = true
@@ -729,55 +835,44 @@ function focusNewCategoryLabelInput() {
 
 function startManageDrag(label: string, event: MouseEvent) {
   if (event.button !== 0) return
+  window.getSelection()?.removeAllRanges()
   manageDragLabel.value = label
   manageDragStart.value = { x: event.clientX, y: event.clientY }
-  const current = event.currentTarget as HTMLElement | null
-  if (current) {
-    const rect = current.getBoundingClientRect()
-    manageDragSourceRect.value = { x: rect.left, y: rect.top }
-    manageDragPointerOffset.value = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    }
-    manageGhostPosition.value = { x: rect.left, y: rect.top }
-  } else {
-    manageDragSourceRect.value = null
-    manageDragPointerOffset.value = { x: 0, y: 0 }
-    manageGhostPosition.value = { x: event.clientX, y: event.clientY }
-  }
-  manageGhostTransition.value = 'none'
   isManageDragging.value = false
-  dragOverManageCategoryLabel.value = null
-}
-
-function onManageRowEnter(label: string) {
-  if (!isManageDragging.value || !manageDragLabel.value || manageDragLabel.value === label) {
-    return
+  manageDropIndex.value = categoryManageDraftLabels.value.indexOf(label)
+  const rowEl = (event.currentTarget as HTMLElement).closest('.category-list-row') as HTMLElement | null
+  const rect = rowEl?.getBoundingClientRect() ?? (event.currentTarget as HTMLElement).getBoundingClientRect()
+  manageDragPointerOffset.value = {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
   }
-  dragOverManageCategoryLabel.value = label
+  manageGhostPosition.value = { x: rect.left, y: rect.top }
 }
 
+/** 正在拖拽时合并顺序并重置指针状态 */
 function finishManageDrag() {
   if (!manageDragLabel.value) return
-  if (isManageDragging.value && dragOverManageCategoryLabel.value) {
-    const fromLabel = manageDragLabel.value
-    const toLabel = dragOverManageCategoryLabel.value
-    const fromIndex = categoryManageDraftLabels.value.indexOf(fromLabel)
-    const toIndex = categoryManageDraftLabels.value.indexOf(toLabel)
-    if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex) {
-      const nextLabels = [...categoryManageDraftLabels.value]
-      nextLabels.splice(fromIndex, 1)
-      nextLabels.splice(toIndex, 0, fromLabel)
-      categoryManageDraftLabels.value = nextLabels
-    }
+
+  const scrollEl = categoryManageScrollRef.value
+  const prevScrollTop = scrollEl?.scrollTop ?? 0
+
+  if (isManageDragging.value) {
+    const drag = manageDragLabel.value
+    const list = categoryManageDraftLabels.value
+    const rest = list.filter(l => l !== drag)
+    const k = Math.min(Math.max(manageDropIndex.value, 0), rest.length)
+    categoryManageDraftLabels.value = [...rest.slice(0, k), drag, ...rest.slice(k)]
   }
+
   manageDragLabel.value = null
   manageDragStart.value = null
   isManageDragging.value = false
-  dragOverManageCategoryLabel.value = null
-  manageDragSourceRect.value = null
-  manageDragPointerOffset.value = { x: 0, y: 0 }
-  manageGhostTransition.value = 'none'
+
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      if (scrollEl) scrollEl.scrollTop = prevScrollTop
+    })
+  })
 }
 
 /** 左侧上下文「新建分类」等：立即写入持久化 */
@@ -1034,7 +1129,16 @@ function copyAllDetails() {
 </script>
 
 <template>
-  <div class="registry-list-root flex flex-col h-full min-h-0" :class="[registryListIntroClass, { 'registry-list-root--dragging': isPointerDragging || isManageDragging }]">
+  <div
+    class="registry-list-root flex flex-col h-full min-h-0"
+    :class="[
+      registryListIntroClass,
+      {
+        'registry-list-root--dragging': isPointerDragging || isManageDragging || manageDragLabel,
+        'registry-list-root--pointer-dragging': isPointerDragging,
+      },
+    ]"
+  >
     <!-- Header -->
     <div class="rl-intro-header flex items-center gap-2 px-4 pt-4 pb-2">
       <h2 class="text-base font-bold">{{ t('registryList.title') }}</h2>
@@ -1217,7 +1321,7 @@ function copyAllDetails() {
     <!-- Add/Edit Dialog -->
     <RegistryDialog :visible="showDialog" :registry="editingRegistry" :category-labels="categoryLabels" :current-category="editingRegistry ? categoryByRegistry[editingRegistry.name] || '' : ''" @save-category="saveCategoryFromDialog" @close="showDialog = false" />
 
-    <el-dialog v-model="showCategoryContextPromptDialog" :title="categoryContextPromptTitle" width="420px" :close-on-click-modal="false" destroy-on-close @closed="onCategoryContextPromptDialogClosed">
+    <el-dialog v-model="showCategoryContextPromptDialog" :title="categoryContextPromptTitle" width="420px" class="app-dialog" :close-on-click-modal="false" destroy-on-close @closed="onCategoryContextPromptDialogClosed">
       <p class="text-sm text-gray-500 mb-3 m-0">{{ categoryContextPromptHint }}</p>
       <el-input v-model="categoryContextPromptInput" :maxlength="categoryLabelMaxLength" show-word-limit clearable @keyup.enter="confirmCategoryContextPrompt" />
       <template #footer>
@@ -1257,42 +1361,47 @@ function copyAllDetails() {
         <div v-if="categoryManageDraftLabels.length === 0" class="category-empty-state">
           {{ t('categoryDialog.empty') }}
         </div>
-        <div v-else class="category-list-wrap">
+        <div v-else ref="categoryManageScrollRef" class="category-list-scroll-host">
+          <TransitionGroup :name="isManageDragging ? 'cat-manage-flip' : 'cat-manage-idle'" tag="div" class="category-list-wrap">
           <div
-            v-for="label in categoryManageDraftLabels"
-            :key="label"
-            :class="[
-              'category-list-row',
-              {
-                'category-list-row--drag-over': dragOverManageCategoryLabel === label,
-                'opacity-70': isManageDragging && manageDragLabel === label,
-              },
-            ]"
-            @mouseenter="onManageRowEnter(label)"
+            v-for="slot in manageCategoryListSlots"
+            :key="slot.label"
+            class="category-manage-flip-item"
+            :data-manage-row-label="slot.label"
           >
-            <div class="category-drag-handle" @mousedown.left.stop.prevent="startManageDrag(label, $event)" :title="t('categoryDialog.dragSort')">
-              <el-icon><Rank /></el-icon>
-            </div>
-            <el-input
-              :ref="getCategoryRenameRefCallback(label)"
-              v-model="categoryRenameInputs[label]"
-              class="category-input"
-              :maxlength="categoryLabelMaxLength"
-              show-word-limit
-              :disabled="editingCategoryLabel !== label"
-            />
-            <div class="category-row-actions">
-              <el-button size="small" :disabled="editingCategoryLabel !== null && editingCategoryLabel !== label" @click="editingCategoryLabel === label ? cancelRenameCategory(label) : startRenameCategory(label)">
-                {{ editingCategoryLabel === label ? t('common.cancel') : t('categoryDialog.rename') }}
-              </el-button>
-              <el-button v-if="editingCategoryLabel === label" size="small" type="primary" @click="confirmRenameInManageDraft(label)">
-                {{ t('common.confirm') }}
-              </el-button>
-              <el-button size="small" type="danger" @click="deleteCategoryLabel(label)">
-                {{ t('categoryDialog.delete') }}
-              </el-button>
+            <div
+              :class="[
+                'category-list-row',
+                {
+                  'category-list-row--drag-preview': slot.isDragPreview,
+                },
+              ]"
+            >
+              <div class="category-drag-handle" @mousedown.left.stop.prevent="startManageDrag(slot.label, $event)" :title="t('categoryDialog.dragSort')">
+                <el-icon><Rank /></el-icon>
+              </div>
+              <el-input
+                :ref="getCategoryRenameRefCallback(slot.label)"
+                v-model="categoryRenameInputs[slot.label]"
+                class="category-input"
+                :maxlength="categoryLabelMaxLength"
+                show-word-limit
+                :disabled="editingCategoryLabel !== slot.label"
+              />
+              <div class="category-row-actions">
+                <el-button size="small" :disabled="editingCategoryLabel !== null && editingCategoryLabel !== slot.label" @click="editingCategoryLabel === slot.label ? cancelRenameCategory(slot.label) : startRenameCategory(slot.label)">
+                  {{ editingCategoryLabel === slot.label ? t('common.cancel') : t('categoryDialog.rename') }}
+                </el-button>
+                <el-button v-if="editingCategoryLabel === slot.label" size="small" type="primary" @click="confirmRenameInManageDraft(slot.label)">
+                  {{ t('common.confirm') }}
+                </el-button>
+                <el-button size="small" type="danger" @click="deleteCategoryLabel(slot.label)">
+                  {{ t('categoryDialog.delete') }}
+                </el-button>
+              </div>
             </div>
           </div>
+          </TransitionGroup>
         </div>
       </div>
       <template #footer>
@@ -1385,24 +1494,24 @@ function copyAllDetails() {
       </div>
     </Teleport>
 
-    <!-- Category Manage Dragging Ghost -->
+    <!-- 分类管理：跟随光标的拖拽分身（列表内另有半透明占位行） -->
     <Teleport to="body">
       <div
         v-if="isManageDragging && manageDragLabel"
-        class="fixed z-[9999] pointer-events-none px-3 py-2 rounded-lg border border-gray-200 bg-white shadow-lg min-w-42"
+        class="category-manage-drag-ghost fixed z-[10000] pointer-events-none"
         :style="{
           left: '0px',
           top: '0px',
           transform: `translate(${manageGhostPosition.x}px, ${manageGhostPosition.y}px)`,
-          transition: manageGhostTransition,
         }"
       >
-        <div class="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <el-icon class="text-gray-400"><Rank /></el-icon>
+        <div class="category-manage-drag-ghost-inner flex items-center gap-2 text-sm font-semibold">
+          <el-icon class="category-manage-drag-ghost-icon"><Rank /></el-icon>
           <span class="truncate">{{ manageDragLabel }}</span>
         </div>
       </div>
     </Teleport>
+
   </div>
 </template>
 
@@ -1577,19 +1686,91 @@ function copyAllDetails() {
   line-height: 1.45;
 }
 
+/* 滚动层外提：松手时占位槽与真实行切换不会触发布局与 FLIP move 抢同一帧 */
+.category-list-scroll-host {
+  width: 100%;
+  max-height: 19rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-anchor: none;
+  box-sizing: border-box;
+}
+
 .category-list-wrap {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
-  max-height: 19rem;
-  overflow-y: auto;
-  overflow-x: hidden;
-  /* 减轻追加行时浏览器滚动锚定导致的列表跳动 */
-  overflow-anchor: none;
   /* 不用 scrollbar-gutter: stable，否则右侧预留槽位会让列表比上方「新增分类」块视觉上更窄 */
   padding: 0.15rem 0 0.35rem;
   box-sizing: border-box;
+}
+
+.category-manage-flip-item {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/*
+ * 弹窗初次展开时用 cat-manage-idle：关闭 FLIP move，避免列表项从 (0,0) 飞入。
+ * 仅在拖拽排序（isManageDragging）时用 cat-manage-flip 做换位动画。
+ */
+.cat-manage-flip-enter-active,
+.cat-manage-flip-leave-active,
+.cat-manage-idle-enter-active,
+.cat-manage-idle-leave-active {
+  transition: none !important;
+}
+
+.cat-manage-flip-enter-from,
+.cat-manage-flip-enter-to,
+.cat-manage-flip-leave-from,
+.cat-manage-flip-leave-to,
+.cat-manage-idle-enter-from,
+.cat-manage-idle-enter-to,
+.cat-manage-idle-leave-from,
+.cat-manage-idle-leave-to {
+  opacity: 1;
+}
+
+.cat-manage-idle-move {
+  transition: none !important;
+}
+
+.cat-manage-flip-move {
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* 拖拽排序：插入位置上的半透明本体预览（行内仍可 mousemove，手柄/输入/按钮不抢交互） */
+.category-list-row--drag-preview {
+  opacity: 0.5;
+}
+
+.category-list-row--drag-preview .category-drag-handle,
+.category-list-row--drag-preview .category-row-actions {
+  pointer-events: none;
+}
+
+.category-list-row--drag-preview :deep(.el-input__wrapper) {
+  pointer-events: none;
+}
+
+.category-manage-drag-ghost-inner {
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--app-radius-md);
+  border: 0.5px solid color-mix(in srgb, var(--app-separator) 88%, transparent);
+  background: linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%);
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  min-width: 10rem;
+  max-width: min(90vw, 28rem);
+  color: var(--el-text-color-primary);
+}
+
+.category-manage-drag-ghost-icon {
+  color: var(--app-text-muted);
+  flex-shrink: 0;
 }
 
 .category-list-row {
@@ -1618,14 +1799,6 @@ function copyAllDetails() {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
     0 4px 14px rgba(0, 122, 255, 0.09);
-}
-
-.category-list-row--drag-over {
-  background: color-mix(in srgb, var(--el-color-primary-light-9) 58%, #ffffff 42%);
-  border-color: color-mix(in srgb, var(--el-color-primary) 42%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--el-color-primary) 22%, transparent),
-    0 6px 18px color-mix(in srgb, var(--el-color-primary) 16%, transparent);
 }
 
 .category-drag-handle {

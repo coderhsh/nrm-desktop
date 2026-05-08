@@ -908,6 +908,38 @@ html.dark .registry-item.is-idle {
   background-color: rgba(255, 255, 255, 0.045);
 }
 
+/* 拖拽源列表项时禁用 hover 描边/底色（指针掠过其它项不出现「伪 hover」） */
+.registry-list-root--pointer-dragging .registry-item.is-idle:hover {
+  background-color: #f2f2f7 !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.registry-list-root--pointer-dragging .registry-item.is-active:hover {
+  background-color: color-mix(in srgb, var(--el-color-primary) 14%, #ffffff) !important;
+  border-left-color: var(--el-color-primary) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 28%, transparent),
+    0 1px 5px color-mix(in srgb, var(--el-color-primary) 18%, transparent) !important;
+  outline-color: transparent !important;
+}
+
+html.dark .registry-list-root--pointer-dragging .registry-item.is-idle:hover {
+  background-color: rgba(255, 255, 255, 0.045) !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.dark .registry-list-root--pointer-dragging .registry-item.is-active:hover {
+  background-color: rgba(10, 132, 255, 0.3) !important;
+  border-left-color: #7ec5ff !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(10, 132, 255, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.22),
+    0 2px 10px rgba(0, 0, 0, 0.28) !important;
+  outline-color: transparent !important;
+}
+
 html.dark .category-drop-overlay {
   background-color: rgba(28, 28, 30, 0.45);
   border-color: rgba(10, 132, 255, 0.35);
@@ -1498,18 +1530,6 @@ html.dark .registry-dialog .el-button:not(.el-button--primary):hover {
   color: var(--el-text-color-primary);
 }
 
-html.dark .registry-dialog .el-button--primary {
-  background-color: var(--el-color-primary);
-  border-color: var(--el-color-primary);
-  color: #ffffff;
-}
-
-html.dark .registry-dialog .el-button--primary:hover,
-html.dark .registry-dialog .el-button--primary:focus {
-  background-color: var(--el-color-primary-dark-2);
-  border-color: var(--el-color-primary-dark-2);
-}
-
 /* 分类管理弹窗（Teleport）：深色 sheet + 列表区覆写浅色 scoped 样式 */
 html.dark .category-manage-dialog .el-dialog {
   background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
@@ -1562,12 +1582,221 @@ html.dark .category-manage-dialog .category-list-row:hover {
     0 6px 18px rgba(0, 0, 0, 0.38) !important;
 }
 
-html.dark .category-manage-dialog .category-list-row--drag-over {
-  background: rgba(10, 132, 255, 0.14) !important;
-  border-color: rgba(10, 132, 255, 0.55) !important;
+/*
+ * 分类排序拖拽分身 teleported 到 body，不依赖 Vue scoped 属性即可命中。
+ * 与 .category-manage-dialog .category-list-row 深色表面一致。
+ */
+html.dark .category-manage-drag-ghost-inner {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(56, 56, 58, 0.95) 0%, rgba(44, 44, 46, 0.92) 100%);
+  color: var(--app-text);
   box-shadow:
-    0 0 0 2px rgba(10, 132, 255, 0.28),
-    0 8px 22px rgba(10, 132, 255, 0.18) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .category-manage-drag-ghost-icon {
+  color: var(--app-text-muted);
+}
+
+/*
+ * 分类排序拖拽（body.category-manage-sort-dragging）
+ * 弹窗 teleport 到 body，须禁止选中：否则会拖出系统文本选中（蓝色），不同于 hover。
+ */
+body.category-manage-sort-dragging,
+body.category-manage-sort-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.category-manage-sort-dragging ::selection {
+  background: transparent !important;
+}
+
+body.category-manage-sort-dragging ::-moz-selection {
+  background: transparent !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .category-list-row {
+  outline: none !important;
+}
+
+/*
+ * 压制 hover（指针掠过时的描边/按钮变亮）
+ */
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-list-row:hover:not(.category-list-row--drag-preview) {
+  border-color: color-mix(in srgb, var(--app-separator) 82%, transparent) !important;
+  background: color-mix(in srgb, #ffffff 94%, #f2f2f7 6%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-list-row:hover:not(.category-list-row--drag-preview) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: linear-gradient(180deg, rgba(56, 56, 58, 0.95) 0%, rgba(44, 44, 46, 0.92) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .category-drag-handle:hover {
+  color: var(--app-text-muted) !important;
+  background: transparent !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-create-row .el-input__wrapper:hover:not(.is-focus),
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-input .el-input__wrapper:hover:not(.is-focus) {
+  box-shadow: 0 0 0 1px rgba(188, 198, 214, 0.76) inset !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-create-row .el-input__wrapper:hover:not(.is-focus),
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-input .el-input__wrapper:hover:not(.is-focus) {
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-create-row .category-create-btn--add.el-button:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #e8eaef 100%) !important;
+  border-color: rgba(158, 166, 182, 0.92) !important;
+  color: #1d1d1f !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-create-btn--add.el-button:hover {
+  background: linear-gradient(180deg, #48484a 0%, #3a3a3c 100%) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 2px 10px rgba(0, 0, 0, 0.38) !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--primary:hover {
+  background: linear-gradient(180deg, #3a9dff 0%, #0a84ff 100%) !important;
+  border-color: rgba(33, 117, 220, 0.52) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 4px 12px rgba(10, 132, 255, 0.22) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--primary:hover {
+  background: linear-gradient(180deg, #409cff 0%, #0a84ff 100%) !important;
+  border-color: rgba(120, 190, 255, 0.45) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 14px rgba(10, 132, 255, 0.35) !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%) !important;
+  border-color: rgba(187, 197, 213, 0.95) !important;
+  color: #5c677a !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: linear-gradient(180deg, #4b505a 0%, #3d424c 100%) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(242, 244, 248, 0.92) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--danger:hover {
+  background: color-mix(in srgb, #ff3b30 12%, #ffffff 88%) !important;
+  border-color: color-mix(in srgb, #ff3b30 35%, #ffffff 65%) !important;
+  color: #d70015 !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--danger:hover {
+  background-color: rgba(255, 69, 58, 0.16) !important;
+  border-color: rgba(255, 69, 58, 0.45) !important;
+  color: #ff6961 !important;
+}
+
+/* 底部「保存」、关闭钮、输入框后缀/字数 hover（此前未覆盖仍会透出蓝） */
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #3a9dff 0%, #0a84ff 100%) !important;
+  border-color: rgba(33, 117, 220, 0.58) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 8px 18px rgba(10, 132, 255, 0.26) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
+html.dark body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #78787d 0%, #5e5e63 100%) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .el-dialog__headerbtn:hover,
+body.category-manage-sort-dragging .category-manage-dialog .el-dialog__headerbtn:focus {
+  color: var(--el-text-color-secondary) !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .el-input__suffix-inner .el-icon:hover,
+body.category-manage-sort-dragging .category-manage-dialog .el-input__suffix-inner .el-input__icon:hover {
+  color: var(--el-text-color-placeholder) !important;
+}
+
+body.category-manage-sort-dragging .registry-sidebar-card:hover {
+  border-color: color-mix(in srgb, var(--app-separator) 85%, transparent) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.dark body.category-manage-sort-dragging .registry-sidebar-card:hover {
+  border-color: color-mix(in srgb, var(--app-separator) 70%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 3px 14px rgba(0, 0, 0, 0.32),
+    0 1px 3px rgba(0, 0, 0, 0.22) !important;
+}
+
+body.category-manage-sort-dragging .speed-test-card:hover {
+  border-color: color-mix(in srgb, #c8d1dd 68%, #ffffff) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 0 0 0.5px rgba(156, 170, 188, 0.3),
+    0 2px 6px rgba(33, 44, 62, 0.07),
+    0 10px 24px rgba(28, 40, 60, 0.11) !important;
+}
+
+html.dark body.category-manage-sort-dragging .speed-test-card:hover {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    0 3px 10px rgba(0, 0, 0, 0.34),
+    0 10px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.category-manage-sort-dragging .current-source-card:hover {
+  transform: none !important;
+  border-color: color-mix(in srgb, #c8d1dd 68%, #ffffff) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12) !important;
+}
+
+html.dark body.category-manage-sort-dragging .current-source-card:hover {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2) !important;
 }
 
 html.dark .category-manage-dialog .category-create-row .el-input__wrapper,
@@ -1650,23 +1879,39 @@ html.dark .category-manage-dialog .category-row-actions .el-button--danger:hover
   color: #ff857d !important;
 }
 
-html.dark .category-manage-dialog .el-dialog__footer .el-button--primary {
+/*
+ * 深色：表单/抽屉页脚主按钮 — 中性锌灰填充，避免与侧栏「添加源」等蓝色主操作混淆。
+ */
+html.dark .category-manage-dialog .el-dialog__footer .el-button--primary,
+html.dark .settings-drawer .el-drawer__footer .el-button--primary,
+html.dark .registry-dialog .el-button--primary,
+html.dark .app-dialog .el-dialog__footer .el-button--primary {
   border-radius: 0.72rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   min-width: 5.5rem;
-  background: linear-gradient(180deg, #409cff 0%, #0a84ff 100%) !important;
-  border-color: rgba(120, 190, 255, 0.45) !important;
-  color: #ffffff !important;
+  background: linear-gradient(180deg, #6a6a6e 0%, #525256 100%) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #fafafa !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 4px 14px rgba(10, 132, 255, 0.35) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 14px rgba(0, 0, 0, 0.35) !important;
 }
 
 html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
-html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
-  background: linear-gradient(180deg, #52a8ff 0%, #1e8fff 100%) !important;
-  border-color: rgba(150, 205, 255, 0.55) !important;
+html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:focus,
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:hover,
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:focus,
+html.dark .registry-dialog .el-button--primary:hover,
+html.dark .registry-dialog .el-button--primary:focus,
+html.dark .app-dialog .el-dialog__footer .el-button--primary:hover,
+html.dark .app-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #78787d 0%, #5e5e63 100%) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 18px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* 全局：深色模式下输入框字数统计去掉黑色背景块 */
@@ -1794,16 +2039,7 @@ html.dark .settings-drawer .el-drawer__footer {
   background: rgba(44, 44, 46, 0.92);
 }
 
-html.dark .settings-drawer .el-drawer__footer .el-button--primary {
-  background-color: var(--el-color-primary) !important;
-  border-color: var(--el-color-primary) !important;
-  color: #ffffff !important;
-}
-
-html.dark .settings-drawer .el-drawer__footer .el-button--primary:hover {
-  background-color: var(--el-color-primary-dark-2) !important;
-  border-color: var(--el-color-primary-dark-2) !important;
-}
+/* 设置抽屉「保存」主色见上方 html.dark .settings-drawer .el-drawer__footer .el-button--primary */
 
 /* 右键菜单（源列表）深色模式 hover：使用更低亮度并强制覆盖 */
 .context-menu-item {
