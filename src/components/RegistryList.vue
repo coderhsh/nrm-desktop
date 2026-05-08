@@ -623,6 +623,8 @@ function moveRegistryToCategory(registryName: string, label: string) {
 
 function onRegistryMouseDown(registry: Registry, event: MouseEvent) {
   if (event.button !== 0) return
+  /* 拖拽结束后多数浏览器不再派发「松手误触」的 click，suppress 会残留；新一次按下表示新手势，清掉以免第一次切换被吞 */
+  suppressNextClick.value = false
   pointerDragRegistryName.value = registry.name
   pointerDragSourceCategory.value = getRegistryCategory(registry)
   pointerStart.value = { x: event.clientX, y: event.clientY }
