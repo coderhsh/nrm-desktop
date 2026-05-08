@@ -72,11 +72,30 @@ const themeOptions = computed(() => [
   { label: t('app.settings.themeDark'), value: 'dark' as const },
 ])
 const elementLocale = computed(() => (coerceAppLanguage(language.value) === 'en' ? en : zhCn))
-const nextThemeLabel = computed(() => {
-  if (theme.theme.value === 'auto') return t('app.settings.themeDark')
-  if (theme.theme.value === 'dark') return t('app.settings.themeLight')
-  return t('app.settings.themeFollowSystem')
+/** 底部状态栏：只在浅色 / 深色间切换，不出现「跟随系统」作为下一状态 */
+const dockThemeIcon = computed(() => {
+  const effectiveDark =
+    theme.theme.value === 'auto' ? theme.isDark.value : theme.theme.value === 'dark'
+  return effectiveDark ? '🌙' : '☀️'
 })
+
+const dockNextThemeLabel = computed(() => {
+  const effectiveDark =
+    theme.theme.value === 'auto' ? theme.isDark.value : theme.theme.value === 'dark'
+  return effectiveDark ? t('app.settings.themeLight') : t('app.settings.themeDark')
+})
+
+function toggleDockTheme() {
+  if (theme.theme.value === 'auto') {
+    theme.theme.value = theme.isDark.value ? 'light' : 'dark'
+    return
+  }
+  if (theme.theme.value === 'dark') {
+    theme.theme.value = 'light'
+  } else {
+    theme.theme.value = 'dark'
+  }
+}
 let unlistenCloseRequested: null | (() => void) = null
 let unlistenRegistryChanged: null | (() => void) = null
 let unlistenTrayRestored: null | (() => void) = null
@@ -395,10 +414,10 @@ async function handleCloseDialogClosed() {
           <el-button
             text
             size="small"
-            @click="theme.toggle()"
-            :title="t('app.themeTooltip', { mode: nextThemeLabel })"
+            @click="toggleDockTheme"
+            :title="t('app.themeTooltip', { mode: dockNextThemeLabel })"
           >
-            {{ theme.icon.value }}
+            {{ dockThemeIcon }}
           </el-button>
 
           <el-button text size="small" :title="t('common.settings')" @click="showSettingsDialog = true">
