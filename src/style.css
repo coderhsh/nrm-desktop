@@ -169,7 +169,7 @@ html.dark .el-overlay:has(.el-message-box) {
   border: 0.5px solid color-mix(in srgb, var(--app-separator) 70%, transparent);
 }
 
-/* 删除分类确认：外壳与「编辑分类标签」category-manage-dialog sheet 一致（非系统默认 MessageBox 皮） */
+/* 删除分类确认：外壳与「分类管理」category-manage-dialog sheet 一致（非系统默认 MessageBox 皮） */
 .el-message-box.category-delete-confirm-messagebox {
   width: min(26rem, calc(100vw - 2rem));
   max-width: 26rem;
@@ -1561,7 +1561,7 @@ html.dark .el-message-box__btns .el-button--primary {
   border-color: transparent;
 }
 
-/* 删除分类确认（深色）：与编辑分类标签 category-manage-dialog sheet 同外壳 */
+/* 删除分类确认（深色）：与分类管理 category-manage-dialog sheet 同外壳 */
 html.dark .el-message-box.category-delete-confirm-messagebox {
   border: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
   background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
@@ -1645,7 +1645,7 @@ html.dark .el-checkbox__label {
   color: var(--el-text-color-regular);
 }
 
-/* 添加/编辑源弹窗：与「编辑分类标签」共用 category-manage-dialog sheet；仅保留表单项标签微调 */
+/* 添加/编辑源弹窗：与「分类管理」共用 category-manage-dialog sheet；仅保留表单项标签微调 */
 html:not(.dark) .registry-dialog.category-manage-dialog .el-form-item__label {
   color: #667083;
   font-weight: 600;
@@ -1682,7 +1682,7 @@ html:not(.dark) .registry-dialog .registry-dialog-category-toggle.el-button:acti
   transform: scale(0.98);
 }
 
-/* 编辑分类标签弹窗：浅色 sheet + 标题栏 */
+/* 分类管理弹窗：浅色 sheet + 标题栏 */
 html:not(.dark) .category-manage-dialog .el-dialog {
   background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
   border: 1px solid rgba(193, 203, 218, 0.62);
@@ -1877,7 +1877,7 @@ html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:a
   transform: scale(0.98);
 }
 
-/* 设置抽屉页脚「保存」— 与编辑分类标签弹窗页脚同一套近白胶囊 */
+/* 设置抽屉页脚「保存」— 与分类管理弹窗页脚同一套近白胶囊 */
 html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary {
   border-radius: 980px !important;
   font-weight: 500 !important;
@@ -2563,7 +2563,7 @@ html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:active 
   transform: scale(0.98);
 }
 
-/* 设置抽屉页脚「保存」— 与编辑分类标签弹窗深色页脚胶囊一致 */
+/* 设置抽屉页脚「保存」— 与分类管理弹窗深色页脚胶囊一致 */
 html.dark .settings-drawer .el-drawer__footer .el-button--primary {
   border-radius: 980px !important;
   font-weight: 500 !important;
@@ -2628,7 +2628,7 @@ html.dark .el-textarea__inner + .el-textarea__count {
   width: min(360px, 90vw) !important;
 }
 
-/* 设置抽屉：浅色 — 与编辑分类标签 category-manage-dialog 同系 sheet（从右侧滑入，左缘为视觉主边） */
+/* 设置抽屉：浅色 — 与分类管理 category-manage-dialog 同系 sheet（从右侧滑入，左缘为视觉主边） */
 html:not(.dark) .settings-drawer.el-drawer {
   background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
   border-left: 1px solid rgba(193, 203, 218, 0.62);
@@ -2721,7 +2721,7 @@ html:not(.dark) .settings-drawer .el-drawer__footer {
   background: transparent;
 }
 
-/* 设置抽屉：深色 — 与编辑分类标签弹窗同外壳 */
+/* 设置抽屉：深色 — 与分类管理弹窗同外壳 */
 html.dark .settings-drawer.el-drawer {
   background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
   border-left: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);

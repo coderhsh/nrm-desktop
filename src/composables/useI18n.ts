@@ -194,7 +194,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'backend.backupFileNotFound': '备份文件不存在',
 
     // category-manage-dialog
-    'categoryDialog.title': '编辑分类标签',
+    'categoryDialog.title': '分类管理',
     'categoryDialog.newPlaceholder': '输入新分类名称',
     'categoryDialog.add': '新增分类',
     'categoryDialog.empty': '暂无可编辑的分类标签',
@@ -405,7 +405,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'backend.noRegistriesAvailable': 'No registries available',
     'backend.backupFileNotFound': 'Backup file does not exist',
 
-    'categoryDialog.title': 'Edit Category Labels',
+    'categoryDialog.title': 'Category Management',
     'categoryDialog.newPlaceholder': 'Enter new category name',
     'categoryDialog.add': 'Add Category',
     'categoryDialog.empty': 'No editable category labels',
