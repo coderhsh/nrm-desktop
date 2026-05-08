@@ -876,7 +876,7 @@ function copyAllDetails() {
 </script>
 
 <template>
-  <div class="registry-list-root flex flex-col h-full min-h-0" :class="registryListIntroClass">
+  <div class="registry-list-root flex flex-col h-full min-h-0" :class="[registryListIntroClass, { 'registry-list-root--dragging': isPointerDragging || isManageDragging }]">
     <!-- Header -->
     <div class="rl-intro-header flex items-center gap-2 px-4 pt-4 pb-2">
       <h2 class="text-base font-bold">{{ t('registryList.title') }}</h2>
@@ -1224,6 +1224,12 @@ function copyAllDetails() {
 </template>
 
 <style scoped>
+.registry-list-root--dragging,
+.registry-list-root--dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
 .registry-fold-toolbar {
   border: 1px solid color-mix(in srgb, var(--el-border-color-lighter) 88%, transparent);
   background: color-mix(in srgb, var(--el-fill-color-lighter) 50%, var(--el-fill-color-blank) 50%);
