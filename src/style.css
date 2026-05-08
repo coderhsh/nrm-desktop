@@ -574,18 +574,23 @@ html.dark .registry-list-skeleton-shimmer {
   background-color: #f2f2f7;
 }
 
-/* Current source card：浅色下加强落影，与下方测速白卡层次一致 */
+/* Current source card: refined, compact, Apple-like */
 .current-source-card {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: linear-gradient(148deg, #004bad 0%, #0077ed 38%, #0a84ff 62%, #47a3ff 100%);
+  background: linear-gradient(160deg, #f8f9fc 0%, #f2f4f8 52%, #eceff4 100%);
+  border: 1px solid color-mix(in srgb, #c8d1dd 68%, #ffffff);
+  transition:
+    transform 220ms var(--app-ease-out),
+    box-shadow 260ms var(--app-ease-out),
+    border-color 260ms var(--app-ease-out),
+    background-color 260ms var(--app-ease-out);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 0 0 0.5px rgba(0, 55, 130, 0.2),
-    0 1px 2px rgba(0, 0, 0, 0.08),
-    0 4px 16px rgba(0, 45, 100, 0.18),
-    0 12px 32px rgba(0, 40, 90, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12);
   animation: current-source-card-in var(--app-duration-slow) var(--app-ease-out) both;
 }
 
@@ -594,15 +599,72 @@ html.dark .registry-list-skeleton-shimmer {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.1) 42%, transparent 64%);
-  opacity: 0.55;
+  background: linear-gradient(108deg, transparent 4%, rgba(255, 255, 255, 0.48) 44%, transparent 72%);
+  opacity: 0.48;
   pointer-events: none;
   z-index: 0;
+}
+
+.current-source-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--el-color-primary) 22%, #c8d1dd);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    0 0 0 0.5px rgba(140, 156, 178, 0.42),
+    0 3px 8px rgba(26, 38, 60, 0.1),
+    0 14px 30px rgba(24, 36, 56, 0.15);
+}
+
+.current-source-card:active {
+  transform: translateY(0) scale(0.995);
 }
 
 .current-source-card > * {
   position: relative;
   z-index: 1;
+}
+
+.current-source-kicker {
+  color: #6e7480;
+  opacity: 1;
+}
+
+.current-source-name {
+  color: #1f232b;
+  letter-spacing: -0.012em;
+}
+
+.current-source-url {
+  color: #626a78;
+  text-decoration: underline;
+  text-decoration-color: rgba(98, 106, 120, 0.38);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.current-source-url:hover {
+  color: #3f4756;
+  text-decoration-color: rgba(63, 71, 86, 0.56);
+}
+
+.current-source-copy-btn.el-button {
+  color: #2f3746 !important;
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(173, 184, 201, 0.45) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 1px 2px rgba(20, 30, 46, 0.06) !important;
+}
+
+.current-source-copy-btn.el-button:hover,
+.current-source-copy-btn.el-button:focus {
+  color: #1f2734 !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(150, 166, 188, 0.6) !important;
+}
+
+.current-source-copy-btn.el-button:active {
+  background: rgba(250, 252, 255, 0.88) !important;
 }
 
 @keyframes current-source-card-in {
@@ -784,19 +846,63 @@ html.dark .category-drop-hint {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-/* 深色：当前源卡片 — 小阴影，与主列 #1a1b20 底色衔接 */
+/* Dark mode current source card */
 html.dark .current-source-card {
-  background: linear-gradient(165deg, #252629 0%, #2c2e32 52%, #303236 100%);
+  background: linear-gradient(168deg, #2a2c31 0%, #2f3237 52%, #33363b 100%);
+  border-color: rgba(255, 255, 255, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 0 0.5px rgba(255, 255, 255, 0.07),
-    0 2px 10px rgba(0, 0, 0, 0.34),
-    0 8px 22px rgba(0, 0, 0, 0.16);
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .current-source-card:hover {
+  border-color: rgba(126, 197, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 0.5px rgba(142, 201, 255, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.38),
+    0 16px 30px rgba(0, 0, 0, 0.24);
 }
 
 html.dark .current-source-card::after {
   background: linear-gradient(108deg, transparent 0%, rgba(255, 255, 255, 0.04) 48%, transparent 72%);
   opacity: 0.45;
+}
+
+html.dark .current-source-kicker {
+  color: rgba(235, 235, 245, 0.52);
+}
+
+html.dark .current-source-name {
+  color: #f5f5f7;
+}
+
+html.dark .current-source-url {
+  color: rgba(235, 235, 245, 0.72);
+  text-decoration-color: rgba(235, 235, 245, 0.26);
+}
+
+html.dark .current-source-url:hover {
+  color: rgba(235, 235, 245, 0.9);
+  text-decoration-color: rgba(235, 235, 245, 0.44);
+}
+
+html.dark .current-source-copy-btn.el-button {
+  color: #e9efff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.dark .current-source-copy-btn.el-button:hover,
+html.dark .current-source-copy-btn.el-button:focus {
+  color: #f4f8ff !important;
+  background: rgba(126, 197, 255, 0.2) !important;
+  border-color: rgba(126, 197, 255, 0.42) !important;
 }
 
 /* 深色：添加源 — 半透明主色底 + 描边，与侧栏表面更一体 */
