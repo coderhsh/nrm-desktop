@@ -128,11 +128,31 @@ pnpm build
 
 - `pnpm dev`：启动桌面开发模式（自动选择可用端口）
 - `pnpm build`：构建桌面安装包/可执行文件，并输出构建产物信息
+- `pnpm build:pretty`：`pnpm build` 的别名（兼容命令）
 - `pnpm build:win`：仅构建 Windows 安装包/可执行文件
 - `pnpm ui:dev`：仅启动 Vite 前端开发服务
 - `pnpm ui:build`：仅执行前端类型检查与构建
 - `pnpm tauri`：透传调用 Tauri CLI
 - `pnpm update:logo`：基于 `src-tauri/icons/logo.png` 生成桌面图标集
+- `pnpm version`：同步桌面应用版本元数据
+- `pnpm sync:version`：与 `pnpm version` 等价的显式命令
+
+## 项目结构 📁
+
+仓库主要目录说明：
+
+- `src/`：Vue 界面、样式、组合式逻辑与状态管理
+- `src/components/`：核心界面模块（源列表、卡片、弹窗等）
+- `src/composables/`：可复用组合函数（国际化、动效、行为逻辑）
+- `src-tauri/src/`：Rust 后端实现与 Tauri 入口
+- `src-tauri/icons/`：图标源文件与生成后的图标资源
+- `scripts/`：开发/构建辅助脚本（自动端口、构建输出、图标生成等）
+
+## 构建产物说明 📦
+
+- 前端构建产物位于 `dist/`
+- Tauri 构建产物位于 `src-tauri/target/`
+- Windows 安装包产物取决于启用目标（`nsis` / `msi`）
 
 ## 配置与数据位置 🗂️
 

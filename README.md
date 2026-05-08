@@ -128,11 +128,31 @@ pnpm build
 
 - `pnpm dev` - run desktop app in dev mode (auto port selection)
 - `pnpm build` - build desktop binaries/installers with output summary
+- `pnpm build:pretty` - alias of `pnpm build` (kept for compatibility)
 - `pnpm build:win` - build Windows-only installer/binaries
 - `pnpm ui:dev` - run Vite frontend only
 - `pnpm ui:build` - type-check and build frontend only
 - `pnpm tauri` - pass-through Tauri CLI command
 - `pnpm update:logo` - generate desktop icon set from `src-tauri/icons/logo.png`
+- `pnpm version` - sync desktop app version metadata
+- `pnpm sync:version` - same as `pnpm version`, explicit command name
+
+## Project Structure 📁
+
+Key directories in this repository:
+
+- `src/` - Vue UI, styles, composables, and state logic
+- `src/components/` - major interface modules (registry list, cards, dialogs)
+- `src/composables/` - reusable composition hooks (i18n, motion, behavior)
+- `src-tauri/src/` - Rust backend and Tauri entry points
+- `src-tauri/icons/` - icon source files and generated assets
+- `scripts/` - dev/build helpers (auto-port startup, build output, icon generation)
+
+## Build Output Notes 📦
+
+- Frontend output is generated under `dist/`
+- Tauri build artifacts are generated under `src-tauri/target/`
+- Windows installer outputs depend on enabled targets (`nsis` / `msi`)
 
 ## Configuration and Data 🗂️
 
