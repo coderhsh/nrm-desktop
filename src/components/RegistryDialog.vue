@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import type { InputInstance } from 'element-plus'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n } from '@/composables/useI18n'
 import type { Registry } from '@/types'
@@ -21,6 +22,8 @@ const store = useRegistryStore()
 const { t } = useI18n()
 
 const formRef = ref()
+const nameInputRef = ref<InputInstance>()
+const categoryCustomInputRef = ref<InputInstance>()
 const name = ref('')
 const url = ref('')
 const submitting = ref(false)
@@ -92,6 +95,9 @@ function toggleCategoryInputMode() {
   }
   useCustomCategoryInput.value = true
   categoryInput.value = selectedCategoryLabel.value
+  nextTick(() => {
+    categoryCustomInputRef.value?.focus()
+  })
 }
 
 async function handleSubmit() {
@@ -158,39 +164,83 @@ function validateUrl(_rule: any, value: string, callback: any) {
   }
   callback()
 }
+
+/** 弹窗打开后再聚焦，避免与 Element Plus 焦点管理冲突 */
+function focusNameInput() {
+  nextTick(() => {
+    nameInputRef.value?.focus()
+  })
+}
 </script>
 
 <template>
-  <el-dialog :model-value="visible" :title="isEdit() ? t('registryDialog.editTitle') : t('registryDialog.addTitle')" width="420px" :close-on-click-modal="false" class="registry-dialog app-dialog" @update:model-value="(v: boolean) => !v && handleClose()">
-    <el-form ref="formRef" :model="{ name, url }" label-width="60px" label-position="left" @submit.prevent="handleSubmit" class="registry-dialog-form">
-      <el-form-item :label="t('registryDialog.label.name')" prop="name" :rules="[{ required: true, validator: validateName, trigger: 'blur' }]">
-        <el-input v-model="name" :placeholder="t('registryDialog.placeholder.name')" :maxlength="nameMaxLength" show-word-limit />
-      </el-form-item>
-      <el-form-item :label="t('registryDialog.label.url')" prop="url" :rules="[{ required: true, validator: validateUrl, trigger: 'blur' }]">
-        <el-input v-model="url" :placeholder="t('registryDialog.placeholder.url')" />
-      </el-form-item>
-      <el-form-item :label="t('registryDialog.label.category')">
-        <div class="flex items-center gap-2 w-full">
-          <el-select v-if="!useCustomCategoryInput" v-model="selectedCategoryLabel" class="flex-1" :placeholder="t('registryDialog.category.selectPlaceholder')" clearable filterable>
-            <el-option v-for="label in categoryLabels ?? []" :key="label" :label="label" :value="label" />
-          </el-select>
-          <el-input v-else v-model="categoryInput" class="flex-1" :placeholder="t('registryDialog.category.inputPlaceholder')" :maxlength="categoryLabelMaxLength" show-word-limit clearable />
-          <el-button @click="toggleCategoryInputMode">
-            {{ useCustomCategoryInput ? t('registryDialog.category.usePreset') : t('registryDialog.category.useCustom') }}
-          </el-button>
-        </div>
-      </el-form-item>
-    </el-form>
+  <el-dialog
+    :model-value="visible"
+    :title="isEdit() ? t('registryDialog.editTitle') : t('registryDialog.addTitle')"
+    width="420px"
+    :close-on-click-modal="false"
+    class="registry-dialog category-manage-dialog app-dialog"
+    modal-class="category-manage-modal"
+    align-center
+    @opened="focusNameInput"
+    @update:model-value="(v: boolean) => !v && handleClose()"
+  >
+    <div class="category-manage-content">
+      <el-form ref="formRef" :model="{ name, url }" label-width="60px" label-position="left" @submit.prevent="handleSubmit" class="registry-dialog-form">
+        <el-form-item :label="t('registryDialog.label.name')" prop="name" :rules="[{ required: true, validator: validateName, trigger: 'blur' }]">
+          <el-input
+            ref="nameInputRef"
+            v-model="name"
+            class="category-input"
+            :placeholder="t('registryDialog.placeholder.name')"
+            :maxlength="nameMaxLength"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item :label="t('registryDialog.label.url')" prop="url" :rules="[{ required: true, validator: validateUrl, trigger: 'blur' }]">
+          <el-input v-model="url" class="category-input" :placeholder="t('registryDialog.placeholder.url')" />
+        </el-form-item>
+        <el-form-item :label="t('registryDialog.label.category')">
+          <div class="flex items-center gap-2 w-full">
+            <el-select
+              v-if="!useCustomCategoryInput"
+              v-model="selectedCategoryLabel"
+              class="category-input flex-1 min-w-0"
+              :placeholder="t('registryDialog.category.selectPlaceholder')"
+              clearable
+              filterable
+            >
+              <el-option v-for="label in categoryLabels ?? []" :key="label" :label="label" :value="label" />
+            </el-select>
+            <el-input
+              v-else
+              ref="categoryCustomInputRef"
+              v-model="categoryInput"
+              class="category-input flex-1 min-w-0"
+              :placeholder="t('registryDialog.category.inputPlaceholder')"
+              :maxlength="categoryLabelMaxLength"
+              show-word-limit
+              clearable
+            />
+            <el-button @click="toggleCategoryInputMode">
+              {{ useCustomCategoryInput ? t('registryDialog.category.usePreset') : t('registryDialog.category.useCustom') }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+    </div>
     <template #footer>
-      <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">
-        {{ t('common.save') }}
-      </el-button>
+      <div class="category-manage-dialog-footer">
+        <el-button class="category-manage-dialog-footer__close" @click="handleClose">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">
+          {{ t('common.save') }}
+        </el-button>
+      </div>
     </template>
   </el-dialog>
 </template>
 <style scoped>
 .registry-dialog-form {
-  padding-top: 24px;
+  padding-top: 0;
 }
 </style>

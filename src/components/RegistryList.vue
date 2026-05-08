@@ -1940,66 +1940,6 @@ function registryFlipTransitionName(categoryLabel: string): string {
   font-size: 1rem;
 }
 
-.category-manage-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding-top: 0.125rem;
-  font-family: var(--el-font-family);
-  letter-spacing: -0.01em;
-}
-
-.category-create-row {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.6rem 0.7rem;
-  border-radius: 0.875rem;
-  border: 1px solid rgba(0, 0, 0, 0.055);
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.88),
-    0 1px 4px rgba(15, 23, 42, 0.035);
-  transition:
-    border-color var(--app-duration-mid) var(--app-ease-spring),
-    box-shadow var(--app-duration-mid) var(--app-ease-out),
-    background-color 0.22s var(--app-ease-out);
-}
-
-.category-create-btn {
-  min-width: 5.25rem;
-  border-radius: 980px;
-  font-weight: 500;
-  letter-spacing: -0.015em;
-}
-
-/* 浅色：新增分类 — 低对比填充 + 轻阴影，避免「硬边灰块」 */
-.category-create-row .category-create-btn--add.el-button {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  color: #1d1d1f;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
-  transition:
-    background-color 0.2s var(--app-ease-out),
-    border-color 0.2s var(--app-ease-out),
-    box-shadow 0.2s var(--app-ease-out),
-    transform 0.15s var(--app-ease-spring),
-    color 0.2s var(--app-ease-out);
-}
-
-.category-create-row .category-create-btn--add.el-button:hover {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #000000;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
-}
-
-.category-create-row .category-create-btn--add.el-button:active {
-  transform: scale(0.98);
-}
-
 .category-empty-state {
   width: 100%;
   box-sizing: border-box;
