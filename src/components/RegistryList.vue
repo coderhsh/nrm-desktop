@@ -8,6 +8,7 @@ import { useRegistryStore } from '@/stores/registry'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
 import { storeToRefs } from 'pinia'
 import type { Registry } from '@/types'
+import type { InputInstance } from 'element-plus'
 import { testSingleSpeed } from '@/api/speedtest'
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/latency-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
@@ -141,9 +142,37 @@ const showDetailDialog = ref(false)
 const selectedRegistry = ref<Registry | null>(null)
 const showCategoryManageDialog = ref(false)
 const newCategoryLabel = ref('')
+const newCategoryLabelInputRef = ref<InputInstance>()
 const categoryRenameInputs = ref<Record<string, string>>({})
 const testingByRegistry = ref<Record<string, boolean>>({})
 const editingCategoryLabel = ref<string | null>(null)
+/** 分类管理弹窗草稿（拖拽排序、重命名、新增、删除），仅底部「保存」写入持久化 */
+const categoryManageDraftLabels = ref<string[]>([])
+const draftPresetCategoryLabel = ref('')
+const draftCategoryByRegistry = ref<Record<string, string>>({})
+const draftCategoryExpanded = ref<Record<string, boolean>>({})
+/** 分类管理弹窗内各行重命名输入框，供点击「重命名」后 focus */
+const categoryRenameInputRefs = new Map<string, InputInstance>()
+
+function setCategoryRenameInputRef(label: string, el: unknown) {
+  if (el == null) {
+    categoryRenameInputRefs.delete(label)
+    return
+  }
+  categoryRenameInputRefs.set(label, el as InputInstance)
+}
+
+/** 稳定引用，避免 v-for 每次渲染换函数导致 ref 反复卸载 */
+const categoryRenameRefCallbacks = new Map<string, (el: unknown) => void>()
+
+function getCategoryRenameRefCallback(label: string) {
+  let cb = categoryRenameRefCallbacks.get(label)
+  if (!cb) {
+    cb = (el: unknown) => setCategoryRenameInputRef(label, el)
+    categoryRenameRefCallbacks.set(label, cb)
+  }
+  return cb
+}
 const draggingCategoryLabel = ref<string | null>(null)
 const dragOverManageCategoryLabel = ref<string | null>(null)
 const manageDragLabel = ref<string | null>(null)
@@ -417,7 +446,7 @@ function confirmCategoryContextPrompt() {
       [label]: categoryContextPromptInput.value,
     }
     editingCategoryLabel.value = label
-    saveRenamedCategory(label)
+    persistRenamedCategory(label)
     if (editingCategoryLabel.value === null) {
       closeCategoryContextPrompt()
     }
@@ -651,8 +680,12 @@ function saveCategoryFromDialog(payload: { oldName: string; newName: string; cat
 }
 
 function openCategoryManageDialog() {
+  categoryManageDraftLabels.value = [...categoryLabels.value]
+  draftPresetCategoryLabel.value = presetCategoryLabel.value
+  draftCategoryByRegistry.value = { ...categoryByRegistry.value }
+  draftCategoryExpanded.value = { ...categoryExpanded.value }
   const inputs: Record<string, string> = {}
-  for (const label of categoryLabels.value) {
+  for (const label of categoryManageDraftLabels.value) {
     inputs[label] = label
   }
   categoryRenameInputs.value = inputs
@@ -663,7 +696,35 @@ function openCategoryManageDialog() {
   manageDragStart.value = null
   isManageDragging.value = false
   contextMenu.value = null
+  newCategoryLabel.value = ''
   showCategoryManageDialog.value = true
+}
+
+function applyCategoryManageDraftAndClose() {
+  categoryLabels.value = [...categoryManageDraftLabels.value]
+  presetCategoryLabel.value = draftPresetCategoryLabel.value
+  categoryByRegistry.value = { ...draftCategoryByRegistry.value }
+  categoryExpanded.value = { ...draftCategoryExpanded.value }
+  ElMessage.success(t('categoryDialog.saved'))
+  showCategoryManageDialog.value = false
+}
+
+/** 关闭弹窗后清空草稿并重置未提交的编辑态（含顶部新分类输入、行内重命名草稿） */
+function onCategoryManageDialogClosed() {
+  newCategoryLabel.value = ''
+  editingCategoryLabel.value = null
+  const inputs: Record<string, string> = {}
+  for (const label of categoryLabels.value) {
+    inputs[label] = label
+  }
+  categoryRenameInputs.value = inputs
+}
+
+/** 弹窗打开动画结束后再聚焦，避免与 Element Plus 焦点管理冲突 */
+function focusNewCategoryLabelInput() {
+  nextTick(() => {
+    newCategoryLabelInputRef.value?.focus()
+  })
 }
 
 function startManageDrag(label: string, event: MouseEvent) {
@@ -701,14 +762,13 @@ function finishManageDrag() {
   if (isManageDragging.value && dragOverManageCategoryLabel.value) {
     const fromLabel = manageDragLabel.value
     const toLabel = dragOverManageCategoryLabel.value
-    const fromIndex = categoryLabels.value.indexOf(fromLabel)
-    const toIndex = categoryLabels.value.indexOf(toLabel)
+    const fromIndex = categoryManageDraftLabels.value.indexOf(fromLabel)
+    const toIndex = categoryManageDraftLabels.value.indexOf(toLabel)
     if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex) {
-      const nextLabels = [...categoryLabels.value]
+      const nextLabels = [...categoryManageDraftLabels.value]
       nextLabels.splice(fromIndex, 1)
       nextLabels.splice(toIndex, 0, fromLabel)
-      categoryLabels.value = nextLabels
-      ElMessage.success(t('categoryDialog.sorted'))
+      categoryManageDraftLabels.value = nextLabels
     }
   }
   manageDragLabel.value = null
@@ -720,6 +780,7 @@ function finishManageDrag() {
   manageGhostTransition.value = 'none'
 }
 
+/** 左侧上下文「新建分类」等：立即写入持久化 */
 function addCategoryLabel(): boolean {
   const normalized = normalizeCategoryLabel(newCategoryLabel.value)
   if (!normalized) {
@@ -740,8 +801,34 @@ function addCategoryLabel(): boolean {
   return true
 }
 
-function startRenameCategory(label: string) {
+/** 分类管理弹窗内：仅写入草稿 */
+function addCategoryLabelToDraft(): boolean {
+  const normalized = normalizeCategoryLabel(newCategoryLabel.value)
+  if (!normalized) {
+    ElMessage.error(t('categoryDialog.nameRequired'))
+    return false
+  }
+  if (
+    normalized === uncategorizedLabel.value ||
+    normalized === draftPresetCategoryLabel.value ||
+    categoryManageDraftLabels.value.includes(normalized)
+  ) {
+    ElMessage.error(t('categoryDialog.nameExists'))
+    return false
+  }
+  categoryManageDraftLabels.value = [...categoryManageDraftLabels.value, normalized]
+  categoryRenameInputs.value = {
+    ...categoryRenameInputs.value,
+    [normalized]: normalized,
+  }
+  newCategoryLabel.value = ''
+  return true
+}
+
+async function startRenameCategory(label: string) {
   editingCategoryLabel.value = label
+  await nextTick()
+  categoryRenameInputRefs.get(label)?.focus()
 }
 
 function cancelRenameCategory(label: string) {
@@ -752,7 +839,8 @@ function cancelRenameCategory(label: string) {
   editingCategoryLabel.value = null
 }
 
-function saveRenamedCategory(oldLabel: string) {
+/** 上下文菜单重命名等：立即写入持久化 */
+function persistRenamedCategory(oldLabel: string) {
   if (editingCategoryLabel.value !== oldLabel) {
     return
   }
@@ -799,12 +887,82 @@ function saveRenamedCategory(oldLabel: string) {
   ElMessage.success(t('categoryDialog.renamed'))
 }
 
+/** 分类管理弹窗内：仅更新草稿，底部「保存」再持久化 */
+function confirmRenameInManageDraft(oldLabel: string) {
+  if (editingCategoryLabel.value !== oldLabel) return
+  const newLabel = normalizeCategoryLabel(categoryRenameInputs.value[oldLabel] || '')
+  if (!newLabel) {
+    ElMessage.error(t('categoryDialog.nameRequired'))
+    return
+  }
+  if (newLabel === oldLabel) {
+    editingCategoryLabel.value = null
+    return
+  }
+  if (
+    newLabel === uncategorizedLabel.value ||
+    newLabel === draftPresetCategoryLabel.value ||
+    categoryManageDraftLabels.value.some(l => l !== oldLabel && l === newLabel)
+  ) {
+    ElMessage.error(t('categoryDialog.nameExists'))
+    return
+  }
+
+  categoryManageDraftLabels.value = categoryManageDraftLabels.value.map(l => (l === oldLabel ? newLabel : l))
+
+  if (oldLabel === draftPresetCategoryLabel.value) {
+    draftPresetCategoryLabel.value = newLabel
+  }
+
+  const mapping = { ...draftCategoryByRegistry.value }
+  for (const name of Object.keys(mapping)) {
+    if (mapping[name] === oldLabel) mapping[name] = newLabel
+  }
+  draftCategoryByRegistry.value = mapping
+
+  const expanded = { ...draftCategoryExpanded.value }
+  if (expanded[oldLabel] !== undefined) {
+    expanded[newLabel] = expanded[oldLabel]
+    delete expanded[oldLabel]
+  }
+  draftCategoryExpanded.value = expanded
+
+  editingCategoryLabel.value = null
+
+  const renameInputs = { ...categoryRenameInputs.value }
+  delete renameInputs[oldLabel]
+  renameInputs[newLabel] = newLabel
+  categoryRenameInputs.value = renameInputs
+}
+
 async function deleteCategoryLabel(label: string) {
   try {
     await ElMessageBox.confirm(t('categoryDialog.confirmDeleteContent', { label }), t('categoryDialog.confirmDeleteTitle'), { confirmButtonText: t('common.delete'), cancelButtonText: t('common.cancel'), type: 'warning' })
   } catch {
     return
   }
+
+  if (showCategoryManageDialog.value) {
+    categoryManageDraftLabels.value = categoryManageDraftLabels.value.filter(item => item !== label)
+    const draftMapping: Record<string, string> = {}
+    for (const [name, category] of Object.entries(draftCategoryByRegistry.value)) {
+      if (category !== label) {
+        draftMapping[name] = category
+      }
+    }
+    draftCategoryByRegistry.value = draftMapping
+    const draftExp = { ...draftCategoryExpanded.value }
+    delete draftExp[label]
+    draftCategoryExpanded.value = draftExp
+    const renameInputs = { ...categoryRenameInputs.value }
+    delete renameInputs[label]
+    categoryRenameInputs.value = renameInputs
+    if (editingCategoryLabel.value === label) {
+      editingCategoryLabel.value = null
+    }
+    return
+  }
+
   categoryLabels.value = categoryLabels.value.filter(item => item !== label)
   const mapping: Record<string, string> = {}
   for (const [name, category] of Object.entries(categoryByRegistry.value)) {
@@ -1070,20 +1228,38 @@ function copyAllDetails() {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showCategoryManageDialog" :title="t('categoryDialog.title')" width="520px" class="category-manage-dialog" :close-on-click-modal="false">
+    <el-dialog
+      v-model="showCategoryManageDialog"
+      :title="t('categoryDialog.title')"
+      width="520px"
+      class="category-manage-dialog app-dialog"
+      modal-class="category-manage-modal"
+      align-center
+      :close-on-click-modal="false"
+      @opened="focusNewCategoryLabelInput"
+      @closed="onCategoryManageDialogClosed"
+    >
       <div class="category-manage-content">
         <div class="category-create-row">
-          <el-input v-model="newCategoryLabel" :placeholder="t('categoryDialog.newPlaceholder')" :maxlength="categoryLabelMaxLength" show-word-limit clearable @keyup.enter="addCategoryLabel" />
-          <el-button type="primary" class="category-create-btn" @click="addCategoryLabel">
+          <el-input
+            ref="newCategoryLabelInputRef"
+            v-model="newCategoryLabel"
+            :placeholder="t('categoryDialog.newPlaceholder')"
+            :maxlength="categoryLabelMaxLength"
+            show-word-limit
+            clearable
+            @keyup.enter="addCategoryLabelToDraft"
+          />
+          <el-button class="category-create-btn category-create-btn--add" @click="addCategoryLabelToDraft">
             {{ t('categoryDialog.add') }}
           </el-button>
         </div>
-        <div v-if="categoryLabels.length === 0" class="category-empty-state">
+        <div v-if="categoryManageDraftLabels.length === 0" class="category-empty-state">
           {{ t('categoryDialog.empty') }}
         </div>
         <div v-else class="category-list-wrap">
           <div
-            v-for="label in categoryLabels"
+            v-for="label in categoryManageDraftLabels"
             :key="label"
             :class="[
               'category-list-row',
@@ -1097,13 +1273,20 @@ function copyAllDetails() {
             <div class="category-drag-handle" @mousedown.left.stop.prevent="startManageDrag(label, $event)" :title="t('categoryDialog.dragSort')">
               <el-icon><Rank /></el-icon>
             </div>
-            <el-input v-model="categoryRenameInputs[label]" class="category-input" :maxlength="categoryLabelMaxLength" show-word-limit :disabled="editingCategoryLabel !== label" />
+            <el-input
+              :ref="getCategoryRenameRefCallback(label)"
+              v-model="categoryRenameInputs[label]"
+              class="category-input"
+              :maxlength="categoryLabelMaxLength"
+              show-word-limit
+              :disabled="editingCategoryLabel !== label"
+            />
             <div class="category-row-actions">
               <el-button size="small" :disabled="editingCategoryLabel !== null && editingCategoryLabel !== label" @click="editingCategoryLabel === label ? cancelRenameCategory(label) : startRenameCategory(label)">
                 {{ editingCategoryLabel === label ? t('common.cancel') : t('categoryDialog.rename') }}
               </el-button>
-              <el-button v-if="editingCategoryLabel === label" size="small" type="primary" @click="saveRenamedCategory(label)">
-                {{ t('common.save') }}
+              <el-button v-if="editingCategoryLabel === label" size="small" type="primary" @click="confirmRenameInManageDraft(label)">
+                {{ t('common.confirm') }}
               </el-button>
               <el-button size="small" type="danger" @click="deleteCategoryLabel(label)">
                 {{ t('categoryDialog.delete') }}
@@ -1113,7 +1296,7 @@ function copyAllDetails() {
         </div>
       </div>
       <template #footer>
-        <el-button @click="showCategoryManageDialog = false">{{ t('common.close') }}</el-button>
+        <el-button type="primary" @click="applyCategoryManageDraftAndClose">{{ t('categoryDialog.footerSave') }}</el-button>
       </template>
     </el-dialog>
 
@@ -1333,71 +1516,116 @@ function copyAllDetails() {
 .category-manage-content {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  padding-top: 0.25rem;
+  gap: 1rem;
+  padding-top: 0.125rem;
+  font-family: var(--el-font-family);
+  letter-spacing: -0.01em;
 }
 
 .category-create-row {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--el-border-color-lighter) 80%, transparent);
-  border-radius: 0.875rem;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--el-fill-color-blank) 92%, #ffffff 8%), color-mix(in srgb, var(--el-fill-color) 72%, var(--el-fill-color-blank) 28%));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--app-radius-md);
+  border: 0.5px solid color-mix(in srgb, var(--app-separator) 88%, transparent);
+  background: color-mix(in srgb, #f2f2f7 92%, #ffffff 8%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color var(--app-duration-mid) var(--app-ease-spring),
+    box-shadow var(--app-duration-mid) var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring);
 }
 
 .category-create-btn {
   min-width: 5.25rem;
-  border-radius: 0.625rem;
+  border-radius: 0.72rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* 浅色：新增分类为主按钮但不用系统蓝，接近 macOS 默认填充灰按钮 */
+.category-create-row .category-create-btn--add.el-button {
+  background: linear-gradient(180deg, #ffffff 0%, #e8eaef 100%);
+  border-color: rgba(158, 166, 182, 0.92);
+  color: #1d1d1f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.category-create-row .category-create-btn--add.el-button:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #dfe3ea 100%);
+  border-color: rgba(140, 150, 168, 0.98);
+  color: #000000;
 }
 
 .category-empty-state {
-  font-size: 0.875rem;
-  color: var(--el-text-color-secondary);
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.8125rem;
+  color: var(--app-text-muted);
   text-align: center;
-  padding: 2.2rem 1rem;
-  border: 1px dashed color-mix(in srgb, var(--el-border-color) 78%, transparent);
-  border-radius: 0.875rem;
-  background: var(--el-fill-color-lighter);
+  padding: 2.5rem 1.25rem;
+  border-radius: var(--app-radius-md);
+  border: 0.5px dashed color-mix(in srgb, var(--app-separator) 95%, var(--el-color-primary) 5%);
+  background: color-mix(in srgb, #f2f2f7 88%, #ffffff 12%);
+  line-height: 1.45;
 }
 
 .category-list-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 0.5rem;
+  width: 100%;
   max-height: 19rem;
-  overflow: auto;
-  padding: 0.2rem 0.35rem 0.35rem 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 减轻追加行时浏览器滚动锚定导致的列表跳动 */
+  overflow-anchor: none;
+  /* 不用 scrollbar-gutter: stable，否则右侧预留槽位会让列表比上方「新增分类」块视觉上更窄 */
+  padding: 0.15rem 0 0.35rem;
+  box-sizing: border-box;
 }
 
 .category-list-row {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--el-border-color-lighter) 84%, transparent);
-  border-radius: 0.875rem;
-  background: var(--el-fill-color-blank);
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.55rem 0.6rem;
+  border-radius: var(--app-radius-md);
+  border: 0.5px solid color-mix(in srgb, var(--app-separator) 82%, transparent);
+  background: color-mix(in srgb, #ffffff 94%, #f2f2f7 6%);
   transition:
-    border-color var(--app-duration) var(--app-ease),
-    background-color var(--app-duration) var(--app-ease),
-    box-shadow var(--app-duration) var(--app-ease);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+    border-color var(--app-duration-mid) var(--app-ease-spring),
+    background-color var(--app-duration-mid) var(--app-ease-spring),
+    box-shadow var(--app-duration-mid) var(--app-ease-out);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .category-list-row:hover {
-  border-color: color-mix(in srgb, var(--el-border-color) 88%, transparent);
-  background: color-mix(in srgb, var(--el-fill-color-lighter) 84%, var(--el-fill-color-blank));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: color-mix(in srgb, var(--el-color-primary) 22%, var(--app-separator));
+  background: color-mix(in srgb, #ffffff 88%, var(--el-color-primary-light-9) 12%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 4px 14px rgba(0, 122, 255, 0.09);
 }
 
 .category-list-row--drag-over {
-  background: color-mix(in srgb, var(--el-color-primary) 10%, var(--el-fill-color-blank));
-  border-color: color-mix(in srgb, var(--el-color-primary) 45%, var(--el-border-color));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 30%, transparent);
+  background: color-mix(in srgb, var(--el-color-primary-light-9) 58%, #ffffff 42%);
+  border-color: color-mix(in srgb, var(--el-color-primary) 42%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--el-color-primary) 22%, transparent),
+    0 6px 18px color-mix(in srgb, var(--el-color-primary) 16%, transparent);
 }
 
 .category-drag-handle {
@@ -1406,22 +1634,24 @@ function copyAllDetails() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--el-text-color-secondary);
-  border-radius: 0.625rem;
+  color: var(--app-text-muted);
+  border-radius: 0.55rem;
   cursor: grab;
   flex-shrink: 0;
   transition:
-    color 0.18s ease,
-    background-color 0.18s ease;
+    color var(--app-duration-mid) var(--app-ease-spring),
+    background-color var(--app-duration-mid) var(--app-ease-spring),
+    transform 0.14s var(--app-ease-spring);
 }
 
 .category-drag-handle:active {
   cursor: grabbing;
+  transform: scale(0.94);
 }
 
 .category-drag-handle:hover {
   color: var(--el-text-color-primary);
-  background: color-mix(in srgb, var(--el-fill-color) 86%, transparent);
+  background: color-mix(in srgb, var(--el-color-primary-light-9) 65%, transparent);
 }
 
 .category-input {
@@ -1430,102 +1660,71 @@ function copyAllDetails() {
 }
 
 .category-input :deep(.el-input__wrapper) {
-  border-radius: 0.625rem;
+  border-radius: 0.72rem;
+  transition:
+    box-shadow var(--app-duration-mid) var(--app-ease-out),
+    background-color var(--app-duration-mid) var(--app-ease-out);
 }
 
 .category-row-actions {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.35rem;
   flex-shrink: 0;
 }
 
 .category-row-actions :deep(.el-button) {
-  border-radius: 0.625rem;
-}
-
-:global(html.dark) .category-create-row {
-  border-color: var(--el-border-color);
-  background: var(--el-bg-color-overlay);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
-}
-
-:global(html.dark) .category-list-row {
-  border-color: var(--el-border-color);
-  background: var(--el-fill-color-blank);
-  box-shadow: 0 1px 0 var(--app-separator);
-}
-
-:global(html.dark) .category-list-row:hover {
-  border-color: var(--el-border-color-light);
-  background: var(--el-fill-color-light);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
-}
-
-:global(html.dark) .category-create-row :deep(.el-input__wrapper),
-:global(html.dark) .category-input :deep(.el-input__wrapper) {
-  background-color: var(--el-fill-color-blank) !important;
-  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
-}
-
-:global(html.dark) .category-create-row :deep(.el-input__wrapper:hover),
-:global(html.dark) .category-input :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
-}
-
-:global(html.dark) .category-create-row :deep(.el-input__wrapper.is-focus),
-:global(html.dark) .category-input :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
-}
-
-:global(html.dark) .category-create-btn,
-:global(html.dark) .category-row-actions :deep(.el-button--primary) {
-  background: linear-gradient(180deg, #3f78bd 0%, #2f68ac 100%);
-  border-color: rgba(137, 193, 255, 0.44);
-  color: #eaf3ff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 1px 4px rgba(0, 0, 0, 0.32);
-}
-
-:global(html.dark) .category-create-btn:hover,
-:global(html.dark) .category-row-actions :deep(.el-button--primary:hover) {
-  background: linear-gradient(180deg, #4b85cc 0%, #3873ba 100%);
-  border-color: rgba(160, 210, 255, 0.56);
-  color: #f5f9ff;
-}
-
-:global(html.dark) .category-row-actions :deep(.el-button) {
+  border-radius: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   transition:
-    background-color 0.24s var(--app-ease-out),
-    border-color 0.24s var(--app-ease-out),
-    color 0.24s var(--app-ease-out),
-    box-shadow 0.24s var(--app-ease-out);
+    background-color var(--app-duration-mid) var(--app-ease-spring),
+    border-color var(--app-duration-mid) var(--app-ease-spring),
+    color var(--app-duration) var(--app-ease-spring),
+    transform 0.14s var(--app-ease-spring),
+    box-shadow var(--app-duration-mid) var(--app-ease-out);
 }
 
-:global(html.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger)) {
-  background: linear-gradient(180deg, #4b505a 0%, #434852 100%);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: rgba(236, 238, 244, 0.88);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+.category-row-actions :deep(.el-button:active:not(.is-disabled)) {
+  transform: scale(0.97);
 }
 
-:global(html.dark) .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):hover) {
-  background: linear-gradient(180deg, #565c67 0%, #4d5460 100%);
-  border-color: rgba(255, 255, 255, 0.24);
+.category-row-actions :deep(.el-button--primary) {
+  background: linear-gradient(180deg, #3a9dff 0%, #0a84ff 100%);
+  border-color: rgba(33, 117, 220, 0.52);
   color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 4px 12px rgba(10, 132, 255, 0.22);
 }
 
-:global(html.dark) .category-row-actions :deep(.el-button--danger) {
-  background: rgba(255, 69, 58, 0.14);
-  border-color: rgba(255, 69, 58, 0.42);
-  color: #ff7b72;
+.category-row-actions :deep(.el-button--primary:hover) {
+  background: linear-gradient(180deg, #4aa6ff 0%, #1b8fff 100%);
+  border-color: rgba(44, 129, 230, 0.64);
 }
 
-:global(html.dark) .category-row-actions :deep(.el-button--danger:hover) {
-  background: rgba(255, 69, 58, 0.2);
-  border-color: rgba(255, 69, 58, 0.52);
-  color: #ff918a;
+.category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger)) {
+  background: linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%);
+  border-color: rgba(187, 197, 213, 0.95);
+  color: #5c677a;
+}
+
+.category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):hover) {
+  background: linear-gradient(180deg, #ffffff 0%, #edf2f9 100%);
+  border-color: rgba(166, 179, 201, 0.98);
+  color: #404c60;
+}
+
+.category-row-actions :deep(.el-button--danger) {
+  background: color-mix(in srgb, #ff3b30 12%, #ffffff 88%);
+  border-color: color-mix(in srgb, #ff3b30 35%, #ffffff 65%);
+  color: #d70015;
+}
+
+.category-row-actions :deep(.el-button--danger:hover) {
+  background: color-mix(in srgb, #ff3b30 18%, #ffffff 82%);
+  border-color: color-mix(in srgb, #ff3b30 42%, #ffffff 58%);
+  color: #c40012;
 }
 
 .context-menu-item {

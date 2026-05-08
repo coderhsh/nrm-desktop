@@ -209,6 +209,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'categoryDialog.confirmDeleteContent': '确定要删除分类 "{label}" 吗？该分类下源将自动归入未分类。',
     'categoryDialog.registryCategoryUpdated': '分类已更新',
     'categoryDialog.registrySetUncategorized': '已设为未分类',
+    'categoryDialog.footerSave': '保存',
 
     // registry-dialog
     'registryDialog.addTitle': '添加源',
@@ -419,6 +420,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'categoryDialog.confirmDeleteContent': 'Are you sure to delete category "{label}"? Sources in this category will be moved to uncategorized.',
     'categoryDialog.registryCategoryUpdated': 'Category updated',
     'categoryDialog.registrySetUncategorized': 'Set to uncategorized',
+    'categoryDialog.footerSave': 'Save',
 
     'registryDialog.addTitle': 'Add Source',
     'registryDialog.editTitle': 'Edit Source',
