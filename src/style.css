@@ -1409,10 +1409,10 @@ html.dark .speed-test-card .speed-test-header-action.el-button.is-text:focus {
 
 /* 深色：添加源 — 半透明主色底 + 描边，与侧栏表面更一体 */
 html.dark .registry-add-btn.el-button--primary {
-  --el-button-bg-color: rgba(10, 132, 255, 0.18);
-  --el-button-border-color: rgba(10, 132, 255, 0.42);
+  --el-button-bg-color: #424448;
+  --el-button-border-color: #595a5e;
   --el-button-text-color: #e8f2ff;
-  --el-button-hover-bg-color: rgba(10, 132, 255, 0.28);
+  --el-button-hover-bg-color: #3c4d5c;
   --el-button-hover-border-color: rgba(10, 132, 255, 0.55);
   --el-button-hover-text-color: #ffffff;
   --el-button-active-bg-color: rgba(10, 132, 255, 0.22);
