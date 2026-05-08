@@ -364,15 +364,11 @@ async function handleReset() {
   }
 }
 
-function closeCloseConfirmDialog() {
-  showCloseConfirmDialog.value = false
-}
-
-async function applyCloseAction() {
-  pendingCloseAction.value = closeActionDraft.value
+async function applyCloseAction(action: 'minimize' | 'exit') {
+  pendingCloseAction.value = action
   showCloseConfirmDialog.value = false
   if (rememberCloseChoice.value) {
-    closeBehavior.value = closeActionDraft.value
+    closeBehavior.value = action
   }
 }
 
@@ -604,28 +600,24 @@ async function handleCloseDialogClosed() {
         v-model="showCloseConfirmDialog"
         :title="t('app.closeDialog.title')"
         class="close-confirm-dialog"
-        width="420px"
+        width="380px"
         :close-on-click-modal="false"
-        :show-close="false"
+        :show-close="true"
         :destroy-on-close="true"
         @closed="handleCloseDialogClosed"
       >
-        <div class="close-confirm-content flex flex-col gap-3">
-          <p class="close-confirm-desc text-sm leading-relaxed text-app-muted m-0">
+        <div class="close-confirm-content flex flex-col gap-4">
+          <p class="close-confirm-desc text-sm leading-relaxed m-0">
             {{ t('app.closeDialog.desc') }}
           </p>
-          <el-radio-group v-model="closeActionDraft" class="close-action-group flex flex-col gap-2.5">
-            <el-radio value="minimize" class="close-action-item">{{ t('app.closeDialog.minimize') }}</el-radio>
-            <el-radio value="exit" class="close-action-item">{{ t('app.closeDialog.exit') }}</el-radio>
-          </el-radio-group>
           <div class="close-remember-wrap">
             <el-checkbox v-model="rememberCloseChoice">{{ t('app.closeDialog.remember') }}</el-checkbox>
           </div>
         </div>
         <template #footer>
-          <div class="flex justify-end gap-2">
-            <el-button class="close-confirm-cancel-btn" @click="closeCloseConfirmDialog">{{ t('common.cancel') }}</el-button>
-            <el-button type="primary" @click="applyCloseAction">{{ t('common.confirm') }}</el-button>
+          <div class="close-confirm-footer flex justify-end gap-2">
+            <el-button class="close-confirm-exit-btn" @click="applyCloseAction('exit')">{{ t('app.closeDialog.exit') }}</el-button>
+            <el-button class="close-confirm-minimize-btn" @click="applyCloseAction('minimize')">{{ t('app.closeDialog.minimize') }}</el-button>
           </div>
         </template>
       </el-dialog>
@@ -643,29 +635,7 @@ async function handleCloseDialogClosed() {
 .close-confirm-desc {
   text-align: start;
   max-width: 100%;
-}
-
-.close-action-group {
-  width: 100%;
-  align-items: stretch;
-}
-
-.close-action-group :deep(.el-radio) {
-  margin-right: 0;
-  height: auto;
-  align-items: flex-start;
-  white-space: normal;
-}
-
-.close-action-group :deep(.el-radio__label) {
-  line-height: 1.45;
-  white-space: normal;
-  padding-left: 0.5rem;
-}
-
-.close-action-item {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+  color: var(--el-text-color-regular);
 }
 
 .close-remember-wrap {
@@ -676,13 +646,57 @@ async function handleCloseDialogClosed() {
 
 .close-remember-wrap :deep(.el-checkbox) {
   height: auto;
-  align-items: flex-start;
+  align-items: center;
   white-space: normal;
+  --el-checkbox-checked-bg-color: var(--el-color-primary);
+  --el-checkbox-checked-input-border-color: var(--el-color-primary);
+  --el-checkbox-input-border-color-hover: var(--el-color-primary);
+}
+
+.close-remember-wrap :deep(.el-checkbox__inner) {
+  border-radius: 4px;
+}
+
+.close-remember-wrap :deep(.el-checkbox__input) {
+  align-self: center;
+  line-height: 1;
 }
 
 .close-remember-wrap :deep(.el-checkbox__label) {
   line-height: 1.45;
   white-space: normal;
+  color: var(--el-text-color-secondary);
+  font-size: 0.8125rem;
+  padding-left: 0.5rem;
+}
+
+.close-confirm-footer {
+  padding-top: 0.25rem;
+}
+
+.close-confirm-exit-btn {
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  padding: 0 1.1rem;
+}
+
+.close-confirm-minimize-btn {
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  padding: 0 1.1rem;
+  background-color: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+  color: #fff !important;
+}
+
+.close-confirm-minimize-btn:hover {
+  background-color: var(--el-color-primary-light-3) !important;
+  border-color: var(--el-color-primary-light-3) !important;
+}
+
+.close-confirm-minimize-btn:active {
+  background-color: var(--el-color-primary-dark-2) !important;
+  border-color: var(--el-color-primary-dark-2) !important;
 }
 
 .settings-panel {
@@ -728,12 +742,36 @@ async function handleCloseDialogClosed() {
   color: var(--el-text-color-regular);
 }
 
-:global(html.dark) .close-action-item {
-  color: var(--el-text-color-regular);
+:global(html.dark) .close-remember-wrap :deep(.el-checkbox) {
+  --el-checkbox-checked-bg-color: var(--el-color-primary);
+  --el-checkbox-checked-input-border-color: var(--el-color-primary);
+  --el-checkbox-input-border-color-hover: var(--el-color-primary);
 }
 
 :global(html.dark) .close-remember-wrap :deep(.el-checkbox__label) {
-  color: var(--app-text-muted);
+  color: var(--el-text-color-secondary);
+}
+
+:global(html.dark) .close-confirm-minimize-btn {
+  background-color: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+  color: #fff !important;
+}
+
+:global(html.dark) .close-confirm-minimize-btn:hover {
+  background-color: var(--el-color-primary-light-3) !important;
+  border-color: var(--el-color-primary-light-3) !important;
+}
+
+:global(html.dark) .close-confirm-exit-btn {
+  background: var(--el-fill-color) !important;
+  border-color: var(--el-border-color) !important;
+  color: var(--el-text-color-regular) !important;
+}
+
+:global(html.dark) .close-confirm-exit-btn:hover {
+  background: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color-lighter) !important;
 }
 
 :global(html.dark) .settings-section-title {
