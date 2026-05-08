@@ -470,7 +470,7 @@ html.dark .app-sidebar {
   background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
   border: 1px solid color-mix(in srgb, #c8d1dd 68%, #ffffff);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.80),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
     0 0 0 0.5px rgba(156, 170, 188, 0.34),
     0 2px 6px rgba(33, 44, 62, 0.08),
     0 10px 26px rgba(28, 40, 60, 0.12);
@@ -515,7 +515,7 @@ html.dark .app-surface-card:hover {
   display: flex;
   flex-direction: column;
   /* 为阴影留出显示空间，避免被相邻布局覆盖或截断 */
-  margin: 0 4px 12px 4px;
+  margin: 0 4px 0px 4px;
 }
 
 /* 测速卡片：仅保留用户选择禁用动画时的 overflow；视觉样式由 .app-surface-card 提供 */
@@ -1046,7 +1046,7 @@ html.dark .registry-list-skeleton-shimmer {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 1px 3px rgba(28, 40, 60, 0.07),
-    0 0 0 0.5px rgba(60, 80, 110, 0.10);
+    0 0 0 0.5px rgba(60, 80, 110, 0.1);
 }
 
 /* Current source card: 在 .app-surface-card 基础上叠加悬浮位移与 overflow 裁切 */
@@ -1284,7 +1284,7 @@ html.dark .registry-item.is-idle {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 1px 3px rgba(28, 40, 60, 0.07),
-    0 0 0 0.5px rgba(60, 80, 110, 0.10) !important;
+    0 0 0 0.5px rgba(60, 80, 110, 0.1) !important;
 }
 
 .registry-list-root--pointer-dragging .registry-item.is-active:hover {
@@ -2163,12 +2163,7 @@ html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary {
   font-weight: 600;
   letter-spacing: -0.02em;
   min-width: 5.5rem;
-  background: linear-gradient(
-    180deg,
-    var(--app-commit-btn-light-top) 0%,
-    var(--app-commit-btn-light-mid) 52%,
-    var(--app-commit-btn-light-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-commit-btn-light-top) 0%, var(--app-commit-btn-light-mid) 52%, var(--app-commit-btn-light-bot) 100%) !important;
   border: 1px solid var(--app-commit-btn-light-border) !important;
   color: #fafafa !important;
   box-shadow:
@@ -2183,12 +2178,7 @@ html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary {
 
 html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:hover,
 html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:focus {
-  background: linear-gradient(
-    180deg,
-    var(--app-commit-btn-light-hover-top) 0%,
-    var(--app-commit-btn-light-hover-mid) 52%,
-    var(--app-commit-btn-light-hover-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-commit-btn-light-hover-top) 0%, var(--app-commit-btn-light-hover-mid) 52%, var(--app-commit-btn-light-hover-bot) 100%) !important;
   border-color: color-mix(in srgb, #ffffff 28%, rgba(36, 42, 54, 0.62)) !important;
   color: #ffffff !important;
   box-shadow:
@@ -2203,12 +2193,7 @@ html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary {
   letter-spacing: -0.015em !important;
   min-width: 5.5rem !important;
   padding: 0 1.15rem !important;
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-top) 0%,
-    var(--app-category-save-light-mid) 52%,
-    var(--app-category-save-light-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-top) 0%, var(--app-category-save-light-mid) 52%, var(--app-category-save-light-bot) 100%) !important;
   border: 1px solid var(--app-category-save-light-border) !important;
   color: var(--app-text) !important;
   box-shadow:
@@ -2223,12 +2208,7 @@ html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary {
 
 html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
 html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-hover-top) 0%,
-    var(--app-category-save-light-hover-mid) 52%,
-    var(--app-category-save-light-hover-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
   border-color: rgba(0, 0, 0, 0.14) !important;
   color: var(--app-text) !important;
   box-shadow:
@@ -2247,12 +2227,7 @@ html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary {
   letter-spacing: -0.015em !important;
   min-width: 5.5rem !important;
   padding: 0 1.15rem !important;
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-top) 0%,
-    var(--app-category-save-light-mid) 52%,
-    var(--app-category-save-light-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-top) 0%, var(--app-category-save-light-mid) 52%, var(--app-category-save-light-bot) 100%) !important;
   border: 1px solid var(--app-category-save-light-border) !important;
   color: var(--app-text) !important;
   box-shadow:
@@ -2267,12 +2242,7 @@ html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary {
 
 html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:hover,
 html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:focus {
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-hover-top) 0%,
-    var(--app-category-save-light-hover-mid) 52%,
-    var(--app-category-save-light-hover-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
   border-color: rgba(0, 0, 0, 0.14) !important;
   color: var(--app-text) !important;
   box-shadow:
@@ -2290,12 +2260,7 @@ html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primar
   font-weight: 500 !important;
   font-size: 0.8125rem !important;
   padding: 0.32rem 0.72rem !important;
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-top) 0%,
-    var(--app-category-save-light-mid) 52%,
-    var(--app-category-save-light-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-top) 0%, var(--app-category-save-light-mid) 52%, var(--app-category-save-light-bot) 100%) !important;
   border: 1px solid var(--app-category-save-light-border) !important;
   color: var(--app-text) !important;
   box-shadow:
@@ -2305,12 +2270,7 @@ html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primar
 
 html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary:hover,
 html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary:focus {
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-hover-top) 0%,
-    var(--app-category-save-light-hover-mid) 52%,
-    var(--app-category-save-light-hover-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
   border-color: rgba(0, 0, 0, 0.14) !important;
   color: var(--app-text) !important;
   box-shadow:
@@ -2598,12 +2558,7 @@ html.dark body.category-manage-sort-dragging .category-manage-dialog .category-c
 }
 
 html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--primary:hover {
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-hover-top) 0%,
-    var(--app-category-save-light-hover-mid) 52%,
-    var(--app-category-save-light-hover-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
   border-color: rgba(0, 0, 0, 0.14) !important;
   color: var(--app-text) !important;
   box-shadow:
@@ -2655,12 +2610,7 @@ html.dark body.category-manage-sort-dragging .category-manage-dialog .category-r
 /* 底部「保存」、关闭钮、输入框后缀/字数 hover（拖拽排序时强制覆盖默认态） */
 html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
 html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
-  background: linear-gradient(
-    180deg,
-    var(--app-category-save-light-hover-top) 0%,
-    var(--app-category-save-light-hover-mid) 52%,
-    var(--app-category-save-light-hover-bot) 100%
-  ) !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
   border-color: rgba(0, 0, 0, 0.14) !important;
   color: var(--app-text) !important;
   box-shadow:
