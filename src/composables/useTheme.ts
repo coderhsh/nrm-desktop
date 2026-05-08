@@ -1,11 +1,13 @@
 import { computed, watch } from "vue";
 import { useLocalStorage, usePreferredDark } from "@vueuse/core";
+import { useI18n } from "./useI18n";
 
 type Theme = "light" | "dark" | "auto";
 
 const theme = useLocalStorage<Theme>("nrm-desktop-theme", "auto");
 
 export function useTheme() {
+  const { t } = useI18n();
   const isDarkPreferred = usePreferredDark();
 
   const isDark = computed(() => {
@@ -28,9 +30,9 @@ export function useTheme() {
   }
 
   const nextLabel = computed(() => {
-    if (theme.value === "auto") return "深色";
-    if (theme.value === "dark") return "浅色";
-    return "自动";
+    if (theme.value === "auto") return t("app.settings.themeDark");
+    if (theme.value === "dark") return t("app.settings.themeLight");
+    return t("app.settings.themeFollowSystem");
   });
 
   const icon = computed(() => {

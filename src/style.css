@@ -136,13 +136,16 @@ html.dark .el-overlay:has(.el-message-box) {
   border: 0.5px solid color-mix(in srgb, var(--app-separator) 70%, transparent);
 }
 
-/* 删除分类确认：与「编辑分类标签」弹窗（category-manage-dialog）同一套 sheet + 底部胶囊按钮 */
+/* 删除分类确认：外壳与「编辑分类标签」category-manage-dialog sheet 一致（非系统默认 MessageBox 皮） */
 .el-message-box.category-delete-confirm-messagebox {
   width: min(26rem, calc(100vw - 2rem));
   max-width: 26rem;
   padding: 0;
   overflow: hidden;
   border-radius: var(--app-radius-lg);
+}
+
+html:not(.dark) .el-message-box.category-delete-confirm-messagebox {
   border: 1px solid rgba(193, 203, 218, 0.62);
   background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
   box-shadow:
@@ -152,6 +155,9 @@ html.dark .el-overlay:has(.el-message-box) {
 
 .el-message-box.category-delete-confirm-messagebox .el-message-box__header {
   padding: 1.1rem 1.25rem 0.75rem;
+}
+
+html:not(.dark) .el-message-box.category-delete-confirm-messagebox .el-message-box__header {
   border-bottom: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
 }
 
@@ -165,6 +171,9 @@ html.dark .el-overlay:has(.el-message-box) {
   font-weight: 650;
   letter-spacing: -0.02em;
   line-height: 1.3;
+}
+
+html:not(.dark) .el-message-box.category-delete-confirm-messagebox .el-message-box__title {
   color: #1f2632;
 }
 
@@ -180,7 +189,7 @@ html.dark .el-overlay:has(.el-message-box) {
   text-align: left;
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: rgba(60, 60, 67, 0.68);
+  color: var(--app-text-muted);
 }
 
 .el-message-box.category-delete-confirm-messagebox .el-message-box__btns {
@@ -191,6 +200,9 @@ html.dark .el-overlay:has(.el-message-box) {
   gap: 0.625rem;
   padding: 1rem 1.25rem 1.1rem;
   margin: 0;
+}
+
+html:not(.dark) .el-message-box.category-delete-confirm-messagebox .el-message-box__btns {
   border-top: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
   background: transparent;
 }
@@ -235,22 +247,22 @@ html.dark .el-overlay:has(.el-message-box) {
 .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-confirm.el-button--primary {
   min-width: 5.5rem;
   padding: 0 1.15rem;
-  background: linear-gradient(180deg, #ff6b64 0%, #ff3b30 52%, #e62f26 100%) !important;
-  border: 1px solid color-mix(in srgb, #ffffff 22%, rgba(220, 48, 40, 0.55)) !important;
-  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(255, 59, 48, 0.38) !important;
+  color: #c41e12 !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 2px 10px rgba(255, 59, 48, 0.22) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 1px 2px rgba(15, 23, 42, 0.05) !important;
 }
 
 .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-confirm.el-button--primary:hover,
 .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-confirm.el-button--primary:focus {
-  background: linear-gradient(180deg, #ff7a73 0%, #ff4d42 52%, #ef3a30 100%) !important;
-  border-color: color-mix(in srgb, #ffffff 28%, rgba(230, 56, 48, 0.62)) !important;
-  color: #ffffff !important;
+  background: rgba(255, 59, 48, 0.08) !important;
+  border-color: rgba(255, 59, 48, 0.5) !important;
+  color: #a0180f !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 4px 16px rgba(255, 59, 48, 0.26) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 8px rgba(255, 59, 48, 0.12) !important;
 }
 
 .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-confirm.el-button--primary:active {
@@ -1516,29 +1528,31 @@ html.dark .el-message-box__btns .el-button--primary {
   border-color: transparent;
 }
 
-/* 删除分类确认（深色）：与编辑分类标签弹窗同一深色 sheet + 底部胶囊 */
+/* 删除分类确认（深色）：与编辑分类标签 category-manage-dialog sheet 同外壳 */
 html.dark .el-message-box.category-delete-confirm-messagebox {
-  border-color: var(--el-border-color);
+  border: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
   background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 40px rgba(0, 0, 0, 0.42);
+  box-shadow: var(--el-box-shadow);
 }
 
 html.dark .el-message-box.category-delete-confirm-messagebox .el-message-box__header {
-  border-bottom-color: var(--app-separator);
+  border-bottom: 1px solid var(--app-separator);
 }
 
 html.dark .el-message-box.category-delete-confirm-messagebox .el-message-box__title {
-  color: rgba(248, 248, 250, 0.96);
+  color: var(--el-text-color-primary);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
 }
 
 html.dark .el-message-box.category-delete-confirm-messagebox .el-message-box__message {
-  color: rgba(235, 235, 245, 0.72);
+  color: var(--el-text-color-regular);
 }
 
 html.dark .el-message-box.category-delete-confirm-messagebox .el-message-box__btns {
-  border-top-color: var(--app-separator);
+  border-top: 1px solid var(--app-separator);
+  background: transparent;
 }
 
 html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-cancel.el-button {
@@ -1565,22 +1579,22 @@ html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-co
 html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-confirm.el-button--primary {
   min-width: 5.5rem;
   padding: 0 1.15rem;
-  background: linear-gradient(180deg, #cf4339 0%, #b83229 52%, #9e2a22 100%) !important;
-  border: 1px solid rgba(255, 120, 110, 0.28) !important;
-  color: #ffffff !important;
+  background: rgba(58, 58, 60, 0.96) !important;
+  border: 1px solid rgba(255, 100, 90, 0.42) !important;
+  color: #ff6961 !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 2px 10px rgba(0, 0, 0, 0.35) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
 }
 
 html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-confirm.el-button--primary:hover,
 html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-messagebox__btn-confirm.el-button--primary:focus {
-  background: linear-gradient(180deg, #d94e44 0%, #c43a31 52%, #a82f27 100%) !important;
-  border-color: rgba(255, 140, 130, 0.36) !important;
-  color: #ffffff !important;
+  background: rgba(72, 48, 46, 0.52) !important;
+  border-color: rgba(255, 120, 110, 0.52) !important;
+  color: #ff857d !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 4px 14px rgba(0, 0, 0, 0.38) !important;
+    inset 0 1px 0 rgba(255, 200, 195, 0.06),
+    0 2px 10px rgba(255, 69, 58, 0.14) !important;
 }
 
 /* Dark: loading mask */
@@ -1747,8 +1761,7 @@ html:not(.dark) .category-manage-dialog .category-input .el-select__wrapper.is-f
     0 0 0 3px rgba(10, 132, 255, 0.14) !important;
 }
 
-/* 浅色：设置抽屉、仅带 app-dialog 的页脚（如代理）；分类管理弹窗保存见 --app-category-save-light-* */
-html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary,
+/* 浅色：仅带 app-dialog 的页脚（如代理）；设置抽屉保存见下方 .settings-drawer；分类管理弹窗保存见 --app-category-save-light-* */
 html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary {
   border-radius: 0.72rem;
   font-weight: 600;
@@ -1772,8 +1785,6 @@ html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary {
     transform 0.15s var(--app-ease-spring);
 }
 
-html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:hover,
-html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:focus,
 html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:hover,
 html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:focus {
   background: linear-gradient(
@@ -1830,6 +1841,50 @@ html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:f
 }
 
 html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:active {
+  transform: scale(0.98);
+}
+
+/* 设置抽屉页脚「保存」— 与编辑分类标签弹窗页脚同一套近白胶囊 */
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  min-width: 5.5rem !important;
+  padding: 0 1.15rem !important;
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-top) 0%,
+    var(--app-category-save-light-mid) 52%,
+    var(--app-category-save-light-bot) 100%
+  ) !important;
+  border: 1px solid var(--app-category-save-light-border) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    var(--app-category-save-light-shadow) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:hover,
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:focus {
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-hover-top) 0%,
+    var(--app-category-save-light-hover-mid) 52%,
+    var(--app-category-save-light-hover-bot) 100%
+  ) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:active {
   transform: scale(0.98);
 }
 
@@ -2413,10 +2468,8 @@ html.dark .category-manage-dialog .category-row-actions .el-button--danger:hover
 }
 
 /*
- * 深色：表单/抽屉页脚主按钮 — 中性锌灰填充，避免与侧栏「添加源」等蓝色主操作混淆。
- * （分类管理弹窗单独在下面做胶囊 + 更轻阴影）
+ * 深色：表单/对话框页脚主按钮 — 中性锌灰填充（设置抽屉见下方 .settings-drawer；分类管理见更下）
  */
-html.dark .settings-drawer .el-drawer__footer .el-button--primary,
 html.dark .registry-dialog .el-button--primary,
 html.dark .app-dialog .el-dialog__footer .el-button--primary {
   border-radius: 0.72rem;
@@ -2431,8 +2484,6 @@ html.dark .app-dialog .el-dialog__footer .el-button--primary {
     0 4px 14px rgba(0, 0, 0, 0.35) !important;
 }
 
-html.dark .settings-drawer .el-drawer__footer .el-button--primary:hover,
-html.dark .settings-drawer .el-drawer__footer .el-button--primary:focus,
 html.dark .registry-dialog .el-button--primary:hover,
 html.dark .registry-dialog .el-button--primary:focus,
 html.dark .app-dialog .el-dialog__footer .el-button--primary:hover,
@@ -2479,6 +2530,40 @@ html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:active 
   transform: scale(0.98);
 }
 
+/* 设置抽屉页脚「保存」— 与编辑分类标签弹窗深色页脚胶囊一致 */
+html.dark .settings-drawer .el-drawer__footer .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  min-width: 5.5rem;
+  padding: 0 1.15rem !important;
+  background: linear-gradient(180deg, #76767a 0%, #5c5c60 52%, #515155 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fafafa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:hover,
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #838387 0%, #68686d 52%, #5a5a5e 100%) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 14px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:active {
+  transform: scale(0.98);
+}
+
 /* 全局：深色模式下输入框字数统计去掉黑色背景块 */
 html.dark .el-input__count,
 html.dark .el-input__count-inner {
@@ -2510,11 +2595,108 @@ html.dark .el-textarea__inner + .el-textarea__count {
   width: min(360px, 90vw) !important;
 }
 
-/* 设置抽屉：深色模式 */
+/* 设置抽屉：浅色 — 与编辑分类标签 category-manage-dialog 同系 sheet（从右侧滑入，左缘为视觉主边） */
+html:not(.dark) .settings-drawer.el-drawer {
+  background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
+  border-left: 1px solid rgba(193, 203, 218, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    -12px 0 36px rgba(30, 42, 60, 0.16);
+  overflow: hidden;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding: 1rem 1rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+}
+
+html:not(.dark) .settings-drawer .el-drawer__title {
+  color: #1f2632;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__close-btn {
+  color: rgba(60, 60, 67, 0.5);
+}
+
+html:not(.dark) .settings-drawer .el-drawer__close-btn:hover {
+  color: var(--app-text);
+}
+
+html:not(.dark) .settings-drawer .el-drawer__body {
+  padding: 0.85rem 1rem 0.75rem;
+}
+
+html:not(.dark) .settings-drawer .settings-section-title {
+  color: #667083 !important;
+}
+
+html:not(.dark) .settings-drawer .settings-drawer-inline-label,
+html:not(.dark) .settings-drawer .settings-item-label {
+  color: #4a5568 !important;
+}
+
+html:not(.dark) .settings-drawer .settings-note {
+  color: rgba(60, 60, 67, 0.55) !important;
+}
+
+html:not(.dark) .settings-drawer .el-select__wrapper,
+html:not(.dark) .settings-drawer .el-input__wrapper {
+  border-radius: 0.75rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fd 100%) !important;
+  box-shadow: 0 0 0 1px rgba(188, 198, 214, 0.76) inset !important;
+}
+
+html:not(.dark) .settings-drawer .el-select__wrapper:hover,
+html:not(.dark) .settings-drawer .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(167, 180, 201, 0.9) inset !important;
+}
+
+html:not(.dark) .settings-drawer .el-select__wrapper.is-focused,
+html:not(.dark) .settings-drawer .el-input__wrapper.is-focus {
+  box-shadow:
+    0 0 0 1px rgba(10, 132, 255, 0.6) inset,
+    0 0 0 3px rgba(10, 132, 255, 0.14) !important;
+}
+
+html:not(.dark) .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger) {
+  border-radius: 0.72rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--app-text);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
+}
+
+html:not(.dark) .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.11);
+  color: #000000;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
+}
+
+html:not(.dark) .settings-drawer .settings-danger-btn,
+html:not(.dark) .settings-drawer .settings-about-btn {
+  border-radius: 0.72rem !important;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__footer {
+  border-top: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+  padding: 0.85rem 1rem 1rem;
+  background: transparent;
+}
+
+/* 设置抽屉：深色 — 与编辑分类标签弹窗同外壳 */
 html.dark .settings-drawer.el-drawer {
-  background: linear-gradient(195deg, #3e3e42 0%, #2c2c2e 55%, #242426 100%);
+  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+  border-left: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
   color: var(--el-text-color-regular);
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    -14px 0 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
 }
 
 html.dark .settings-drawer .el-drawer__header {
@@ -2525,7 +2707,17 @@ html.dark .settings-drawer .el-drawer__header {
 
 html.dark .settings-drawer .el-drawer__title {
   color: var(--el-text-color-primary);
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+}
+
+html.dark .settings-drawer .el-drawer__close-btn {
+  color: var(--app-text-muted);
+}
+
+html.dark .settings-drawer .el-drawer__close-btn:hover {
+  color: var(--el-text-color-primary);
 }
 
 html.dark .settings-drawer .el-drawer__body {
@@ -2565,6 +2757,7 @@ html.dark .settings-drawer .el-input__wrapper.is-focus {
 }
 
 html.dark .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger) {
+  border-radius: 0.72rem;
   background-color: var(--el-fill-color-light);
   border-color: var(--el-border-color);
   color: var(--el-text-color-regular);
@@ -2601,10 +2794,10 @@ html.dark .settings-drawer .settings-about-btn:hover {
 html.dark .settings-drawer .el-drawer__footer {
   border-top: 1px solid var(--app-separator);
   padding: 0.85rem 1rem 1rem;
-  background: rgba(44, 44, 46, 0.92);
+  background: transparent;
 }
 
-/* 设置抽屉「保存」主色见上方 html.dark .settings-drawer .el-drawer__footer .el-button--primary */
+/* 设置抽屉页脚「保存」见上方 html.dark .settings-drawer .el-drawer__footer .el-button--primary */
 
 /* 右键菜单（源列表）深色模式 hover：使用更低亮度并强制覆盖 */
 .context-menu-item {

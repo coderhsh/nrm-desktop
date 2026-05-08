@@ -67,7 +67,7 @@ const languageOptions = computed(() => [
   { label: t('app.settings.languageEn'), value: 'en' as const },
 ])
 const themeOptions = computed(() => [
-  { label: t('app.settings.themeAuto'), value: 'auto' as const },
+  { label: t('app.settings.themeFollowSystem'), value: 'auto' as const },
   { label: t('app.settings.themeLight'), value: 'light' as const },
   { label: t('app.settings.themeDark'), value: 'dark' as const },
 ])
@@ -75,7 +75,7 @@ const elementLocale = computed(() => (coerceAppLanguage(language.value) === 'en'
 const nextThemeLabel = computed(() => {
   if (theme.theme.value === 'auto') return t('app.settings.themeDark')
   if (theme.theme.value === 'dark') return t('app.settings.themeLight')
-  return t('app.settings.themeAuto')
+  return t('app.settings.themeFollowSystem')
 })
 let unlistenCloseRequested: null | (() => void) = null
 let unlistenRegistryChanged: null | (() => void) = null
