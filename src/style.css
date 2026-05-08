@@ -1604,45 +1604,188 @@ html.dark .el-button--default:focus {
   color: var(--el-text-color-primary);
 }
 
-/* Dark: toast — 与浅色一致用实心底，不用半透明镂空 */
-html.dark .el-message {
-  background-color: #38383f !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+/* -------------------------------------------------------------------------- */
+/* Light: ElMessage — Apple 式：统一磨砂「材料」、细发线边、系统色只给图标 */
+/* -------------------------------------------------------------------------- */
+html:not(.dark) .el-message-fade-enter-active,
+html:not(.dark) .el-message-fade-leave-active {
+  transition:
+    opacity 0.32s cubic-bezier(0.25, 0.1, 0.25, 1),
+    transform 0.44s cubic-bezier(0.33, 1.02, 0.32, 1) !important;
 }
 
-html.dark .el-message__content {
-  color: var(--el-text-color-primary) !important;
+@media (prefers-reduced-motion: reduce) {
+  html:not(.dark) .el-message-fade-enter-active,
+  html:not(.dark) .el-message-fade-leave-active,
+  html.dark .el-message-fade-enter-active,
+  html.dark .el-message-fade-leave-active {
+    transition-duration: 0.01ms !important;
+  }
+
+  html:not(.dark) .el-message,
+  html.dark .el-message {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
-html.dark .el-message--info {
-  background-color: #38383f !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* 成功：与信息类 toast 同底，用主色描边/图标表达「完成」，避免大块荧光绿 */
-html.dark .el-message--success {
-  background-color: #38383f !important;
-  border-color: color-mix(in srgb, var(--el-color-primary) 38%, transparent) !important;
+html:not(.dark) .el-message {
+  --el-message-padding: 10px 20px;
+  gap: 10px !important;
+  border-radius: 14px !important;
+  border: 0.5px solid rgba(0, 0, 0, 0.09) !important;
+  background: rgba(255, 255, 255, 0.74) !important;
   box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.42),
-    0 0 0 1px color-mix(in srgb, var(--el-color-primary) 22%, transparent) inset !important;
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 40px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: saturate(1.85) blur(22px);
+  -webkit-backdrop-filter: saturate(1.85) blur(22px);
+  transition:
+    opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1),
+    transform 0.4s cubic-bezier(0.33, 1.02, 0.32, 1),
+    box-shadow 0.24s cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 0.24s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
 }
 
-html.dark .el-message--success .el-message__icon {
-  color: color-mix(in srgb, var(--el-color-primary) 82%, #b8d4ff 18%) !important;
+/* 各类型共用同一壳，避免「一整块染色塑料」 */
+html:not(.dark) .el-message.el-message--info,
+html:not(.dark) .el-message.el-message--success,
+html:not(.dark) .el-message.el-message--warning,
+html:not(.dark) .el-message.el-message--error,
+html:not(.dark) .el-message.el-message--primary {
+  border-color: rgba(0, 0, 0, 0.09) !important;
+  background: rgba(255, 255, 255, 0.74) !important;
 }
 
-html.dark .el-message--error {
-  background-color: #3a2424 !important;
-  border-color: rgba(255, 69, 58, 0.55) !important;
+html:not(.dark) .el-message__content,
+html:not(.dark) .el-message__content p {
+  color: rgba(29, 29, 31, 0.92) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.022em;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
-html.dark .el-message--warning {
-  background-color: #3a3420 !important;
-  border-color: rgba(255, 214, 10, 0.5) !important;
+html:not(.dark) .el-message__icon {
+  font-size: 1.0625rem !important;
+}
+
+/* SF 系语义色（图标） */
+html:not(.dark) .el-message.el-message--success .el-message-icon--success {
+  color: #34c759 !important;
+}
+
+html:not(.dark) .el-message.el-message--error .el-message-icon--error {
+  color: #ff3b30 !important;
+}
+
+html:not(.dark) .el-message.el-message--warning .el-message-icon--warning {
+  color: #ff9500 !important;
+}
+
+html:not(.dark) .el-message.el-message--info .el-message-icon--info,
+html:not(.dark) .el-message.el-message--primary .el-message-icon--primary {
+  color: #007aff !important;
+}
+
+html:not(.dark) .el-message .el-message__closeBtn {
+  color: rgba(60, 60, 67, 0.34) !important;
+  transition: color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+html:not(.dark) .el-message .el-message__closeBtn:hover {
+  color: rgba(60, 60, 67, 0.62) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dark: ElMessage — 与浅色同一逻辑：深色磨砂壳 + 系统色只给图标 */
+/* -------------------------------------------------------------------------- */
+html.dark .el-message-fade-enter-active,
+html.dark .el-message-fade-leave-active {
+  transition:
+    opacity 0.32s cubic-bezier(0.25, 0.1, 0.25, 1),
+    transform 0.44s cubic-bezier(0.33, 1.02, 0.32, 1) !important;
+}
+
+html.dark .el-message {
+  --el-message-padding: 10px 20px;
+  gap: 10px !important;
+  border-radius: 14px !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(44, 44, 46, 0.78) !important;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 14px 44px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.38) !important;
+  backdrop-filter: saturate(1.55) blur(22px);
+  -webkit-backdrop-filter: saturate(1.55) blur(22px);
+  transition:
+    opacity 0.28s cubic-bezier(0.25, 0.1, 0.25, 1),
+    transform 0.4s cubic-bezier(0.33, 1.02, 0.32, 1),
+    box-shadow 0.24s cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 0.24s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+}
+
+html.dark .el-message.el-message--info,
+html.dark .el-message.el-message--success,
+html.dark .el-message.el-message--warning,
+html.dark .el-message.el-message--error,
+html.dark .el-message.el-message--primary {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(44, 44, 46, 0.78) !important;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 14px 44px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.38) !important;
+}
+
+html.dark .el-message__content,
+html.dark .el-message__content p {
+  color: rgba(245, 245, 247, 0.94) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.022em;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Helvetica Neue', sans-serif;
+}
+
+html.dark .el-message__icon {
+  font-size: 1.0625rem !important;
+}
+
+/* iOS / macOS 深色语义色（图标） */
+html.dark .el-message.el-message--success .el-message-icon--success {
+  color: #32d74b !important;
+}
+
+html.dark .el-message.el-message--error .el-message-icon--error {
+  color: #ff453a !important;
+}
+
+html.dark .el-message.el-message--warning .el-message-icon--warning {
+  color: #ff9f0a !important;
+}
+
+html.dark .el-message.el-message--info .el-message-icon--info,
+html.dark .el-message.el-message--primary .el-message-icon--primary {
+  color: #0a84ff !important;
+}
+
+html.dark .el-message .el-message__closeBtn {
+  color: rgba(235, 235, 245, 0.38) !important;
+  transition: color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+html.dark .el-message .el-message__closeBtn:hover {
+  color: rgba(235, 235, 245, 0.72) !important;
 }
 
 /* 浅色里 .el-message-box 用了 background 渐变简写；深色必须整段覆盖，否则仍带白色渐变 */
