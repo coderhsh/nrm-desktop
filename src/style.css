@@ -15,6 +15,10 @@
   --app-duration: 0.22s;
   --app-duration-mid: 0.28s;
   --app-duration-slow: 0.36s;
+  /* 源列表分类折叠：外壳与箭头共用时长，曲线分开（高度 ease-out、旋转略弹） */
+  --app-category-fold-duration: 0.38s;
+  --app-category-fold-ease: var(--app-ease-out);
+  --app-category-chevron-ease: var(--app-ease-spring);
   --app-radius-sm: 8px;
   --app-radius-md: 12px;
   --app-radius-lg: 14px;
@@ -492,7 +496,7 @@ html.dark .app-statusbar {
 .reg-category-fold-shell {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.42s var(--app-ease-out);
+  transition: grid-template-rows var(--app-category-fold-duration) var(--app-category-fold-ease);
   /* flex 子项默认 min-height:auto 会按内容卡住高度；0fr 时须允许收到 0，否则会「漏」出下面的源 */
   min-height: 0;
   overflow: hidden;
@@ -528,6 +532,10 @@ html.dark .app-statusbar {
   .reg-category-fold-shell {
     transition-duration: 0.01s;
   }
+
+  .category-row-chevron {
+    transition-duration: 0.01s;
+  }
 }
 
 .category-row-chevron {
@@ -536,7 +544,7 @@ html.dark .app-statusbar {
   font-size: 0.9rem;
   line-height: 1;
   text-align: center;
-  transition: transform 0.3s var(--app-ease-spring);
+  transition: transform var(--app-category-fold-duration) var(--app-category-chevron-ease);
   transform: rotate(0deg);
 }
 
