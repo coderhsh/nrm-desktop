@@ -5,7 +5,7 @@ import { onClickOutside, useLocalStorage } from '@vueuse/core'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Expand, Fold, Rank, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
-import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
+import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY } from '@/composables/useI18n'
 import { storeToRefs } from 'pinia'
 import type { Registry } from '@/types'
 import type { InputInstance } from 'element-plus'
@@ -30,6 +30,34 @@ const uncategorizedLabel = computed(() => t('registryList.uncategorized'))
 const defaultPresetLabel = '预设源'
 const categoryLabelMaxLength = 20
 const categoryByRegistry = useLocalStorage<Record<string, string>>(CATEGORY_BY_REGISTRY_STORAGE_KEY, {})
+
+/** 防止 localStorage 损坏或非对象导致渲染期抛错 */
+function normalizeRegistryOrderRecord(v: unknown): Record<string, string[]> {
+  if (v == null || typeof v !== 'object' || Array.isArray(v)) return {}
+  const out: Record<string, string[]> = {}
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (Array.isArray(val)) {
+      out[k] = val.filter((x): x is string => typeof x === 'string')
+    }
+  }
+  return out
+}
+
+/** 各分类下源的展示顺序（registry name）；未记录的分类回退为按名称排序 */
+const registryOrderByCategory = useLocalStorage<Record<string, string[]>>(REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY, {}, {
+  serializer: {
+    read: (raw: string) => {
+      try {
+        const v = JSON.parse(raw) as unknown
+        return normalizeRegistryOrderRecord(v)
+      } catch {
+        return {}
+      }
+    },
+    write: (v: Record<string, string[]>) => JSON.stringify(normalizeRegistryOrderRecord(v)),
+  },
+})
+
 const categoryLabels = useLocalStorage<string[]>('nrm-desktop-category-labels', [])
 const categoryExpanded = useLocalStorage<Record<string, boolean>>('nrm-desktop-category-expanded', {})
 const presetCategoryLabel = useLocalStorage<string>('nrm-desktop-preset-category-label', defaultPresetLabel)
@@ -102,6 +130,71 @@ watch(
   },
   { immediate: true }
 )
+/** 某分类下的源列表（与 groupedRegistries 分区规则一致） */
+function registriesInCategory(categoryLabel: string): Registry[] {
+  const ucat = uncategorizedLabel.value
+  const preset = presetCategoryLabel.value
+  const list: Registry[] = []
+  for (const registry of filteredRegistries.value) {
+    const assignedCategory = categoryByRegistry.value[registry.name]
+    const category = assignedCategory || (registry.is_custom ? ucat : categoryLabels.value.includes(preset) ? preset : ucat)
+    if (category === categoryLabel) list.push(registry)
+  }
+  return list
+}
+
+function applyStoredOrderForCategory(categoryLabel: string, items: Registry[]): Registry[] {
+  const order = normalizeRegistryOrderRecord(registryOrderByCategory.value)[categoryLabel]
+  if (!order?.length) {
+    return [...items].sort((a, b) => a.name.localeCompare(b.name))
+  }
+  const set = new Set(items.map(i => i.name))
+  const ordered: Registry[] = []
+  for (const name of order) {
+    if (!set.has(name)) continue
+    const r = items.find(i => i.name === name)
+    if (r) ordered.push(r)
+  }
+  for (const r of items) {
+    if (!ordered.some(o => o.name === r.name)) ordered.push(r)
+  }
+  return ordered
+}
+
+function getOrderedRegistryNamesInCategory(categoryLabel: string): string[] {
+  return applyStoredOrderForCategory(categoryLabel, registriesInCategory(categoryLabel)).map(r => r.name)
+}
+
+function pruneRegistryOrder(name: string) {
+  const next = { ...normalizeRegistryOrderRecord(registryOrderByCategory.value) }
+  for (const k of Object.keys(next)) {
+    next[k] = (next[k] ?? []).filter(n => n !== name)
+  }
+  registryOrderByCategory.value = next
+}
+
+function reorderStorageAfterCrossCategoryMove(registryName: string, _fromCat: string, toCat: string) {
+  const next = { ...normalizeRegistryOrderRecord(registryOrderByCategory.value) }
+  const stripAll = (arr: string[] | undefined) => (arr ?? []).filter(n => n !== registryName)
+  for (const k of Object.keys(next)) {
+    next[k] = stripAll(next[k])
+  }
+  const targetBase = stripAll(next[toCat])
+  next[toCat] = [...targetBase, registryName]
+  registryOrderByCategory.value = next
+}
+
+function commitRegistryOrderWithinCategory(categoryLabel: string, dragName: string, dropK: number) {
+  const names = getOrderedRegistryNamesInCategory(categoryLabel)
+  const rest = names.filter(n => n !== dragName)
+  const k = Math.min(Math.max(dropK, 0), rest.length)
+  const newOrder = [...rest.slice(0, k), dragName, ...rest.slice(k)]
+  registryOrderByCategory.value = {
+    ...normalizeRegistryOrderRecord(registryOrderByCategory.value),
+    [categoryLabel]: newOrder,
+  }
+}
+
 const groupedRegistries = computed(() => {
   const ucat = uncategorizedLabel.value
   const groups: Record<string, Registry[]> = {}
@@ -132,7 +225,7 @@ const groupedRegistries = computed(() => {
   }
   return orderedLabels.map(label => ({
     label,
-    items: groups[label],
+    items: applyStoredOrderForCategory(label, groups[label]),
   }))
 })
 
@@ -193,8 +286,21 @@ watch(manageDragLabel, v => {
   document.body.classList.toggle('category-manage-sort-dragging', Boolean(v))
 })
 
+watch(
+  () => registrySortActive.value && isPointerDragging.value && Boolean(pointerDragRegistryName.value),
+  v => {
+    if (typeof document === 'undefined') return
+    document.body.classList.toggle('registry-list-sort-dragging', Boolean(v))
+  },
+)
+
 const dragOverCategoryLabel = ref<string | null>(null)
 const pointerDragRegistryName = ref<string | null>(null)
+const pointerDragSourceCategory = ref<string | null>(null)
+/** 同分类内置顶排序：指针落在间隙时更新插入下标（与分类排序 manageDropIndex 语义一致） */
+const registrySortDropIndex = ref(0)
+/** 指针落在「源分类」列表区域内且未指向其它分类时，为 true */
+const registrySortActive = ref(false)
 const isPointerDragging = ref(false)
 const pointerStart = ref<{ x: number; y: number } | null>(null)
 const pointerPosition = ref({ x: 0, y: 0 })
@@ -394,6 +500,7 @@ async function handleDelete(registry: Registry) {
       type: 'warning',
     })
     await store.deleteRegistry(registry.name)
+    pruneRegistryOrder(registry.name)
   } catch {
     // cancelled
   }
@@ -517,6 +624,7 @@ function moveRegistryToCategory(registryName: string, label: string) {
 function onRegistryMouseDown(registry: Registry, event: MouseEvent) {
   if (event.button !== 0) return
   pointerDragRegistryName.value = registry.name
+  pointerDragSourceCategory.value = getRegistryCategory(registry)
   pointerStart.value = { x: event.clientX, y: event.clientY }
   const current = event.currentTarget as HTMLElement | null
   if (current) {
@@ -537,7 +645,9 @@ function onRegistryMouseDown(registry: Registry, event: MouseEvent) {
 }
 
 function onCategoryMouseEnter(label: string) {
-  if (!isPointerDragging.value || !pointerDragRegistryName.value) return
+  if (!isPointerDragging.value || !pointerDragRegistryName.value || !pointerDragSourceCategory.value) return
+  /** 跨分类拖拽：仅在「进入其它分类」时展开并提示放入（同分类排序走指针几何判定） */
+  if (label === pointerDragSourceCategory.value) return
   if (!isCategoryExpanded(label)) {
     categoryExpanded.value = {
       ...categoryExpanded.value,
@@ -549,8 +659,53 @@ function onCategoryMouseEnter(label: string) {
   document.body.style.setProperty('cursor', 'copy', 'important')
 }
 
+/** 当前指针下的分类分组（整块卡片区域含标题），用于区分「同分类排序」与「拖到其它分类」 */
+function categoryUnderPointer(clientX: number, clientY: number): string | null {
+  const stack = document.elementsFromPoint(clientX, clientY)
+  for (const node of stack) {
+    const el = node as HTMLElement
+    const host = el.closest('[data-registry-category-host]')
+    if (host) {
+      return host.getAttribute('data-registry-category-host') ?? null
+    }
+  }
+  return null
+}
+
+function updateRegistrySortDropFromPointer(clientY: number, srcCat: string) {
+  const dragName = pointerDragRegistryName.value
+  if (!dragName) return
+
+  const hosts = document.querySelectorAll('[data-registry-category-host]')
+  let wrap: HTMLElement | null = null
+  for (const h of hosts) {
+    const el = h as HTMLElement
+    if (el.getAttribute('data-registry-category-host') === srcCat) {
+      wrap = el
+      break
+    }
+  }
+  if (!wrap) return
+
+  const rowEls = wrap.querySelectorAll('[data-registry-sort-row]')
+  const rects: DOMRect[] = []
+  const labelsVis: string[] = []
+  rowEls.forEach((row: Element) => {
+    const lab = (row as HTMLElement).getAttribute('data-registry-sort-row')
+    if (!lab) return
+    rects.push(row.getBoundingClientRect())
+    labelsVis.push(lab)
+  })
+  const restLen = getOrderedRegistryNamesInCategory(srcCat).filter(n => n !== dragName).length
+  const picked = pickManageDropIndexFromPointerY(clientY, rects, labelsVis, dragName, restLen)
+  if (picked) registrySortDropIndex.value = picked.k
+}
+
 function clearPointerDragState() {
   pointerDragRegistryName.value = null
+  pointerDragSourceCategory.value = null
+  registrySortDropIndex.value = 0
+  registrySortActive.value = false
   pointerStart.value = null
   dragSourceRect.value = null
   dragPointerOffset.value = { x: 0, y: 0 }
@@ -559,6 +714,9 @@ function clearPointerDragState() {
   ghostTransition.value = 'none'
   document.documentElement.style.removeProperty('cursor')
   document.body.style.removeProperty('cursor')
+  if (typeof document !== 'undefined') {
+    document.body.classList.remove('registry-list-sort-dragging')
+  }
 }
 
 function onWindowMouseMove(event: MouseEvent) {
@@ -586,6 +744,38 @@ function onWindowMouseMove(event: MouseEvent) {
   if (!pointerDragRegistryName.value || !pointerStart.value) return
   if (isPointerDragging.value) {
     ghostTransition.value = 'none'
+
+    const srcCat = pointerDragSourceCategory.value
+    const dragName = pointerDragRegistryName.value
+    const searchOff = !searchQuery.value.trim()
+
+    if (dragName && srcCat) {
+      const underCat = categoryUnderPointer(event.clientX, event.clientY)
+
+      if (underCat && underCat !== srcCat) {
+        registrySortActive.value = false
+        if (!isCategoryExpanded(underCat)) {
+          categoryExpanded.value = {
+            ...categoryExpanded.value,
+            [underCat]: true,
+          }
+        }
+        dragOverCategoryLabel.value = underCat
+        document.documentElement.style.setProperty('cursor', 'copy', 'important')
+        document.body.style.setProperty('cursor', 'copy', 'important')
+      } else {
+        dragOverCategoryLabel.value = null
+        document.documentElement.style.setProperty('cursor', 'grabbing', 'important')
+        document.body.style.setProperty('cursor', 'grabbing', 'important')
+        if (searchOff && underCat === srcCat) {
+          registrySortActive.value = true
+          updateRegistrySortDropFromPointer(event.clientY, srcCat)
+        } else {
+          registrySortActive.value = false
+        }
+      }
+    }
+
     ghostPosition.value = {
       x: event.clientX - dragPointerOffset.value.x,
       y: event.clientY - dragPointerOffset.value.y,
@@ -599,6 +789,13 @@ function onWindowMouseMove(event: MouseEvent) {
     window.getSelection()?.removeAllRanges()
     document.documentElement.style.setProperty('cursor', 'grabbing', 'important')
     document.body.style.setProperty('cursor', 'grabbing', 'important')
+    const src = pointerDragSourceCategory.value
+    const name = pointerDragRegistryName.value
+    if (src && name && !searchQuery.value.trim()) {
+      const names = getOrderedRegistryNamesInCategory(src)
+      const ix = names.indexOf(name)
+      registrySortDropIndex.value = ix >= 0 ? ix : 0
+    }
     if (dragSourceRect.value) {
       ghostTransition.value = 'transform 140ms ease-out'
       requestAnimationFrame(() => {
@@ -625,8 +822,25 @@ function onWindowMouseUp() {
   }
 
   if (!pointerDragRegistryName.value) return
-  if (isPointerDragging.value && dragOverCategoryLabel.value) {
-    moveRegistryToCategory(pointerDragRegistryName.value, dragOverCategoryLabel.value)
+  const dragName = pointerDragRegistryName.value
+  const srcCat = pointerDragSourceCategory.value
+
+  if (
+    isPointerDragging.value &&
+    dragOverCategoryLabel.value &&
+    srcCat &&
+    dragOverCategoryLabel.value !== srcCat
+  ) {
+    moveRegistryToCategory(dragName, dragOverCategoryLabel.value)
+    reorderStorageAfterCrossCategoryMove(dragName, srcCat, dragOverCategoryLabel.value)
+    suppressNextClick.value = true
+  } else if (
+    isPointerDragging.value &&
+    registrySortActive.value &&
+    srcCat &&
+    !searchQuery.value.trim()
+  ) {
+    commitRegistryOrderWithinCategory(srcCat, dragName, registrySortDropIndex.value)
     suppressNextClick.value = true
   }
   clearPointerDragState()
@@ -649,6 +863,7 @@ onBeforeUnmount(() => {
   document.documentElement.style.removeProperty('cursor')
   document.body.style.removeProperty('cursor')
   document.body.classList.remove('category-manage-sort-dragging')
+  document.body.classList.remove('registry-list-sort-dragging')
 })
 
 function normalizeCategoryLabel(label: string | null | undefined): string {
@@ -1039,6 +1254,11 @@ async function deleteCategoryLabel(label: string) {
 
   if (showCategoryManageDialog.value) {
     categoryManageDraftLabels.value = categoryManageDraftLabels.value.filter(item => item !== label)
+    {
+      const ord = { ...registryOrderByCategory.value }
+      delete ord[label]
+      registryOrderByCategory.value = ord
+    }
     const draftMapping: Record<string, string> = {}
     for (const [name, category] of Object.entries(draftCategoryByRegistry.value)) {
       if (category !== label) {
@@ -1059,6 +1279,11 @@ async function deleteCategoryLabel(label: string) {
   }
 
   categoryLabels.value = categoryLabels.value.filter(item => item !== label)
+  {
+    const ord = { ...registryOrderByCategory.value }
+    delete ord[label]
+    registryOrderByCategory.value = ord
+  }
   const mapping: Record<string, string> = {}
   for (const [name, category] of Object.entries(categoryByRegistry.value)) {
     if (category !== label) {
@@ -1126,6 +1351,36 @@ function copyAllDetails() {
   ].join('\n')
   copyText(detailText, t('registryList.detail.copyLabel.detail'))
 }
+
+type RegistrySlot = { registry: Registry; isDragPreview?: boolean }
+
+/** 同分类拖拽排序：预览序列（半透明占位 + FLIP）；搜索激活时不重排 */
+function getRegistrySlotsForGroup(group: { label: string; items: Registry[] }): RegistrySlot[] {
+  const dragName = pointerDragRegistryName.value
+  const srcCat = pointerDragSourceCategory.value
+  if (
+    !isPointerDragging.value ||
+    !registrySortActive.value ||
+    !dragName ||
+    srcCat !== group.label ||
+    searchQuery.value.trim()
+  ) {
+    return group.items.map(registry => ({ registry }))
+  }
+  const restItems = group.items.filter(r => r.name !== dragName)
+  const dragItem = group.items.find(r => r.name === dragName)
+  if (!dragItem) return group.items.map(registry => ({ registry }))
+  const k = Math.min(Math.max(registrySortDropIndex.value, 0), restItems.length)
+  const ordered = [...restItems.slice(0, k), dragItem, ...restItems.slice(k)]
+  return ordered.map(registry => ({
+    registry,
+    isDragPreview: registry.name === dragName,
+  }))
+}
+
+function registryFlipTransitionName(categoryLabel: string): string {
+  return registrySortActive.value && pointerDragSourceCategory.value === categoryLabel && isPointerDragging.value ? 'reg-sort-flip' : 'reg-sort-idle'
+}
 </script>
 
 <template>
@@ -1136,6 +1391,7 @@ function copyAllDetails() {
       {
         'registry-list-root--dragging': isPointerDragging || isManageDragging || manageDragLabel,
         'registry-list-root--pointer-dragging': isPointerDragging,
+        'registry-list-root--registry-sort-dragging': registrySortActive && isPointerDragging,
       },
     ]"
   >
@@ -1196,19 +1452,44 @@ function copyAllDetails() {
           <div
             v-for="group in groupedRegistries"
             :key="group.label"
+            :data-registry-category-host="group.label"
             :class="[
               'relative flex flex-col gap-2 rounded border border-transparent transition-colors',
               {
-                'bg-gray-50 border-primary/60 shadow-sm': dragOverCategoryLabel === group.label && isPointerDragging,
+                'bg-gray-50 border-primary/60 shadow-sm':
+                  dragOverCategoryLabel === group.label &&
+                  isPointerDragging &&
+                  pointerDragSourceCategory &&
+                  dragOverCategoryLabel !== pointerDragSourceCategory,
               },
             ]"
             @mouseenter="onCategoryMouseEnter(group.label)"
           >
-            <div :class="['px-1.5 pt-0.5 text-xs font-semibold text-gray-400 cursor-pointer select-none flex items-center gap-1 rounded', { 'bg-gray-100': dragOverCategoryLabel === group.label }]" @click="toggleCategoryExpanded(group.label)" @contextmenu="onCategoryContextMenu($event, group.label)">
+            <div
+              :class="[
+                'px-1.5 pt-0.5 text-xs font-semibold text-gray-400 cursor-pointer select-none flex items-center gap-1 rounded',
+                {
+                  'bg-gray-100':
+                    dragOverCategoryLabel === group.label &&
+                    pointerDragSourceCategory &&
+                    dragOverCategoryLabel !== pointerDragSourceCategory,
+                },
+              ]"
+              @click="toggleCategoryExpanded(group.label)"
+              @contextmenu="onCategoryContextMenu($event, group.label)"
+            >
               <span class="category-row-chevron text-gray-400" :class="{ 'is-expanded': isCategoryExpanded(group.label) }" aria-hidden="true">▸</span>
               <span>{{ group.label }} ({{ group.items.length }})</span>
             </div>
-            <div v-if="dragOverCategoryLabel === group.label && isPointerDragging" class="category-drop-overlay absolute inset-0 z-20 pointer-events-none rounded-lg bg-white/55 border border-primary/25 backdrop-blur-[2px] flex items-center justify-center">
+            <div
+              v-if="
+                dragOverCategoryLabel === group.label &&
+                isPointerDragging &&
+                pointerDragSourceCategory &&
+                dragOverCategoryLabel !== pointerDragSourceCategory
+              "
+              class="category-drop-overlay absolute inset-0 z-20 pointer-events-none rounded-lg bg-white/55 border border-primary/25 backdrop-blur-[2px] flex items-center justify-center"
+            >
               <div class="category-drop-hint px-3.5 py-2 text-xs font-medium text-primary bg-white/88 rounded-lg border border-white shadow-sm flex items-center gap-1.5">
                 <span class="text-[11px]">↳</span>
                 <span>{{ t('registryList.dropHint', { label: group.label }) }}</span>
@@ -1216,53 +1497,58 @@ function copyAllDetails() {
             </div>
             <div class="reg-category-fold-shell" :class="{ 'reg-category-fold-shell--open': isCategoryExpanded(group.label) }">
               <div class="reg-category-fold-inner flex flex-col gap-2.5">
-                <div
-                  v-for="registry in group.items"
-                  :key="registry.name"
-                  :class="[
-                    'registry-item flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer border-l-3 border-transparent select-none cursor-grab',
-                    {
-                      'is-active': currentRegistry?.name === registry.name,
-                      'is-idle': currentRegistry?.name !== registry.name,
-                      'opacity-40 cursor-grabbing': pointerDragRegistryName === registry.name && isPointerDragging,
-                    },
-                  ]"
-                  @click="handleSwitch(registry)"
-                  @mousedown.left="onRegistryMouseDown(registry, $event)"
-                  @dblclick.stop="openEdit(registry)"
-                  @contextmenu="onContextMenu($event, registry)"
-                >
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1.5">
-                      <span :class="['text-sm font-semibold truncate', { 'text-primary': currentRegistry?.name === registry.name }]">
-                        {{ registry.name }}
-                      </span>
+                <transition-group :name="registryFlipTransitionName(group.label)" tag="div" class="flex flex-col gap-2.5">
+                  <div
+                    v-for="slot in getRegistrySlotsForGroup(group)"
+                    :key="slot.registry.name"
+                    :data-registry-sort-row="slot.registry.name"
+                    :class="[
+                      'registry-item flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer border-l-3 border-transparent select-none cursor-grab',
+                      {
+                        'is-active': currentRegistry?.name === slot.registry.name,
+                        'is-idle': currentRegistry?.name !== slot.registry.name,
+                        'opacity-40 cursor-grabbing':
+                          pointerDragRegistryName === slot.registry.name && isPointerDragging && !slot.isDragPreview,
+                        'registry-item--sort-preview': slot.isDragPreview,
+                      },
+                    ]"
+                    @click="handleSwitch(slot.registry)"
+                    @mousedown.left="onRegistryMouseDown(slot.registry, $event)"
+                    @dblclick.stop="openEdit(slot.registry)"
+                    @contextmenu="onContextMenu($event, slot.registry)"
+                  >
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span :class="['text-sm font-semibold truncate', { 'text-primary': currentRegistry?.name === slot.registry.name }]">
+                          {{ slot.registry.name }}
+                        </span>
+                      </div>
+                      <div class="text-xs text-gray-400 truncate mt-0.5">
+                        {{ slot.registry.url }}
+                      </div>
                     </div>
-                    <div class="text-xs text-gray-400 truncate mt-0.5">
-                      {{ registry.url }}
-                    </div>
-                  </div>
 
-                  <div class="flex items-center gap-2 ml-2 flex-shrink-0">
-                    <template v-if="latencyResults[registry.name]">
-                      <span class="text-xs font-mono font-medium" :style="{ color: latencyBarColor(latencyResults[registry.name].latency_ms) }">
-                        <template v-if="latencyResults[registry.name].latency_ms !== null"> {{ latencyResults[registry.name].latency_ms }}ms </template>
-                        <template v-else class="text-gray-400">
-                          {{ latencyFailLabel(latencyResults[registry.name].error) }}
-                        </template>
-                      </span>
-                      <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: latencyBarColor(latencyResults[registry.name].latency_ms) }"></span>
-                    </template>
-                    <div v-else-if="currentRegistry?.name === registry.name" class="w-2 h-2 rounded-full" style="background: var(--el-color-primary); box-shadow: 0 0 6px rgba(79, 110, 247, 0.4)"></div>
-                    <div class="w-8 h-8 flex items-center justify-center flex-shrink-0">
-                      <el-button link size="small" class="registry-speed-btn registry-speed-btn-fixed" :loading="!!testingByRegistry[registry.name]" :disabled="!!testingByRegistry[registry.name]" @click.stop="handleTest(registry)">
-                        <el-icon v-if="!testingByRegistry[registry.name]" class="text-base leading-none">
-                          <RefreshRight />
-                        </el-icon>
-                      </el-button>
+                    <div class="flex items-center gap-2 ml-2 flex-shrink-0">
+                      <template v-if="latencyResults[slot.registry.name]">
+                        <span class="text-xs font-mono font-medium" :style="{ color: latencyBarColor(latencyResults[slot.registry.name].latency_ms) }">
+                          <template v-if="latencyResults[slot.registry.name].latency_ms !== null"> {{ latencyResults[slot.registry.name].latency_ms }}ms </template>
+                          <template v-else class="text-gray-400">
+                            {{ latencyFailLabel(latencyResults[slot.registry.name].error) }}
+                          </template>
+                        </span>
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: latencyBarColor(latencyResults[slot.registry.name].latency_ms) }"></span>
+                      </template>
+                      <div v-else-if="currentRegistry?.name === slot.registry.name" class="w-2 h-2 rounded-full" style="background: var(--el-color-primary); box-shadow: 0 0 6px rgba(79, 110, 247, 0.4)"></div>
+                      <div class="w-8 h-8 flex items-center justify-center flex-shrink-0" @mousedown.stop>
+                        <el-button link size="small" class="registry-speed-btn registry-speed-btn-fixed" :loading="!!testingByRegistry[slot.registry.name]" :disabled="!!testingByRegistry[slot.registry.name]" @click.stop="handleTest(slot.registry)">
+                          <el-icon v-if="!testingByRegistry[slot.registry.name]" class="text-base leading-none">
+                            <RefreshRight />
+                          </el-icon>
+                        </el-button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </transition-group>
               </div>
             </div>
           </div>
@@ -1739,6 +2025,43 @@ function copyAllDetails() {
 
 .cat-manage-flip-move {
   transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/*
+ * 源列表同分类拖拽：与分类弹窗相同的 idle / flip move 策略。
+ */
+.reg-sort-flip-enter-active,
+.reg-sort-flip-leave-active,
+.reg-sort-idle-enter-active,
+.reg-sort-idle-leave-active {
+  transition: none !important;
+}
+
+.reg-sort-flip-enter-from,
+.reg-sort-flip-enter-to,
+.reg-sort-flip-leave-from,
+.reg-sort-flip-leave-to,
+.reg-sort-idle-enter-from,
+.reg-sort-idle-enter-to,
+.reg-sort-idle-leave-from,
+.reg-sort-idle-leave-to {
+  opacity: 1;
+}
+
+.reg-sort-idle-move {
+  transition: none !important;
+}
+
+.reg-sort-flip-move {
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.registry-item--sort-preview {
+  opacity: 0.5;
+}
+
+.registry-item--sort-preview .registry-speed-btn {
+  pointer-events: none;
 }
 
 /* 拖拽排序：插入位置上的半透明本体预览（行内仍可 mousemove，手柄/输入/按钮不抢交互） */

@@ -9,6 +9,9 @@ export const LANGUAGE_STORAGE_KEY = 'nrm-desktop-language'
 /** 源名称 → 分类标签（localStorage） */
 export const CATEGORY_BY_REGISTRY_STORAGE_KEY = 'nrm-desktop-category-by-registry'
 
+/** 各分类下源卡片自定义排序（registry name 数组），按分类标签存 localStorage */
+export const REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY = 'nrm-desktop-registry-order-by-category'
+
 interface LocaleMessages {
   [key: string]: string
 }
@@ -459,16 +462,21 @@ export function ensureLanguageSeededFromNavigator(): void {
   localStorage.setItem(LANGUAGE_STORAGE_KEY, lang)
 }
 
+export function coerceAppLanguage(value: string): AppLanguage {
+  return value === 'en' || value === 'zh-CN' ? value : 'zh-CN'
+}
+
 export function useI18n() {
   const language = useLocalStorage<AppLanguage>(LANGUAGE_STORAGE_KEY, 'zh-CN')
 
   function t(key: string, params?: Record<string, string | number>): string {
-    const template = messages[language.value][key] || messages['zh-CN'][key] || key
+    const bundle = messages[coerceAppLanguage(language.value)] ?? messages['zh-CN']
+    const template = bundle[key] ?? messages['zh-CN'][key] ?? key
     if (!params) return template
     return Object.entries(params).reduce((result, [paramKey, paramValue]) => result.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue)), template)
   }
 
-  const isEnglish = computed(() => language.value === 'en')
+  const isEnglish = computed(() => coerceAppLanguage(language.value) === 'en')
 
   return {
     language,

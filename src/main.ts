@@ -12,7 +12,12 @@ import { ensureLanguageSeededFromNavigator, LANGUAGE_STORAGE_KEY } from "./compo
 
 async function bootstrap() {
   try {
-    const lang = await invoke<string>("get_app_language");
+    const lang = await Promise.race([
+      invoke<string>("get_app_language"),
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error("get_app_language timeout")), 8000);
+      }),
+    ]);
     if (lang === "en" || lang === "zh-CN") {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
     }
@@ -23,6 +28,9 @@ async function bootstrap() {
   const app = createApp(App);
   app.use(createPinia());
   app.use(ElementPlus, { locale: undefined });
+  app.config.errorHandler = (err, instance, info) => {
+    console.error("[vue]", err, info, instance);
+  };
   app.mount("#app");
 }
 

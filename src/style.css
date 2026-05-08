@@ -510,11 +510,11 @@ html.dark .app-statusbar {
   box-sizing: border-box;
 }
 
-/* 分类内首末行上下呼吸，替代 fold-inner 的垂直 padding，避免干扰 0fr 收起 */
-.reg-category-fold-inner > .registry-item:first-child {
+/* 分类内首末行上下呼吸（TransitionGroup 插入一层 wrapper 后不用直接子选择器） */
+.reg-category-fold-inner .registry-item:first-child {
   margin-top: 6px;
 }
-.reg-category-fold-inner > .registry-item:last-child {
+.reg-category-fold-inner .registry-item:last-child {
   margin-bottom: 6px;
 }
 

@@ -17,7 +17,7 @@ import * as api from '@/api/tauri'
 import type { NodeNpmVersions } from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
 import { useShellIntro } from '@/composables/useShellIntro'
-import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
+import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, coerceAppLanguage } from '@/composables/useI18n'
 import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 
 const store = useRegistryStore()
@@ -71,7 +71,7 @@ const themeOptions = computed(() => [
   { label: t('app.settings.themeLight'), value: 'light' as const },
   { label: t('app.settings.themeDark'), value: 'dark' as const },
 ])
-const elementLocale = computed(() => (language.value === 'en' ? en : zhCn))
+const elementLocale = computed(() => (coerceAppLanguage(language.value) === 'en' ? en : zhCn))
 const nextThemeLabel = computed(() => {
   if (theme.theme.value === 'auto') return t('app.settings.themeDark')
   if (theme.theme.value === 'dark') return t('app.settings.themeLight')
@@ -91,9 +91,14 @@ function clearTrayRestoreGuard() {
 watch(
   language,
   value => {
-    document.documentElement.lang = value
+    const normalized = coerceAppLanguage(value)
+    if (normalized !== value) {
+      language.value = normalized
+      return
+    }
+    document.documentElement.lang = normalized
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 watch(showSettingsDialog, visible => {
