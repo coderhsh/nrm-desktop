@@ -412,7 +412,7 @@ async function handleCloseDialogClosed() {
         <!-- Main Content -->
         <main class="app-main-area">
           <div class="app-main-stage flex flex-1 flex-col min-h-0">
-            <div class="flex-1 flex flex-col min-h-0 overflow-hidden pt-6 pb-6 pr-6 pl-3 gap-4">
+            <div class="flex-1 flex flex-col min-h-0 pt-6 pb-6 pr-6 pl-3 gap-4">
               <div
                 ref="entranceCurrentSourceEl"
                 class="app-entrance-pane shrink-0 min-w-0"

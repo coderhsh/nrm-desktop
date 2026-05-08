@@ -460,18 +460,7 @@ html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__b
   transform: scale(0.98);
 }
 
-/* 浅色：仅用发丝线与主列分界，避免大扩散阴影在 app-bg 上像「毛玻璃灰板」 */
-.app-sidebar {
-  box-shadow: 1px 0 0 color-mix(in srgb, var(--app-separator) 90%, transparent);
-}
-
 html.dark .app-sidebar {
-  box-shadow:
-    1px 0 0 rgba(255, 255, 255, 0.06),
-    2px 0 12px rgba(0, 0, 0, 0.22);
-  /* 外槽与主窗 app-bg 一致，源列表本体在 .registry-sidebar-card 内用 surface */
-  background-color: var(--app-bg) !important;
-  background-image: none !important;
   border-right-color: rgba(255, 255, 255, 0.07) !important;
 }
 
@@ -525,6 +514,8 @@ html.dark .app-surface-card:hover {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* 为阴影留出显示空间，避免被相邻布局覆盖或截断 */
+  margin: 0 4px 12px 4px;
 }
 
 /* 测速卡片：仅保留用户选择禁用动画时的 overflow；视觉样式由 .app-surface-card 提供 */
