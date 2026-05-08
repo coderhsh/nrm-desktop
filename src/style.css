@@ -15,6 +15,9 @@
   --app-duration: 0.22s;
   --app-duration-mid: 0.28s;
   --app-duration-slow: 0.36s;
+  /* 明暗主题切换：View Transitions 交叉淡化时长；无 API 时回退到 surface 过渡 */
+  --app-theme-view-duration: 0.58s;
+  --app-theme-surface-duration: 0.58s;
   /* 源列表分类折叠：外壳与箭头共用时长，曲线分开（高度 ease-out、旋转略弹） */
   --app-category-fold-duration: 0.38s;
   --app-category-fold-ease: var(--app-ease-out);
@@ -87,13 +90,40 @@ body,
   background-color: var(--app-bg);
   background-image: linear-gradient(165deg, var(--app-bg) 0%, color-mix(in srgb, var(--app-bg) 82%, #b8c8e0 18%) 52%, var(--app-bg-elevated) 100%);
   background-attachment: fixed;
+  transition: background-color var(--app-theme-surface-duration) var(--app-ease);
 }
 
 html {
   background-color: var(--app-bg);
   transition:
-    background-color var(--app-duration) var(--app-ease),
-    color var(--app-duration) var(--app-ease);
+    background-color var(--app-theme-surface-duration) var(--app-ease),
+    color var(--app-theme-surface-duration) var(--app-ease);
+}
+
+/* 整页主题切换：Chromium / Safari 18+ 用 root 交叉淡化，观感比瞬间换 class 更柔和 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--app-theme-view-duration);
+  animation-timing-function: var(--app-ease);
+}
+
+::view-transition-group(root) {
+  animation-duration: var(--app-theme-view-duration);
+  animation-timing-function: var(--app-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(root) {
+    animation-duration: 0.01ms !important;
+  }
+
+  html,
+  body,
+  #app {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 body {
@@ -102,6 +132,9 @@ body {
   user-select: none;
   background-color: var(--app-bg);
   color: var(--app-text);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-ease),
+    color var(--app-theme-surface-duration) var(--app-ease);
 }
 
 /* Light: frosted overlay behind modal / drawer (title bar unchanged) */

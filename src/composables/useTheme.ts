@@ -6,6 +6,39 @@ type Theme = "light" | "dark" | "auto";
 
 const theme = useLocalStorage<Theme>("nrm-desktop-theme", "auto");
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function applyDarkClass(val: boolean) {
+  document.documentElement.classList.toggle("dark", val);
+}
+
+/** 首次同步主题不打动画，避免首屏闪一下 */
+let isInitialThemeApply = true;
+
+function transitionToDarkClass(val: boolean) {
+  const apply = () => applyDarkClass(val);
+  if (isInitialThemeApply) {
+    apply();
+    isInitialThemeApply = false;
+    return;
+  }
+  if (prefersReducedMotion()) {
+    apply();
+    return;
+  }
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => { finished: Promise<void> };
+  };
+  if (typeof doc.startViewTransition === "function") {
+    doc.startViewTransition(apply);
+    return;
+  }
+  apply();
+}
+
 export function useTheme() {
   const { t } = useI18n();
   const isDarkPreferred = usePreferredDark();
@@ -18,7 +51,7 @@ export function useTheme() {
   watch(
     isDark,
     (val) => {
-      document.documentElement.classList.toggle("dark", val);
+      transitionToDarkClass(val);
     },
     { immediate: true }
   );
