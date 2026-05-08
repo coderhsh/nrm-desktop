@@ -330,8 +330,13 @@ async function handleReset() {
       {
         confirmButtonText: t('app.resetConfirm.confirm'),
         cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
+        customClass: 'app-reset-defaults-messagebox',
+        confirmButtonClass: 'app-reset-defaults-messagebox__btn-confirm',
+        cancelButtonClass: 'app-reset-defaults-messagebox__btn-cancel',
+        showClose: false,
+        closeOnClickModal: false,
+        distinguishCancelAndClose: true,
+      },
     )
     const lang = await api.resetDefaults()
     if (lang === 'en' || lang === 'zh-CN') {
@@ -511,8 +516,8 @@ async function handleCloseDialogClosed() {
             {{ t('app.settings.data') }}
           </div>
           <div class="settings-actions-grid flex items-center gap-2">
-            <el-button class="flex-1" @click="handleExport">{{ t('common.export') }}</el-button>
-            <el-button class="flex-1" @click="handleImport">{{ t('common.import') }}</el-button>
+            <el-button class="settings-action-btn flex-1" @click="handleExport">{{ t('common.export') }}</el-button>
+            <el-button class="settings-action-btn flex-1" @click="handleImport">{{ t('common.import') }}</el-button>
           </div>
           <el-button class="settings-danger-btn" type="danger" plain @click="handleReset">
             {{ t('app.resetDefaults') }}
@@ -534,29 +539,36 @@ async function handleCloseDialogClosed() {
       <el-dialog
         v-model="showAboutDialog"
         :title="t('app.about.dialogTitle')"
-        width="400px"
-        :close-on-click-modal="true"
+        width="420px"
+        class="app-about-dialog category-manage-dialog app-dialog"
+        modal-class="category-manage-modal"
+        align-center
         append-to-body
+        :close-on-click-modal="true"
       >
-        <div v-if="aboutLoading" class="py-6 text-center text-sm text-gray-400">
-          {{ t('app.about.loading') }}
+        <div class="category-manage-content app-about-dialog-inner">
+          <div v-if="aboutLoading" class="app-about-loading">
+            {{ t('app.about.loading') }}
+          </div>
+          <dl v-else-if="aboutInfo" class="app-about-dl">
+            <div class="app-about-dl__row">
+              <dt>{{ t('app.about.productName') }}</dt>
+              <dd>{{ aboutInfo.name }}</dd>
+            </div>
+            <div class="app-about-dl__row">
+              <dt>{{ t('app.about.version') }}</dt>
+              <dd class="app-about-dl__dd--mono">{{ aboutInfo.version }}</dd>
+            </div>
+            <div class="app-about-dl__row">
+              <dt>{{ t('app.about.tauriVersion') }}</dt>
+              <dd class="app-about-dl__dd--mono">{{ aboutInfo.tauriVersion }}</dd>
+            </div>
+          </dl>
         </div>
-        <dl v-else-if="aboutInfo" class="text-sm flex flex-col gap-3">
-          <div class="flex items-baseline justify-between gap-4">
-            <dt class="text-gray-500 shrink-0">{{ t('app.about.productName') }}</dt>
-            <dd class="font-medium text-right break-all">{{ aboutInfo.name }}</dd>
-          </div>
-          <div class="flex items-baseline justify-between gap-4">
-            <dt class="text-gray-500 shrink-0">{{ t('app.about.version') }}</dt>
-            <dd class="font-mono font-medium text-right">{{ aboutInfo.version }}</dd>
-          </div>
-          <div class="flex items-baseline justify-between gap-4">
-            <dt class="text-gray-500 shrink-0">{{ t('app.about.tauriVersion') }}</dt>
-            <dd class="font-mono font-medium text-right break-all">{{ aboutInfo.tauriVersion }}</dd>
-          </div>
-        </dl>
         <template #footer>
-          <el-button type="primary" @click="showAboutDialog = false">{{ t('common.close') }}</el-button>
+          <div class="category-manage-dialog-footer">
+            <el-button type="primary" @click="showAboutDialog = false">{{ t('common.close') }}</el-button>
+          </div>
         </template>
       </el-dialog>
 
@@ -708,15 +720,4 @@ async function handleCloseDialogClosed() {
   color: var(--app-text-muted) !important;
 }
 
-:global(html.dark) .settings-danger-btn {
-  border-color: rgba(255, 59, 48, 0.35) !important;
-  color: #ff6961 !important;
-  background: rgba(255, 59, 48, 0.12) !important;
-}
-
-:global(html.dark) .settings-about-btn {
-  border-color: var(--el-border-color) !important;
-  color: var(--el-text-color-regular) !important;
-  background: var(--el-fill-color-blank) !important;
-}
 </style>

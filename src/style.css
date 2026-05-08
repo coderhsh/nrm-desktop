@@ -302,6 +302,139 @@ html:not(.dark) .el-message-box.category-delete-confirm-messagebox .el-message-b
   transform: scale(0.98);
 }
 
+/* 恢复默认确认：与分类管理 / 删除分类同系 sheet；确认键为警示色（非删除红） */
+.el-message-box.app-reset-defaults-messagebox {
+  width: min(28rem, calc(100vw - 2rem));
+  max-width: 28rem;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--app-radius-lg);
+}
+
+html:not(.dark) .el-message-box.app-reset-defaults-messagebox {
+  border: 1px solid rgba(193, 203, 218, 0.62);
+  background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 40px rgba(30, 42, 60, 0.18);
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__header {
+  padding: 1.1rem 1.25rem 0.75rem;
+}
+
+html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__header {
+  border-bottom: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__headerbtn {
+  display: none;
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__title {
+  text-align: left;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__title {
+  color: #1f2632;
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__content {
+  padding: 0.85rem 1.25rem 0.25rem;
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__status {
+  display: none !important;
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__message {
+  text-align: left;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--app-text-muted);
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__btns {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  padding: 1rem 1.25rem 1.1rem;
+  margin: 0;
+}
+
+html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__btns {
+  border-top: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+  background: transparent;
+}
+
+.el-message-box.app-reset-defaults-messagebox .el-message-box__btns .el-button {
+  flex: 0 0 auto;
+  margin: 0 !important;
+  min-height: auto;
+  border-radius: 980px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  font-size: 0.9375rem;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring),
+    color 0.2s var(--app-ease-out);
+}
+
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button {
+  min-width: 5rem;
+  padding: 0 1.05rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
+}
+
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button:hover,
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button:focus {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.11);
+  color: #000000;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
+}
+
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button:active {
+  transform: scale(0.98);
+}
+
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary {
+  min-width: 5.5rem;
+  padding: 0 1.15rem;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(217, 119, 6, 0.52) !important;
+  color: #b45309 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 1px 2px rgba(15, 23, 42, 0.05) !important;
+}
+
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:hover,
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:focus {
+  background: rgba(254, 243, 199, 0.45) !important;
+  border-color: rgba(217, 119, 6, 0.65) !important;
+  color: #92400e !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 10px rgba(217, 119, 6, 0.12) !important;
+}
+
+.el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:active {
+  transform: scale(0.98);
+}
+
 /* Drawer slide */
 .el-drawer {
   transition:
@@ -1630,6 +1763,74 @@ html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-co
     0 2px 10px rgba(255, 69, 58, 0.14) !important;
 }
 
+html.dark .el-message-box.app-reset-defaults-messagebox {
+  border: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
+  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+  box-shadow: var(--el-box-shadow);
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__header {
+  border-bottom: 1px solid var(--app-separator);
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__title {
+  color: var(--el-text-color-primary);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__message {
+  color: var(--el-text-color-regular);
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__btns {
+  border-top: 1px solid var(--app-separator);
+  background: transparent;
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button {
+  min-width: 5rem;
+  padding: 0 1.05rem;
+  background: rgba(72, 72, 74, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button:hover,
+html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button:focus {
+  background: rgba(82, 82, 84, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 12px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary {
+  min-width: 5.5rem;
+  padding: 0 1.15rem;
+  background: rgba(58, 52, 40, 0.75) !important;
+  border: 1px solid rgba(251, 191, 36, 0.42) !important;
+  color: #fcd34d !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:hover,
+html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:focus {
+  background: rgba(68, 58, 36, 0.88) !important;
+  border-color: rgba(252, 211, 77, 0.55) !important;
+  color: #fde68a !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 180, 0.08),
+    0 2px 12px rgba(251, 191, 36, 0.12) !important;
+}
+
 /* Dark: loading mask */
 html.dark .el-loading-mask {
   background-color: rgba(28, 28, 30, 0.72) !important;
@@ -1707,6 +1908,74 @@ html:not(.dark) .category-manage-dialog .el-dialog__title {
 
 html:not(.dark) .category-manage-dialog .el-dialog__body {
   padding-top: 0.35rem;
+}
+
+/* 软件信息：与分类管理同壳，正文为键值列表 */
+.app-about-dialog .el-dialog__body {
+  padding-top: 0.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.app-about-dialog-inner {
+  min-height: 4.5rem;
+}
+
+.app-about-loading {
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--app-text-muted);
+  padding: 1.75rem 0.5rem;
+}
+
+.app-about-dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+.app-about-dl__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-separator) 72%, transparent);
+}
+
+.app-about-dl__row:last-child {
+  border-bottom: none;
+  padding-bottom: 0.1rem;
+}
+
+.app-about-dl__row dt {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.9375rem;
+  color: var(--app-text-muted);
+  font-weight: 500;
+}
+
+.app-about-dl__row dd {
+  margin: 0;
+  text-align: right;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--app-text);
+  word-break: break-word;
+}
+
+.app-about-dl__dd--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .app-about-dl__row {
+  border-bottom-color: var(--app-separator);
+}
+
+html.dark .app-about-dl__row dd {
+  color: var(--el-text-color-primary);
 }
 
 /* 分类管理 / 添加源：正文区与「新增分类」条（全局，供 RegistryDialog 与 RegistryList 共用） */
@@ -2695,19 +2964,37 @@ html:not(.dark) .settings-drawer .el-input__wrapper.is-focus {
     0 0 0 3px rgba(10, 132, 255, 0.14) !important;
 }
 
-html:not(.dark) .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger) {
-  border-radius: 0.72rem;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: var(--app-text);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
+/* 设置抽屉 · 浅色：数据区导入/导出 */
+html:not(.dark) .settings-drawer .settings-action-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 1px 2px rgba(15, 23, 42, 0.05) !important;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
 }
 
-html:not(.dark) .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger):hover {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.11);
-  color: #000000;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
+html:not(.dark) .settings-drawer .settings-action-btn.el-button:hover,
+html:not(.dark) .settings-drawer .settings-action-btn.el-button:focus {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.11) !important;
+  color: #000000 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+html:not(.dark) .settings-drawer .settings-action-btn.el-button:active {
+  transform: scale(0.98);
 }
 
 html:not(.dark) .settings-drawer .settings-danger-btn,
@@ -2789,39 +3076,134 @@ html.dark .settings-drawer .el-input__wrapper.is-focus {
   box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
 }
 
-html.dark .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger) {
-  border-radius: 0.72rem;
-  background-color: var(--el-fill-color-light);
-  border-color: var(--el-border-color);
-  color: var(--el-text-color-regular);
+/* 设置抽屉 · 深色：导入/导出 — 锌灰微渐变 + 顶缘高光，hover 略抬亮与弱主色环 */
+html.dark .settings-drawer .settings-action-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: linear-gradient(180deg, rgba(76, 76, 80, 0.98) 0%, rgba(52, 52, 56, 0.97) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(245, 245, 247, 0.95) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 12px rgba(0, 0, 0, 0.38) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
 }
 
-html.dark .settings-drawer .el-button:not(.el-button--primary):not(.el-button--danger):hover {
-  background-color: var(--el-fill-color);
-  border-color: var(--el-border-color-light);
-  color: var(--el-text-color-primary);
+html.dark .settings-drawer .settings-action-btn.el-button:hover,
+html.dark .settings-drawer .settings-action-btn.el-button:focus {
+  background: linear-gradient(180deg, rgba(88, 88, 94, 0.99) 0%, rgba(64, 64, 70, 0.98) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.14) !important;
 }
 
-html.dark .settings-drawer .settings-danger-btn {
-  background-color: rgba(255, 59, 48, 0.12) !important;
-  border-color: rgba(255, 59, 48, 0.35) !important;
-  color: #ff6961 !important;
+html.dark .settings-drawer .settings-action-btn.el-button:focus-visible {
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(10, 132, 255, 0.38) !important;
 }
 
-html.dark .settings-drawer .settings-danger-btn:hover {
-  background-color: rgba(255, 59, 48, 0.18) !important;
-  border-color: rgba(255, 59, 48, 0.48) !important;
+html.dark .settings-drawer .settings-action-btn.el-button:active {
+  transform: scale(0.98);
 }
 
-html.dark .settings-drawer .settings-about-btn {
-  background-color: var(--el-fill-color-blank) !important;
-  border-color: var(--el-border-color) !important;
-  color: var(--el-text-color-regular) !important;
+/* 深色：恢复默认 — 与数据区同体积感，语义保持暖红 */
+html.dark .settings-drawer .settings-danger-btn.el-button.is-plain,
+html.dark .settings-drawer .settings-danger-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: linear-gradient(180deg, rgba(72, 44, 42, 0.75) 0%, rgba(48, 30, 30, 0.88) 100%) !important;
+  border: 1px solid rgba(255, 110, 100, 0.42) !important;
+  color: #ffb4ad !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 195, 0.07),
+    0 2px 12px rgba(0, 0, 0, 0.36) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
 }
 
-html.dark .settings-drawer .settings-about-btn:hover {
-  background-color: var(--el-fill-color-light) !important;
-  border-color: var(--el-border-color-light) !important;
+html.dark .settings-drawer .settings-danger-btn.el-button.is-plain:hover,
+html.dark .settings-drawer .settings-danger-btn.el-button.is-plain:focus,
+html.dark .settings-drawer .settings-danger-btn.el-button:hover,
+html.dark .settings-drawer .settings-danger-btn.el-button:focus {
+  background: linear-gradient(180deg, rgba(88, 52, 48, 0.88) 0%, rgba(56, 34, 32, 0.94) 100%) !important;
+  border-color: rgba(255, 140, 128, 0.55) !important;
+  color: #ffe4e1 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 215, 0.09),
+    0 4px 18px rgba(255, 69, 58, 0.18) !important;
+}
+
+html.dark .settings-drawer .settings-danger-btn.el-button:focus-visible {
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 210, 205, 0.08),
+    0 0 0 2px rgba(255, 100, 90, 0.35) !important;
+}
+
+html.dark .settings-drawer .settings-danger-btn.el-button:active {
+  transform: scale(0.98);
+}
+
+/* 深色：关于入口 — 与导入/导出同一套中性面，全宽时更整 */
+html.dark .settings-drawer .settings-about-btn.el-button.is-plain,
+html.dark .settings-drawer .settings-about-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: linear-gradient(180deg, rgba(76, 76, 80, 0.98) 0%, rgba(52, 52, 56, 0.97) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(245, 245, 247, 0.95) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 12px rgba(0, 0, 0, 0.38) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
+}
+
+html.dark .settings-drawer .settings-about-btn.el-button.is-plain:hover,
+html.dark .settings-drawer .settings-about-btn.el-button.is-plain:focus,
+html.dark .settings-drawer .settings-about-btn.el-button:hover,
+html.dark .settings-drawer .settings-about-btn.el-button:focus {
+  background: linear-gradient(180deg, rgba(88, 88, 94, 0.99) 0%, rgba(64, 64, 70, 0.98) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.14) !important;
+}
+
+html.dark .settings-drawer .settings-about-btn.el-button:focus-visible {
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(10, 132, 255, 0.38) !important;
+}
+
+html.dark .settings-drawer .settings-about-btn.el-button:active {
+  transform: scale(0.98);
 }
 
 html.dark .settings-drawer .el-drawer__footer {
