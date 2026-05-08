@@ -283,26 +283,28 @@ html.dark .app-sidebar {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* overflow: hidden; */
   border-radius: var(--app-radius-lg);
   border: 0.5px solid color-mix(in srgb, var(--app-separator) 85%, transparent);
   background-color: var(--app-surface);
   /* 与测速卡同级，避免大模糊在侧栏槽底色上摊成半透明灰块 */
   box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 0 0 0.5px rgba(140, 156, 178, 0.4),
     0 1px 2px rgba(0, 0, 0, 0.05),
     0 4px 16px rgba(0, 0, 0, 0.05);
   transition:
-    border-color 0.26s var(--app-ease-out),
-    box-shadow 0.26s var(--app-ease-out);
+    border-color 0.36s var(--app-ease-out),
+    box-shadow 0.36s var(--app-ease-out);
 }
 
 .registry-sidebar-card:hover {
-  border-color: color-mix(in srgb, var(--el-color-primary) 22%, #c8d1dd);
+  border-color: color-mix(in srgb, var(--el-color-primary) 20%, #c8d1dd);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.58),
-    0 0 0 0.5px rgba(140, 156, 178, 0.34),
-    0 4px 12px rgba(24, 36, 56, 0.08),
-    0 14px 28px rgba(24, 36, 56, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 0 0 0.5px rgba(140, 156, 178, 0.4),
+    0 3px 8px rgba(26, 38, 60, 0.09),
+    0 14px 28px rgba(24, 36, 56, 0.13);
 }
 
 html.dark .registry-sidebar-card {
