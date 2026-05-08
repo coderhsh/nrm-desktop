@@ -176,6 +176,49 @@ const categoryContextMenu = ref<{
 } | null>(null)
 const categoryContextMenuRef = ref<HTMLElement | null>(null)
 
+/** 右键菜单「新建 / 重命名分类」用对话框（MessageBox.prompt 无法展示字数统计） */
+const showCategoryContextPromptDialog = ref(false)
+const categoryContextPromptMode = ref<'rename' | 'create' | null>(null)
+const categoryContextPromptRenameFrom = ref<string | null>(null)
+const categoryContextPromptInput = ref('')
+
+const categoryContextPromptTitle = computed(() => {
+  if (categoryContextPromptMode.value === 'rename') {
+    return t('registryList.categoryContext.renameTitle')
+  }
+  if (categoryContextPromptMode.value === 'create') {
+    return t('registryList.categoryContext.createTitle')
+  }
+  return ''
+})
+
+const categoryContextPromptHint = computed(() => {
+  if (categoryContextPromptMode.value === 'rename') {
+    return t('registryList.categoryContext.renamePrompt')
+  }
+  if (categoryContextPromptMode.value === 'create') {
+    return t('registryList.categoryContext.createPrompt')
+  }
+  return ''
+})
+
+function openCategoryContextPrompt(mode: 'rename' | 'create', renameFromLabel?: string) {
+  categoryContextPromptMode.value = mode
+  categoryContextPromptRenameFrom.value = mode === 'rename' && renameFromLabel ? renameFromLabel : null
+  categoryContextPromptInput.value = mode === 'rename' && renameFromLabel ? renameFromLabel : ''
+  showCategoryContextPromptDialog.value = true
+}
+
+function closeCategoryContextPrompt() {
+  showCategoryContextPromptDialog.value = false
+}
+
+function onCategoryContextPromptDialogClosed() {
+  categoryContextPromptMode.value = null
+  categoryContextPromptRenameFrom.value = null
+  categoryContextPromptInput.value = ''
+}
+
 onClickOutside(contextMenuRef, () => {
   contextMenu.value = null
 })
@@ -194,14 +237,11 @@ function debugLogRegistryFoldTooltip(runId: string, hypothesisId: string, messag
     timestamp: Date.now(),
   }
   // #region agent log
-  fetch('http://127.0.0.1:7699/ingest/c0d39d9f-6e52-430a-89fa-d646e6e3ca47',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'77e62b'},body:JSON.stringify(payload)}).catch(()=>{});
+  fetch('http://127.0.0.1:7699/ingest/c0d39d9f-6e52-430a-89fa-d646e6e3ca47', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '77e62b' }, body: JSON.stringify(payload) }).catch(() => {})
   // #endregion
   // #region agent log
   try {
-    navigator.sendBeacon(
-      'http://127.0.0.1:7699/ingest/c0d39d9f-6e52-430a-89fa-d646e6e3ca47',
-      JSON.stringify(payload)
-    )
+    navigator.sendBeacon('http://127.0.0.1:7699/ingest/c0d39d9f-6e52-430a-89fa-d646e6e3ca47', JSON.stringify(payload))
   } catch {
     // ignore
   }
@@ -358,38 +398,36 @@ function isUncategorizedCategory(label: string): boolean {
   return label === uncategorizedLabel.value
 }
 
-async function renameCategoryFromContext(label: string) {
+function renameCategoryFromContext(label: string) {
   categoryContextMenu.value = null
   if (isUncategorizedCategory(label)) return
+  openCategoryContextPrompt('rename', label)
+}
 
-  try {
-    const { value } = await ElMessageBox.prompt(t('registryList.categoryContext.renamePrompt'), t('registryList.categoryContext.renameTitle'), {
-      inputValue: label,
-      confirmButtonText: t('common.save'),
-      cancelButtonText: t('common.cancel'),
-    })
+function createCategoryFromContext() {
+  categoryContextMenu.value = null
+  openCategoryContextPrompt('create')
+}
+
+function confirmCategoryContextPrompt() {
+  if (categoryContextPromptMode.value === 'rename' && categoryContextPromptRenameFrom.value) {
+    const label = categoryContextPromptRenameFrom.value
     categoryRenameInputs.value = {
       ...categoryRenameInputs.value,
-      [label]: value,
+      [label]: categoryContextPromptInput.value,
     }
     editingCategoryLabel.value = label
     saveRenamedCategory(label)
-  } catch {
-    // cancelled
+    if (editingCategoryLabel.value === null) {
+      closeCategoryContextPrompt()
+    }
+    return
   }
-}
-
-async function createCategoryFromContext() {
-  categoryContextMenu.value = null
-  try {
-    const { value } = await ElMessageBox.prompt(t('registryList.categoryContext.createPrompt'), t('registryList.categoryContext.createTitle'), {
-      confirmButtonText: t('categoryDialog.add'),
-      cancelButtonText: t('common.cancel'),
-    })
-    newCategoryLabel.value = value
-    addCategoryLabel()
-  } catch {
-    // cancelled
+  if (categoryContextPromptMode.value === 'create') {
+    newCategoryLabel.value = categoryContextPromptInput.value
+    if (addCategoryLabel()) {
+      closeCategoryContextPrompt()
+    }
   }
 }
 
@@ -432,7 +470,7 @@ function moveRegistryToCategory(registryName: string, label: string) {
   }
   categoryByRegistry.value = next
   if (label !== uncategorizedLabel.value) {
-    ElMessage.success(`已将 "${registry.name}" 移动到分类 "${label}"`)
+    ElMessage.success(t('registryList.moveToCategorySuccess', { name: registry.name, label }))
   }
 }
 
@@ -682,15 +720,15 @@ function finishManageDrag() {
   manageGhostTransition.value = 'none'
 }
 
-function addCategoryLabel() {
+function addCategoryLabel(): boolean {
   const normalized = normalizeCategoryLabel(newCategoryLabel.value)
   if (!normalized) {
     ElMessage.error(t('categoryDialog.nameRequired'))
-    return
+    return false
   }
   if (normalized === uncategorizedLabel.value || normalized === presetCategoryLabel.value || categoryLabels.value.includes(normalized)) {
     ElMessage.error(t('categoryDialog.nameExists'))
-    return
+    return false
   }
   categoryLabels.value = [...categoryLabels.value, normalized]
   categoryRenameInputs.value = {
@@ -699,6 +737,7 @@ function addCategoryLabel() {
   }
   newCategoryLabel.value = ''
   ElMessage.success(t('categoryDialog.added'))
+  return true
 }
 
 function startRenameCategory(label: string) {
@@ -979,7 +1018,13 @@ function copyAllDetails() {
     <!-- Context Menu -->
     <Teleport to="body">
       <div v-if="contextMenu" ref="contextMenuRef" class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-36" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
-        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openDetail(contextMenu!.registry); contextMenu = null">
+        <div
+          class="context-menu-item px-3 py-2 text-sm cursor-pointer"
+          @click="
+            openDetail(contextMenu!.registry);
+            contextMenu = null;
+          "
+        >
           {{ t('registryList.context.viewDetail') }}
         </div>
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openEdit(contextMenu!.registry)">
@@ -1013,6 +1058,17 @@ function copyAllDetails() {
 
     <!-- Add/Edit Dialog -->
     <RegistryDialog :visible="showDialog" :registry="editingRegistry" :category-labels="categoryLabels" :current-category="editingRegistry ? categoryByRegistry[editingRegistry.name] || '' : ''" @save-category="saveCategoryFromDialog" @close="showDialog = false" />
+
+    <el-dialog v-model="showCategoryContextPromptDialog" :title="categoryContextPromptTitle" width="420px" :close-on-click-modal="false" destroy-on-close @closed="onCategoryContextPromptDialogClosed">
+      <p class="text-sm text-gray-500 mb-3 m-0">{{ categoryContextPromptHint }}</p>
+      <el-input v-model="categoryContextPromptInput" :maxlength="categoryLabelMaxLength" show-word-limit clearable @keyup.enter="confirmCategoryContextPrompt" />
+      <template #footer>
+        <el-button @click="closeCategoryContextPrompt">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="confirmCategoryContextPrompt">
+          {{ categoryContextPromptMode === 'create' ? t('categoryDialog.add') : t('common.save') }}
+        </el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="showCategoryManageDialog" :title="t('categoryDialog.title')" width="520px" class="category-manage-dialog" :close-on-click-modal="false">
       <div class="category-manage-content">

@@ -18,6 +18,7 @@ import type { NodeNpmVersions } from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
+import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 
 const store = useRegistryStore()
 const theme = useTheme()
@@ -267,7 +268,7 @@ async function handleExport() {
     await api.writeTextFile(path, json)
     ElMessage.success(t('app.export.success'))
   } catch (e) {
-    ElMessage.error(t('app.export.failed', { error: String(e) }))
+    ElMessage.error(t('app.export.failed', { error: formatInvokeErrorMessage(t, e) }))
   }
 }
 
@@ -283,7 +284,7 @@ async function handleImport() {
     ElMessage.success(t('app.import.success'))
     store.fetchRegistries()
   } catch (e) {
-    ElMessage.error(t('app.import.failed', { error: String(e) }))
+    ElMessage.error(t('app.import.failed', { error: formatInvokeErrorMessage(t, e) }))
   }
 }
 
@@ -291,7 +292,9 @@ async function openGithubHome() {
   try {
     await openExternal('https://github.com/coderhsh/nrm-desktop')
   } catch (e) {
-    ElMessage.error(t('app.closeDialog.githubOpenFailed', { error: String(e) }))
+    ElMessage.error(
+      t('app.closeDialog.githubOpenFailed', { error: formatInvokeErrorMessage(t, e) }),
+    )
   }
 }
 

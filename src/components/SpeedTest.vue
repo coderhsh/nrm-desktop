@@ -7,6 +7,7 @@ import { useI18n } from "@/composables/useI18n";
 import type { LatencyResult } from "@/api/speedtest";
 import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from "@/utils/latency-error-i18n";
+import { formatInvokeErrorMessage } from "@/utils/invoke-error-i18n";
 import { latencyBarColor } from "@/utils/latency-bar-color";
 
 const store = useRegistryStore();
@@ -91,7 +92,9 @@ async function runAllTests() {
     }
   } catch (e) {
     ElMessage.error(
-      t("speedTest.runError", { detail: truncateSpeedTestRunError(String(e)) }),
+      t("speedTest.runError", {
+        detail: truncateSpeedTestRunError(formatInvokeErrorMessage(t, e)),
+      }),
     );
   } finally {
     testing.value = false;
@@ -113,7 +116,9 @@ async function runSingleTest(name: string) {
     }
   } catch (e) {
     ElMessage.error(
-      t("speedTest.runError", { detail: truncateSpeedTestRunError(String(e)) }),
+      t("speedTest.runError", {
+        detail: truncateSpeedTestRunError(formatInvokeErrorMessage(t, e)),
+      }),
     );
   } finally {
     singleTesting.value.delete(name);

@@ -6,6 +6,7 @@ import * as api from "@/api/tauri";
 import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
 import type { LatencyResult } from "@/api/speedtest";
 import { useI18n } from "@/composables/useI18n";
+import { formatInvokeErrorMessage } from "@/utils/invoke-error-i18n";
 
 export const useRegistryStore = defineStore("registry", () => {
   const { t } = useI18n();
@@ -68,7 +69,9 @@ export const useRegistryStore = defineStore("registry", () => {
       registries.value = allRegs;
       currentRegistry.value = current;
     } catch (e) {
-      ElMessage.error(`加载源列表失败: ${e}`);
+      ElMessage.error(
+        t("registryStore.fetchFailed", { error: formatInvokeErrorMessage(t, e) }),
+      );
     } finally {
       loading.value = false;
     }
@@ -98,7 +101,7 @@ export const useRegistryStore = defineStore("registry", () => {
         registries.value.find((r) => r.name === name) || null;
     } catch (e) {
       ElMessage.error(
-        t("registryStore.switchFailed", { error: String(e) })
+        t("registryStore.switchFailed", { error: formatInvokeErrorMessage(t, e) }),
       );
     }
   }
@@ -132,7 +135,9 @@ export const useRegistryStore = defineStore("registry", () => {
       registries.value.push({ name, url, is_custom: true });
       void measureRegistryLatency(name);
     } catch (e) {
-      ElMessage.error(`添加源失败: ${e}`);
+      ElMessage.error(
+        t("registryStore.addFailed", { error: formatInvokeErrorMessage(t, e) }),
+      );
       throw e;
     }
   }
@@ -163,7 +168,7 @@ export const useRegistryStore = defineStore("registry", () => {
       }
     } catch (e) {
       ElMessage.error(
-        t("registryStore.deleteFailed", { error: String(e) })
+        t("registryStore.deleteFailed", { error: formatInvokeErrorMessage(t, e) }),
       );
       throw e;
     }
@@ -228,7 +233,9 @@ export const useRegistryStore = defineStore("registry", () => {
         currentRegistry.value = { name: newName, url: newUrl, is_custom: true };
       }
     } catch (e) {
-      ElMessage.error(`更新源失败: ${e}`);
+      ElMessage.error(
+        t("registryStore.updateFailed", { error: formatInvokeErrorMessage(t, e) }),
+      );
       throw e;
     }
   }

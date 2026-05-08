@@ -59,7 +59,7 @@ async function handleOpenUrl() {
         size="small"
         class="!text-white !px-2.5 !py-1.5 !rounded-full !border-0 hover:!bg-white/25 !transition-all !duration-300 !ease-out active:!scale-[0.97]"
         style="background: rgba(255, 255, 255, 0.18)"
-        title="复制当前源链接"
+        :title="t('currentSource.copyUrlTooltip')"
         @click="handleCopyUrl"
       >
         <el-icon class="mr-1"><CopyDocument /></el-icon>
