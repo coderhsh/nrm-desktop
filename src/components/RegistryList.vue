@@ -229,6 +229,19 @@ const groupedRegistries = computed(() => {
   }))
 })
 
+/** 输入搜索词时自动展开仍有匹配源的分类，清空搜索不改变折叠状态 */
+watch(
+  () => searchQuery.value.trim(),
+  q => {
+    if (!q) return
+    const next = { ...categoryExpanded.value }
+    for (const g of groupedRegistries.value) {
+      if (g.items.length > 0) next[g.label] = true
+    }
+    categoryExpanded.value = next
+  },
+)
+
 const showDialog = ref(false)
 const editingRegistry = ref<Registry | null>(null)
 const showDetailDialog = ref(false)
