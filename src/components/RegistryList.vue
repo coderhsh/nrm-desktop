@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { onClickOutside, useLocalStorage } from '@vueuse/core'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Expand, Fold, Rank, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
+import { Delete, Expand, Fold, Rank, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY } from '@/composables/useI18n'
 import { storeToRefs } from 'pinia'
@@ -1711,7 +1711,8 @@ function registryFlipTransitionName(categoryLabel: string): string {
                   {{ t('common.confirm') }}
                 </el-button>
                 <el-button size="small" type="danger" @click="deleteCategoryLabel(slot.label)">
-                  {{ t('categoryDialog.delete') }}
+                  <el-icon class="mr-1"><Delete /></el-icon>
+                  {{ t('common.delete') }}
                 </el-button>
               </div>
             </div>

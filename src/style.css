@@ -930,7 +930,8 @@ html.dark .registry-list-skeleton-shimmer {
   text-decoration-color: rgba(63, 71, 86, 0.56);
 }
 
-.current-source-copy-btn.el-button {
+.current-source-copy-btn.el-button,
+.speed-test-card .speed-test-header-action.el-button.is-text {
   color: #2f3746 !important;
   background: rgba(255, 255, 255, 0.62) !important;
   border: 1px solid rgba(173, 184, 201, 0.45) !important;
@@ -940,13 +941,16 @@ html.dark .registry-list-skeleton-shimmer {
 }
 
 .current-source-copy-btn.el-button:hover,
-.current-source-copy-btn.el-button:focus {
+.current-source-copy-btn.el-button:focus,
+.speed-test-card .speed-test-header-action.el-button.is-text:hover,
+.speed-test-card .speed-test-header-action.el-button.is-text:focus {
   color: #1f2734 !important;
   background: rgba(255, 255, 255, 0.8) !important;
   border-color: rgba(150, 166, 188, 0.6) !important;
 }
 
-.current-source-copy-btn.el-button:active {
+.current-source-copy-btn.el-button:active,
+.speed-test-card .speed-test-header-action.el-button.is-text:active {
   background: rgba(250, 252, 255, 0.88) !important;
 }
 
@@ -1195,7 +1199,8 @@ html.dark .current-source-url:hover {
   text-decoration-color: rgba(235, 235, 245, 0.44);
 }
 
-html.dark .current-source-copy-btn.el-button {
+html.dark .current-source-copy-btn.el-button,
+html.dark .speed-test-card .speed-test-header-action.el-button.is-text {
   color: #e9efff !important;
   background: rgba(255, 255, 255, 0.1) !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
@@ -1205,7 +1210,9 @@ html.dark .current-source-copy-btn.el-button {
 }
 
 html.dark .current-source-copy-btn.el-button:hover,
-html.dark .current-source-copy-btn.el-button:focus {
+html.dark .current-source-copy-btn.el-button:focus,
+html.dark .speed-test-card .speed-test-header-action.el-button.is-text:hover,
+html.dark .speed-test-card .speed-test-header-action.el-button.is-text:focus {
   color: #f4f8ff !important;
   background: rgba(126, 197, 255, 0.2) !important;
   border-color: rgba(126, 197, 255, 0.42) !important;

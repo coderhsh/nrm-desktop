@@ -189,10 +189,23 @@ watch(
     <div class="flex items-center justify-between mb-4 shrink-0">
       <h3 class="speed-test-title text-base font-semibold">{{ t('speedTest.title') }}</h3>
       <div class="flex items-center gap-2 shrink-0">
-        <el-button v-if="hasResults && fastestResult" type="success" size="small" class="speed-fastest-btn shrink-0" :disabled="testing" @click="switchToFastest">
+        <el-button
+          v-if="hasResults && fastestResult"
+          text
+          size="small"
+          class="speed-test-header-action speed-fastest-btn shrink-0 !px-2.5 !py-1.5 !rounded-full !border-0 !transition-all !duration-250 !ease-out active:!scale-[0.97]"
+          :disabled="testing"
+          @click="switchToFastest"
+        >
           {{ t('speedTest.switchFastest') }}
         </el-button>
-        <el-button type="primary" size="small" class="speed-test-retest-btn speed-test-main-btn shrink-0" :loading="testing" @click="runAllTests">
+        <el-button
+          text
+          size="small"
+          class="speed-test-header-action speed-test-retest-btn speed-test-main-btn shrink-0 !px-2.5 !py-1.5 !rounded-full !border-0 !transition-all !duration-250 !ease-out active:!scale-[0.97]"
+          :loading="testing"
+          @click="runAllTests"
+        >
           {{ testing ? t('speedTest.testing') : t('speedTest.testAll') }}
         </el-button>
       </div>
@@ -299,61 +312,10 @@ watch(
   -webkit-user-select: none;
 }
 
+/* 顶栏按钮：与当前源「复制 URL」同款（见 style.css .speed-test-header-action）；此处仅布局 */
 .speed-test-main-btn.el-button--small,
 .speed-fastest-btn.el-button--small {
-  border-radius: 999px;
-  font-weight: 600;
-  border: 1px solid transparent;
   justify-content: center;
-  transition:
-    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    color 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.speed-test-main-btn.el-button--small {
-  background: linear-gradient(180deg, #ffffff 0%, #f7f8fb 100%);
-  border-color: rgba(173, 182, 197, 0.62);
-  color: #303745;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 2px 6px rgba(38, 48, 66, 0.08);
-}
-
-.speed-fastest-btn.el-button--small {
-  background: linear-gradient(180deg, #fdfdff 0%, #f4f4fc 100%);
-  border-color: rgba(155, 157, 214, 0.62);
-  color: #4a4fbc;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    0 2px 6px rgba(70, 74, 156, 0.1);
-}
-
-.speed-test-main-btn.el-button--small:not(.is-disabled):hover,
-.speed-test-main-btn.el-button--small:not(.is-disabled):focus {
-  background: linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%);
-  border-color: rgba(156, 168, 188, 0.74);
-  color: #222a38;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 4px 10px rgba(38, 48, 66, 0.11);
-}
-
-.speed-fastest-btn.el-button--small:not(.is-disabled):hover,
-.speed-fastest-btn.el-button--small:not(.is-disabled):focus {
-  background: linear-gradient(180deg, #ffffff 0%, #ededfb 100%);
-  border-color: rgba(133, 139, 206, 0.72);
-  color: #3f45b0;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 4px 10px rgba(70, 74, 156, 0.14);
-}
-
-.speed-test-main-btn.el-button--small:not(.is-disabled):active,
-.speed-fastest-btn.el-button--small:not(.is-disabled):active {
-  filter: brightness(0.97);
 }
 
 .speed-test-main-btn.el-button--small :deep(.el-button__content) {
@@ -459,38 +421,6 @@ watch(
 
 :global(html.dark) .speed-test-title {
   color: #f5f5f7;
-}
-
-:global(html.dark) .speed-test-main-btn.el-button--small {
-  background: linear-gradient(180deg, #5a6270 0%, #4a5260 100%);
-  border-color: rgba(176, 187, 207, 0.24);
-  color: #f2f6ff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 2px 7px rgba(0, 0, 0, 0.32);
-}
-
-:global(html.dark) .speed-fastest-btn.el-button--small {
-  background: linear-gradient(180deg, #565d85 0%, #4a5075 100%);
-  border-color: rgba(157, 166, 233, 0.34);
-  color: #e8ebff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 2px 7px rgba(0, 0, 0, 0.3);
-}
-
-:global(html.dark) .speed-test-main-btn.el-button--small:not(.is-disabled):hover,
-:global(html.dark) .speed-test-main-btn.el-button--small:not(.is-disabled):focus {
-  background: linear-gradient(180deg, #657082 0%, #566173 100%);
-  border-color: rgba(188, 199, 219, 0.32);
-  color: #ffffff;
-}
-
-:global(html.dark) .speed-fastest-btn.el-button--small:not(.is-disabled):hover,
-:global(html.dark) .speed-fastest-btn.el-button--small:not(.is-disabled):focus {
-  background: linear-gradient(180deg, #626a96 0%, #555d86 100%);
-  border-color: rgba(176, 185, 245, 0.42);
-  color: #ffffff;
 }
 
 :global(html.dark) .speed-result-row:hover {
