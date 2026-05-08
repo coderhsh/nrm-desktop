@@ -1032,6 +1032,11 @@ function applyCategoryManageDraftAndClose() {
   showCategoryManageDialog.value = false
 }
 
+/** 关闭分类管理弹窗且不保存（与标题栏 X 一致，由 @closed 清空草稿） */
+function closeCategoryManageDialogWithoutSave() {
+  showCategoryManageDialog.value = false
+}
+
 /** 关闭弹窗后清空草稿并重置未提交的编辑态（含顶部新分类输入、行内重命名草稿） */
 function onCategoryManageDialogClosed() {
   newCategoryLabel.value = ''
@@ -1249,7 +1254,16 @@ function confirmRenameInManageDraft(oldLabel: string) {
 
 async function deleteCategoryLabel(label: string) {
   try {
-    await ElMessageBox.confirm(t('categoryDialog.confirmDeleteContent', { label }), t('categoryDialog.confirmDeleteTitle'), { confirmButtonText: t('common.delete'), cancelButtonText: t('common.cancel'), type: 'warning' })
+    await ElMessageBox.confirm(t('categoryDialog.confirmDeleteContent', { label }), t('categoryDialog.confirmDeleteTitle'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
+      customClass: 'category-delete-confirm-messagebox',
+      confirmButtonClass: 'category-delete-confirm-messagebox__btn-confirm',
+      cancelButtonClass: 'category-delete-confirm-messagebox__btn-cancel',
+      showClose: false,
+      closeOnClickModal: false,
+      distinguishCancelAndClose: true,
+    })
   } catch {
     return
   }
@@ -1693,7 +1707,10 @@ function registryFlipTransitionName(categoryLabel: string): string {
         </div>
       </div>
       <template #footer>
-        <el-button type="primary" @click="applyCategoryManageDraftAndClose">{{ t('categoryDialog.footerSave') }}</el-button>
+        <div class="category-manage-dialog-footer">
+          <el-button class="category-manage-dialog-footer__close" @click="closeCategoryManageDialogWithoutSave">{{ t('common.close') }}</el-button>
+          <el-button type="primary" @click="applyCategoryManageDraftAndClose">{{ t('categoryDialog.footerSave') }}</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -1925,40 +1942,49 @@ function registryFlipTransitionName(categoryLabel: string): string {
   gap: 0.625rem;
   width: 100%;
   box-sizing: border-box;
-  padding: 0.65rem 0.75rem;
-  border-radius: var(--app-radius-md);
-  border: 0.5px solid color-mix(in srgb, var(--app-separator) 88%, transparent);
-  background: color-mix(in srgb, #f2f2f7 92%, #ffffff 8%);
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(0, 0, 0, 0.055);
+  background: rgba(255, 255, 255, 0.78);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 1px 4px rgba(15, 23, 42, 0.035);
   transition:
     border-color var(--app-duration-mid) var(--app-ease-spring),
     box-shadow var(--app-duration-mid) var(--app-ease-out),
-    transform 0.14s var(--app-ease-spring);
+    background-color 0.22s var(--app-ease-out);
 }
 
 .category-create-btn {
   min-width: 5.25rem;
-  border-radius: 0.72rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  border-radius: 980px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
 }
 
-/* 浅色：新增分类为主按钮但不用系统蓝，接近 macOS 默认填充灰按钮 */
+/* 浅色：新增分类 — 低对比填充 + 轻阴影，避免「硬边灰块」 */
 .category-create-row .category-create-btn--add.el-button {
-  background: linear-gradient(180deg, #ffffff 0%, #e8eaef 100%);
-  border-color: rgba(158, 166, 182, 0.92);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.07);
   color: #1d1d1f;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring),
+    color 0.2s var(--app-ease-out);
 }
 
 .category-create-row .category-create-btn--add.el-button:hover {
-  background: linear-gradient(180deg, #ffffff 0%, #dfe3ea 100%);
-  border-color: rgba(140, 150, 168, 0.98);
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
   color: #000000;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
+}
+
+.category-create-row .category-create-btn--add.el-button:active {
+  transform: scale(0.98);
 }
 
 .category-empty-state {
@@ -2167,20 +2193,24 @@ function registryFlipTransitionName(categoryLabel: string): string {
 .category-row-actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
+/* 与弹窗底部「关闭 / 保存」同一套：小一号胶囊 + 轻阴影；删除为描边红字避免粉块 */
 .category-row-actions :deep(.el-button) {
-  border-radius: 0.72rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  border-radius: 980px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: -0.015em;
+  padding: 0.32rem 0.72rem;
+  min-height: 2rem;
   transition:
-    background-color var(--app-duration-mid) var(--app-ease-spring),
-    border-color var(--app-duration-mid) var(--app-ease-spring),
-    color var(--app-duration) var(--app-ease-spring),
-    transform 0.14s var(--app-ease-spring),
-    box-shadow var(--app-duration-mid) var(--app-ease-out);
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring);
 }
 
 .category-row-actions :deep(.el-button:active:not(.is-disabled)) {
@@ -2188,41 +2218,52 @@ function registryFlipTransitionName(categoryLabel: string): string {
 }
 
 .category-row-actions :deep(.el-button--primary) {
-  background: linear-gradient(180deg, #3a9dff 0%, #0a84ff 100%);
-  border-color: rgba(33, 117, 220, 0.52);
+  background: linear-gradient(180deg, #52a3ff 0%, #0a84ff 52%, #0878eb 100%);
+  border: 1px solid color-mix(in srgb, #ffffff 24%, rgba(8, 120, 235, 0.55));
   color: #ffffff;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 4px 12px rgba(10, 132, 255, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 2px 10px rgba(10, 132, 255, 0.2);
 }
 
-.category-row-actions :deep(.el-button--primary:hover) {
-  background: linear-gradient(180deg, #4aa6ff 0%, #1b8fff 100%);
-  border-color: rgba(44, 129, 230, 0.64);
+.category-row-actions :deep(.el-button--primary:hover),
+.category-row-actions :deep(.el-button--primary:focus) {
+  background: linear-gradient(180deg, #62adff 0%, #1b8fff 52%, #0a7ad8 100%);
+  border-color: color-mix(in srgb, #ffffff 30%, rgba(27, 143, 255, 0.65));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 4px 14px rgba(10, 132, 255, 0.24);
 }
 
 .category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger)) {
-  background: linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%);
-  border-color: rgba(187, 197, 213, 0.95);
-  color: #5c677a;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
 }
 
-.category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):hover) {
-  background: linear-gradient(180deg, #ffffff 0%, #edf2f9 100%);
-  border-color: rgba(166, 179, 201, 0.98);
-  color: #404c60;
+.category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):hover),
+.category-row-actions :deep(.el-button:not(.el-button--primary):not(.el-button--danger):focus) {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.11);
+  color: #000000;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
 }
 
 .category-row-actions :deep(.el-button--danger) {
-  background: color-mix(in srgb, #ff3b30 12%, #ffffff 88%);
-  border-color: color-mix(in srgb, #ff3b30 35%, #ffffff 65%);
-  color: #d70015;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  color: #ff3b30;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.category-row-actions :deep(.el-button--danger:hover) {
-  background: color-mix(in srgb, #ff3b30 18%, #ffffff 82%);
-  border-color: color-mix(in srgb, #ff3b30 42%, #ffffff 58%);
-  color: #c40012;
+.category-row-actions :deep(.el-button--danger:hover),
+.category-row-actions :deep(.el-button--danger:focus) {
+  background: rgba(255, 59, 48, 0.08);
+  border-color: rgba(255, 59, 48, 0.45);
+  color: #e62f26;
+  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.12);
 }
 
 .context-menu-item {
