@@ -5,6 +5,7 @@ import { open } from "@tauri-apps/plugin-shell";
 import { useRegistryStore } from "@/stores/registry";
 import { useI18n } from "@/composables/useI18n";
 import { storeToRefs } from "pinia";
+import AppSurfaceCard from "@/components/AppSurfaceCard.vue";
 
 const store = useRegistryStore();
 const { currentRegistry } = storeToRefs(store);
@@ -37,7 +38,7 @@ async function handleOpenUrl() {
 </script>
 
 <template>
-  <div
+  <AppSurfaceCard
     class="current-source-card flex items-center justify-between px-6 py-5 rounded-2xl"
   >
     <div class="flex flex-col gap-0.5">
@@ -65,5 +66,5 @@ async function handleOpenUrl() {
         {{ t("currentSource.copyUrl") }}
       </el-button>
     </div>
-  </div>
+  </AppSurfaceCard>
 </template>

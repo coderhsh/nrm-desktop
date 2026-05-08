@@ -1446,9 +1446,6 @@ function registryFlipTransitionName(categoryLabel: string): string {
         <el-icon class="mr-1"><Setting /></el-icon>
         {{ t('registryList.categoryManage') }}
       </el-button>
-      <div v-if="latencyLoading" class="ml-auto">
-        <el-icon class="is-loading text-gray-400"><Search /></el-icon>
-      </div>
     </div>
 
     <!-- Search + 分类全部展开/折叠 -->

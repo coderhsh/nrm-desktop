@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { RefreshRight } from '@element-plus/icons-vue'
 import { useDark } from '@vueuse/core'
 import { useRegistryStore } from '@/stores/registry'
+import AppSurfaceCard from '@/components/AppSurfaceCard.vue'
 import { useI18n } from '@/composables/useI18n'
 import type { LatencyResult } from '@/api/speedtest'
 import { testAllSpeed, testSingleSpeed } from '@/api/speedtest'
@@ -188,7 +189,7 @@ watch(
 </script>
 
 <template>
-  <div class="speed-test-card app-card p-5 flex flex-col min-h-0 flex-1 overflow-hidden">
+  <AppSurfaceCard class="speed-test-card p-5 flex flex-col min-h-0 flex-1 overflow-hidden rounded-2xl">
     <div class="flex items-center justify-between mb-4 shrink-0">
       <h3 class="speed-test-title text-base font-semibold">{{ t('speedTest.title') }}</h3>
       <div class="flex items-center gap-2 shrink-0">
@@ -290,7 +291,7 @@ watch(
         </div>
       </el-scrollbar>
     </div>
-  </div>
+  </AppSurfaceCard>
 </template>
 
 <style scoped>

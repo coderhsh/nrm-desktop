@@ -402,7 +402,7 @@ async function handleCloseDialogClosed() {
         <aside class="app-sidebar">
           <div
             ref="entranceSidebarEl"
-            class="registry-sidebar-card app-entrance-pane"
+            class="app-surface-card registry-sidebar-card app-entrance-pane rounded-[14px]"
             data-entrance="left"
           >
             <RegistryList />
@@ -422,7 +422,7 @@ async function handleCloseDialogClosed() {
               </div>
               <div
                 ref="entranceSpeedTestEl"
-                class="app-entrance-pane min-h-0 flex-1 flex flex-col overflow-hidden min-w-0"
+                class="app-entrance-pane min-h-0 flex-1 flex flex-col min-w-0"
                 data-entrance="bottom"
               >
                 <SpeedTest />
