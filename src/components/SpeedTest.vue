@@ -1,59 +1,61 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
-import { ElMessage } from "element-plus";
-import { RefreshRight } from "@element-plus/icons-vue";
-import { useRegistryStore } from "@/stores/registry";
-import { useI18n } from "@/composables/useI18n";
-import type { LatencyResult } from "@/api/speedtest";
-import { testAllSpeed, testSingleSpeed } from "@/api/speedtest";
-import { formatLatencyErrorMessage, truncateSpeedTestRunError } from "@/utils/latency-error-i18n";
-import { formatInvokeErrorMessage } from "@/utils/invoke-error-i18n";
-import { latencyBarColor } from "@/utils/latency-bar-color";
+import { ref, computed, onMounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { RefreshRight } from '@element-plus/icons-vue'
+import { useDark } from '@vueuse/core'
+import { useRegistryStore } from '@/stores/registry'
+import { useI18n } from '@/composables/useI18n'
+import type { LatencyResult } from '@/api/speedtest'
+import { testAllSpeed, testSingleSpeed } from '@/api/speedtest'
+import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/latency-error-i18n'
+import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
+import { latencyBarColor } from '@/utils/latency-bar-color'
 
-const store = useRegistryStore();
-const { t } = useI18n();
+const store = useRegistryStore()
+const { t } = useI18n()
+const isDark = useDark()
 
-const results = ref<LatencyResult[]>([]);
+const results = ref<LatencyResult[]>([])
 /** 首屏为 true，避免挂载前出现「请点击测速」空态；与重新测速时的 loading 一致 */
-const testing = ref(true);
-const singleTesting = ref<Set<string>>(new Set());
+const testing = ref(true)
+const singleTesting = ref<Set<string>>(new Set())
 
-const hasResults = computed(() => results.value.length > 0);
+const hasResults = computed(() => results.value.length > 0)
 
 /** 与后端 `test_all`、单次重测一致：成功项按延迟升序，失败置底 */
 function sortLatencyResults(items: LatencyResult[]): LatencyResult[] {
   return [...items].sort((a, b) => {
     if (a.latency_ms !== null && b.latency_ms !== null) {
-      return a.latency_ms - b.latency_ms;
+      return a.latency_ms - b.latency_ms
     }
-    if (a.latency_ms !== null) return -1;
-    if (b.latency_ms !== null) return 1;
-    return a.name.localeCompare(b.name);
-  });
+    if (a.latency_ms !== null) return -1
+    if (b.latency_ms !== null) return 1
+    return a.name.localeCompare(b.name)
+  })
 }
 
 const fastestResult = computed(() => {
-  let best: LatencyResult | null = null;
-  let bestMs = Infinity;
+  let best: LatencyResult | null = null
+  let bestMs = Infinity
   for (const r of results.value) {
-    if (r.latency_ms === null) continue;
+    if (r.latency_ms === null) continue
     if (r.latency_ms < bestMs) {
-      bestMs = r.latency_ms;
-      best = r;
+      bestMs = r.latency_ms
+      best = r
     }
   }
-  return best;
-});
+  return best
+})
 
 /**
  * Sync full latency results to the registry store for sidebar display.
  */
 function syncAllLatencyResults(items: LatencyResult[]) {
-  const map: Record<string, LatencyResult> = {};
+  const map: Record<string, LatencyResult> = {}
   for (const item of items) {
-    map[item.name] = item;
+    map[item.name] = item
   }
-  store.latencyResults = map;
+  store.latencyResults = map
 }
 
 /**
@@ -63,163 +65,149 @@ function syncSingleLatencyResult(item: LatencyResult) {
   store.latencyResults = {
     ...store.latencyResults,
     [item.name]: item,
-  };
+  }
 }
 
-const speedRevealStepMs = 76;
+const speedRevealStepMs = 76
 
 async function runAllTests() {
-  testing.value = true;
-  store.setLatencyLoading(true);
-  results.value = [];
+  testing.value = true
+  store.setLatencyLoading(true)
+  results.value = []
   try {
-    const items = await testAllSpeed();
-    syncAllLatencyResults(items);
+    const items = await testAllSpeed()
+    syncAllLatencyResults(items)
 
-    const reduceMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
 
     if (reduceMotion || items.length === 0) {
-      results.value = sortLatencyResults(items);
+      results.value = sortLatencyResults(items)
     } else {
       for (let i = 0; i < items.length; i++) {
-        results.value.push(items[i]);
+        results.value.push(items[i])
         if (i < items.length - 1) {
-          await new Promise((r) => setTimeout(r, speedRevealStepMs));
+          await new Promise(r => setTimeout(r, speedRevealStepMs))
         }
       }
     }
   } catch (e) {
     ElMessage.error(
-      t("speedTest.runError", {
+      t('speedTest.runError', {
         detail: truncateSpeedTestRunError(formatInvokeErrorMessage(t, e)),
-      }),
-    );
+      })
+    )
   } finally {
-    testing.value = false;
-    store.setLatencyLoading(false);
+    testing.value = false
+    store.setLatencyLoading(false)
   }
 }
 
 async function runSingleTest(name: string) {
-  singleTesting.value.add(name);
+  singleTesting.value.add(name)
   try {
-    const result = await testSingleSpeed(name);
-    syncSingleLatencyResult(result);
-    const idx = results.value.findIndex((r) => r.name === name);
+    const result = await testSingleSpeed(name)
+    syncSingleLatencyResult(result)
+    const idx = results.value.findIndex(r => r.name === name)
     if (idx !== -1) {
-      results.value[idx] = result;
-      results.value = sortLatencyResults(results.value);
+      results.value[idx] = result
+      results.value = sortLatencyResults(results.value)
     } else {
-      results.value = sortLatencyResults([...results.value, result]);
+      results.value = sortLatencyResults([...results.value, result])
     }
   } catch (e) {
     ElMessage.error(
-      t("speedTest.runError", {
+      t('speedTest.runError', {
         detail: truncateSpeedTestRunError(formatInvokeErrorMessage(t, e)),
-      }),
-    );
+      })
+    )
   } finally {
-    singleTesting.value.delete(name);
+    singleTesting.value.delete(name)
   }
 }
 
 function switchToFastest() {
   if (fastestResult.value) {
-    store.switchRegistry(fastestResult.value.name);
+    store.switchRegistry(fastestResult.value.name)
   }
 }
 
 /** 结果行上展示的短失败原因（随语言切换） */
 function latencyRowFailText(error: string | null | undefined): string {
-  return formatLatencyErrorMessage(t, error, 20);
+  return formatLatencyErrorMessage(t, error, 20)
 }
 
 function getBarColor(ms: number | null): string {
-  return latencyBarColor(ms);
+  if (!isDark.value) return latencyBarColor(ms)
+  if (ms === null) return '#8e8e93'
+  if (ms < 200) return '#30d158'
+  if (ms < 500) return '#32d74b'
+  if (ms < 1000) return '#ffd60a'
+  if (ms < 3000) return '#ff9f0a'
+  return '#ff453a'
 }
 
 function getBarWidth(ms: number | null, maxMs: number): string {
-  if (ms === null) return "0%";
-  const pct = Math.max(2, (1 - ms / maxMs) * 100);
-  return `${pct}%`;
+  if (ms === null) return '0%'
+  const pct = Math.max(2, (1 - ms / maxMs) * 100)
+  return `${pct}%`
 }
 
 const maxLatency = computed(() => {
-  const vals = results.value
-    .map((r) => r.latency_ms)
-    .filter((v): v is number => v !== null);
-  return vals.length > 0 ? Math.max(...vals, 100) : 100;
-});
+  const vals = results.value.map(r => r.latency_ms).filter((v): v is number => v !== null)
+  return vals.length > 0 ? Math.max(...vals, 100) : 100
+})
 
 onMounted(() => {
-  void runAllTests();
-});
+  void runAllTests()
+})
 
 /** 源重命名后 store 已迁移 latency 键，本地 results 仍带旧 name，需与 registries 对齐 */
 watch(
-  () => store.registries.map((r) => r.name).join("\n"),
+  () => store.registries.map(r => r.name).join('\n'),
   (nextKey, prevKey) => {
-    if (prevKey === undefined || nextKey === prevKey || testing.value) return;
-    if (results.value.length === 0) return;
-    const map = store.latencyResults;
-    const rebuilt = store.registries.map((reg) => {
-      const hit = map[reg.name];
-      if (hit) return { ...hit };
+    if (prevKey === undefined || nextKey === prevKey || testing.value) return
+    if (results.value.length === 0) return
+    const map = store.latencyResults
+    const rebuilt = store.registries.map(reg => {
+      const hit = map[reg.name]
+      if (hit) return { ...hit }
       return {
         name: reg.name,
         url: reg.url,
         latency_ms: null,
         error: null,
         is_custom: !!reg.is_custom,
-      };
-    });
-    results.value = sortLatencyResults(rebuilt);
-  },
-);
+      }
+    })
+    results.value = sortLatencyResults(rebuilt)
+  }
+)
 </script>
 
 <template>
   <div class="speed-test-card app-card p-5 flex flex-col min-h-0 flex-1 overflow-hidden">
     <div class="flex items-center justify-between mb-4 shrink-0">
-      <h3 class="text-base font-bold">{{ t("speedTest.title") }}</h3>
+      <h3 class="speed-test-title text-base font-semibold">{{ t('speedTest.title') }}</h3>
       <div class="flex items-center gap-2 shrink-0">
-        <el-button
-          v-if="hasResults && fastestResult"
-          type="success"
-          size="small"
-          class="shrink-0"
-          :disabled="testing"
-          @click="switchToFastest"
-        >
-          {{ t("speedTest.switchFastest") }}
+        <el-button v-if="hasResults && fastestResult" type="success" size="small" class="speed-fastest-btn shrink-0" :disabled="testing" @click="switchToFastest">
+          {{ t('speedTest.switchFastest') }}
         </el-button>
-        <el-button
-          type="primary"
-          size="small"
-          class="speed-test-retest-btn shrink-0"
-          :loading="testing"
-          @click="runAllTests"
-        >
-          {{ testing ? t("speedTest.testing") : t("speedTest.testAll") }}
+        <el-button type="primary" size="small" class="speed-test-retest-btn speed-test-main-btn shrink-0" :loading="testing" @click="runAllTests">
+          {{ testing ? t('speedTest.testing') : t('speedTest.testAll') }}
         </el-button>
       </div>
     </div>
 
     <!-- Empty state -->
-    <div
-      v-if="!hasResults && !testing"
-      class="py-8 text-center text-sm text-gray-400 shrink-0"
-    >
-      {{ t("speedTest.empty") }}
+    <div v-if="!hasResults && !testing" class="py-8 text-center text-sm text-gray-400 shrink-0">
+      {{ t('speedTest.empty') }}
     </div>
 
     <!-- Testing loading -->
     <div v-if="testing && !hasResults" class="py-10 flex items-center justify-center shrink-0">
       <div class="flex items-center gap-2 text-sm text-gray-400">
         <el-icon class="is-loading"><RefreshRight /></el-icon>
-        <span>{{ t("speedTest.loading") }}</span>
+        <span>{{ t('speedTest.loading') }}</span>
       </div>
     </div>
 
@@ -230,7 +218,7 @@ watch(
           <div
             v-for="(result, index) in results"
             :key="result.name"
-            class="speed-result-row flex items-center gap-3 py-1.5"
+            class="speed-result-row flex items-center gap-3 py-1.5 px-2"
             :style="{
               '--speed-stagger': String(index * 18),
               /* 全部测速逐条入场时，行已错开时间轴，柱条仅用短阶梯即可 */
@@ -241,7 +229,7 @@ watch(
             <div class="w-20 flex-shrink-0">
               <div class="flex items-center gap-1">
                 <span
-                  class="text-sm font-medium truncate"
+                  class="speed-result-name text-sm font-medium truncate"
                   :class="{
                     'text-primary': store.currentRegistry?.name === result.name,
                   }"
@@ -253,7 +241,7 @@ watch(
 
             <!-- Bar -->
             <div class="flex-1 h-5 relative">
-              <div class="absolute inset-0 bg-app-track rounded-full overflow-hidden">
+              <div class="speed-result-track absolute inset-0 rounded-full overflow-hidden">
                 <div
                   v-if="result.latency_ms !== null"
                   class="latency-bar-fill h-full rounded-full"
@@ -268,31 +256,15 @@ watch(
 
             <!-- Value -->
             <div class="w-20 text-right flex-shrink-0">
-              <span
-                v-if="result.latency_ms !== null"
-                class="text-sm font-mono font-medium"
-                :style="{ color: getBarColor(result.latency_ms) }"
-              >
-                {{ result.latency_ms }}ms
-              </span>
-              <span
-                v-else
-                class="text-xs text-gray-400"
-              >
+              <span v-if="result.latency_ms !== null" class="speed-result-value text-sm font-mono font-medium" :style="{ color: getBarColor(result.latency_ms) }"> {{ result.latency_ms }}ms </span>
+              <span v-else class="speed-result-error text-xs text-gray-400">
                 {{ latencyRowFailText(result.error) }}
               </span>
             </div>
 
             <!-- Re-test button：固定占位，避免 loading 与图标切换时抖动 -->
             <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center">
-              <el-button
-                link
-                size="small"
-                class="speed-retest-btn speed-retest-btn-fixed"
-                :loading="singleTesting.has(result.name)"
-                :disabled="testing || singleTesting.has(result.name)"
-                @click="runSingleTest(result.name)"
-              >
+              <el-button link size="small" class="speed-retest-btn speed-retest-btn-fixed speed-retest-pill" :loading="singleTesting.has(result.name)" :disabled="testing || singleTesting.has(result.name)" @click="runSingleTest(result.name)">
                 <el-icon v-if="!singleTesting.has(result.name)" class="text-base leading-none">
                   <RefreshRight />
                 </el-icon>
@@ -317,6 +289,83 @@ watch(
   padding-right: 0.35rem;
 }
 
+.speed-test-title {
+  color: #1f232b;
+  letter-spacing: -0.01em;
+}
+
+.speed-test-card {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.speed-test-main-btn.el-button--small,
+.speed-fastest-btn.el-button--small {
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  justify-content: center;
+  transition:
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.speed-test-main-btn.el-button--small {
+  background: linear-gradient(180deg, #ffffff 0%, #f7f8fb 100%);
+  border-color: rgba(173, 182, 197, 0.62);
+  color: #303745;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 6px rgba(38, 48, 66, 0.08);
+}
+
+.speed-fastest-btn.el-button--small {
+  background: linear-gradient(180deg, #fdfdff 0%, #f4f4fc 100%);
+  border-color: rgba(155, 157, 214, 0.62);
+  color: #4a4fbc;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 2px 6px rgba(70, 74, 156, 0.1);
+}
+
+.speed-test-main-btn.el-button--small:not(.is-disabled):hover,
+.speed-test-main-btn.el-button--small:not(.is-disabled):focus {
+  background: linear-gradient(180deg, #ffffff 0%, #f2f5fa 100%);
+  border-color: rgba(156, 168, 188, 0.74);
+  color: #222a38;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 4px 10px rgba(38, 48, 66, 0.11);
+}
+
+.speed-fastest-btn.el-button--small:not(.is-disabled):hover,
+.speed-fastest-btn.el-button--small:not(.is-disabled):focus {
+  background: linear-gradient(180deg, #ffffff 0%, #ededfb 100%);
+  border-color: rgba(133, 139, 206, 0.72);
+  color: #3f45b0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 4px 10px rgba(70, 74, 156, 0.14);
+}
+
+.speed-test-main-btn.el-button--small:not(.is-disabled):active,
+.speed-fastest-btn.el-button--small:not(.is-disabled):active {
+  filter: brightness(0.97);
+}
+
+.speed-test-main-btn.el-button--small :deep(.el-button__content) {
+  width: 100%;
+  justify-content: center;
+}
+
+.speed-test-main-btn.el-button--small.is-loading :deep(.el-icon.is-loading) {
+  margin-right: 0.35rem;
+  margin-left: 0;
+}
+
 .speed-retest-btn.el-button.is-link {
   background-color: transparent !important;
 }
@@ -335,11 +384,145 @@ watch(
   min-height: 2rem;
   padding: 0 !important;
   box-sizing: border-box;
+  position: relative;
+}
+.speed-retest-btn-fixed.el-button.is-link :deep(.el-button__content) {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .speed-retest-btn-fixed :deep(.el-icon) {
   font-size: 1rem;
 }
 .speed-retest-btn-fixed.is-loading :deep(.el-icon) {
   font-size: 1rem;
+}
+.speed-retest-btn-fixed.is-loading :deep(.el-icon.is-loading) {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+.speed-retest-btn-fixed.el-button.is-link.is-loading :deep(.el-button__content) {
+  color: transparent;
+}
+.speed-retest-btn-fixed.el-button.is-link.is-loading :deep(.el-icon.is-loading) {
+  position: absolute;
+  inset: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: auto !important;
+}
+
+.speed-retest-pill.el-button.is-link {
+  border-radius: 999px;
+  color: #556073 !important;
+  border: 1px solid rgba(170, 182, 201, 0.44);
+  background: rgba(255, 255, 255, 0.64) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(25, 38, 58, 0.06);
+}
+
+.speed-retest-pill.el-button.is-link:hover,
+.speed-retest-pill.el-button.is-link:focus {
+  color: #384357 !important;
+  border-color: rgba(148, 164, 188, 0.58);
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+
+.speed-result-row {
+  border-radius: 10px;
+  transition: background-color 220ms var(--app-ease-out);
+}
+
+.speed-result-row:hover {
+  background: color-mix(in srgb, #f5f7fb 88%, var(--el-color-primary) 12%);
+}
+
+.speed-result-track {
+  background: linear-gradient(180deg, rgba(222, 228, 237, 0.78) 0%, rgba(214, 221, 232, 0.72) 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.62);
+}
+
+.speed-result-name {
+  color: #2a313d;
+}
+
+.speed-result-value {
+  letter-spacing: -0.01em;
+}
+
+.speed-result-error {
+  color: #7a8392 !important;
+}
+
+:global(html.dark) .speed-test-title {
+  color: #f5f5f7;
+}
+
+:global(html.dark) .speed-test-main-btn.el-button--small {
+  background: linear-gradient(180deg, #5a6270 0%, #4a5260 100%);
+  border-color: rgba(176, 187, 207, 0.24);
+  color: #f2f6ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 7px rgba(0, 0, 0, 0.32);
+}
+
+:global(html.dark) .speed-fastest-btn.el-button--small {
+  background: linear-gradient(180deg, #565d85 0%, #4a5075 100%);
+  border-color: rgba(157, 166, 233, 0.34);
+  color: #e8ebff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 7px rgba(0, 0, 0, 0.3);
+}
+
+:global(html.dark) .speed-test-main-btn.el-button--small:not(.is-disabled):hover,
+:global(html.dark) .speed-test-main-btn.el-button--small:not(.is-disabled):focus {
+  background: linear-gradient(180deg, #657082 0%, #566173 100%);
+  border-color: rgba(188, 199, 219, 0.32);
+  color: #ffffff;
+}
+
+:global(html.dark) .speed-fastest-btn.el-button--small:not(.is-disabled):hover,
+:global(html.dark) .speed-fastest-btn.el-button--small:not(.is-disabled):focus {
+  background: linear-gradient(180deg, #626a96 0%, #555d86 100%);
+  border-color: rgba(176, 185, 245, 0.42);
+  color: #ffffff;
+}
+
+:global(html.dark) .speed-result-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global(html.dark) .speed-result-track {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.06) 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04);
+}
+
+:global(html.dark) .speed-result-name {
+  color: rgba(235, 235, 245, 0.86);
+}
+
+:global(html.dark) .speed-result-error {
+  color: rgba(235, 235, 245, 0.55) !important;
+}
+
+:global(html.dark) .speed-retest-pill.el-button.is-link {
+  color: rgba(235, 240, 255, 0.86) !important;
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 2px 6px rgba(0, 0, 0, 0.24);
+}
+
+:global(html.dark) .speed-retest-pill.el-button.is-link:hover,
+:global(html.dark) .speed-retest-pill.el-button.is-link:focus {
+  color: #f4f8ff !important;
+  border-color: rgba(126, 197, 255, 0.42);
+  background: rgba(126, 197, 255, 0.2) !important;
 }
 </style>
