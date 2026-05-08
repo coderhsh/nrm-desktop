@@ -43,6 +43,26 @@
   --el-color-primary-light-8: #c5e0ff;
   --el-color-primary-light-9: #e8f2ff;
   --el-color-primary-dark-2: #0062d6;
+  /* 页脚「保存」等确认操作：石墨蓝灰，与全局主色蓝、输入 focus 环区分 */
+  --app-commit-btn-light-top: #5a6270;
+  --app-commit-btn-light-mid: #464d5c;
+  --app-commit-btn-light-bot: #3a414f;
+  --app-commit-btn-light-border: color-mix(in srgb, #ffffff 20%, rgba(32, 38, 50, 0.55));
+  --app-commit-btn-light-hover-top: #656e7e;
+  --app-commit-btn-light-hover-mid: #515a6a;
+  --app-commit-btn-light-hover-bot: #444c5c;
+  --app-commit-btn-light-shadow: 0 2px 10px rgba(22, 28, 40, 0.18);
+  --app-commit-btn-light-shadow-hover: 0 4px 14px rgba(22, 28, 40, 0.22);
+  /* 仅分类管理弹窗·浅色「保存」— 近白填充、细线、深字（macOS sheet 式；满意后再同步其它页脚） */
+  --app-category-save-light-top: #ffffff;
+  --app-category-save-light-mid: #fafafa;
+  --app-category-save-light-bot: #f2f2f4;
+  --app-category-save-light-border: rgba(0, 0, 0, 0.1);
+  --app-category-save-light-hover-top: #fafafa;
+  --app-category-save-light-hover-mid: #f2f2f4;
+  --app-category-save-light-hover-bot: #ebebed;
+  --app-category-save-light-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --app-category-save-light-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.07), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
   --el-border-radius-base: 10px;
   --el-border-radius-small: 8px;
   --el-transition-duration-fast: 0.22s;
@@ -1589,6 +1609,32 @@ html:not(.dark) .registry-dialog .el-form-item:not(.is-required) .el-form-item__
   padding-left: 0.72em;
 }
 
+/* 添加源：「使用自定义分类 / 使用预设」— 与 sheet 内其它次要按钮一致，去掉主题蓝 hover */
+html:not(.dark) .registry-dialog .registry-dialog-category-toggle.el-button {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: var(--app-text) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045) !important;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html:not(.dark) .registry-dialog .registry-dialog-category-toggle.el-button:hover,
+html:not(.dark) .registry-dialog .registry-dialog-category-toggle.el-button:focus {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.11) !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07) !important;
+}
+
+html:not(.dark) .registry-dialog .registry-dialog-category-toggle.el-button:active {
+  transform: scale(0.98);
+}
+
 /* 编辑分类标签弹窗：浅色 sheet + 标题栏 */
 html:not(.dark) .category-manage-dialog .el-dialog {
   background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
@@ -1701,18 +1747,24 @@ html:not(.dark) .category-manage-dialog .category-input .el-select__wrapper.is-f
     0 0 0 3px rgba(10, 132, 255, 0.14) !important;
 }
 
-html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary {
-  border-radius: 980px;
-  font-weight: 500;
-  letter-spacing: -0.015em;
+/* 浅色：设置抽屉、仅带 app-dialog 的页脚（如代理）；分类管理弹窗保存见 --app-category-save-light-* */
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary,
+html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary {
+  border-radius: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   min-width: 5.5rem;
-  padding: 0 1.15rem;
-  background: linear-gradient(180deg, #52a3ff 0%, #0a84ff 52%, #0878eb 100%);
-  border: 1px solid color-mix(in srgb, #ffffff 24%, rgba(8, 120, 235, 0.55));
-  color: #ffffff;
+  background: linear-gradient(
+    180deg,
+    var(--app-commit-btn-light-top) 0%,
+    var(--app-commit-btn-light-mid) 52%,
+    var(--app-commit-btn-light-bot) 100%
+  ) !important;
+  border: 1px solid var(--app-commit-btn-light-border) !important;
+  color: #fafafa !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 2px 10px rgba(10, 132, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    var(--app-commit-btn-light-shadow) !important;
   transition:
     background 0.2s var(--app-ease-out),
     box-shadow 0.2s var(--app-ease-out),
@@ -1720,17 +1772,99 @@ html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary {
     transform 0.15s var(--app-ease-spring);
 }
 
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:hover,
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:focus,
+html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:hover,
+html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(
+    180deg,
+    var(--app-commit-btn-light-hover-top) 0%,
+    var(--app-commit-btn-light-hover-mid) 52%,
+    var(--app-commit-btn-light-hover-bot) 100%
+  ) !important;
+  border-color: color-mix(in srgb, #ffffff 28%, rgba(36, 42, 54, 0.62)) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    var(--app-commit-btn-light-shadow-hover) !important;
+}
+
+/* 需 !important：该弹窗同时带 .app-dialog，通用页脚规则已用 commit 色板 !important */
+html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  min-width: 5.5rem !important;
+  padding: 0 1.15rem !important;
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-top) 0%,
+    var(--app-category-save-light-mid) 52%,
+    var(--app-category-save-light-bot) 100%
+  ) !important;
+  border: 1px solid var(--app-category-save-light-border) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    var(--app-category-save-light-shadow) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
 html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
 html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
-  background: linear-gradient(180deg, #62adff 0%, #1b8fff 52%, #0a7ad8 100%);
-  border-color: color-mix(in srgb, #ffffff 30%, rgba(27, 143, 255, 0.65));
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-hover-top) 0%,
+    var(--app-category-save-light-hover-mid) 52%,
+    var(--app-category-save-light-hover-bot) 100%
+  ) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 4px 16px rgba(10, 132, 255, 0.26);
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
 }
 
 html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:active {
   transform: scale(0.98);
+}
+
+/* 浅色：分类列表行内「确定」（重命名后）— 与页脚「保存」同一套近白样式 */
+html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  font-size: 0.8125rem !important;
+  padding: 0.32rem 0.72rem !important;
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-top) 0%,
+    var(--app-category-save-light-mid) 52%,
+    var(--app-category-save-light-bot) 100%
+  ) !important;
+  border: 1px solid var(--app-category-save-light-border) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    var(--app-category-save-light-shadow) !important;
+}
+
+html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary:hover,
+html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary:focus {
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-hover-top) 0%,
+    var(--app-category-save-light-hover-mid) 52%,
+    var(--app-category-save-light-hover-bot) 100%
+  ) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
 }
 
 /* 分类管理弹窗底部：关闭在左、保存在右（与 macOS sheet 底部动作区一致） */
@@ -1837,6 +1971,35 @@ html.dark .category-manage-modal.el-overlay {
 /* 与必填项红色星号占位对齐，避免「分类」标签左移 */
 html.dark .registry-dialog .el-form-item:not(.is-required) .el-form-item__label {
   padding-left: 0.72em;
+}
+
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button {
+  background: rgba(72, 72, 74, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button:hover,
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button:focus {
+  background: rgba(82, 82, 84, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 12px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button:active {
+  transform: scale(0.98);
 }
 
 /* 分类管理弹窗（Teleport）：深色 sheet + 列表区覆写浅色 scoped 样式 */
@@ -1984,21 +2147,26 @@ html.dark body.category-manage-sort-dragging .category-manage-dialog .category-c
 }
 
 html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--primary:hover {
-  background: linear-gradient(180deg, #52a3ff 0%, #0a84ff 52%, #0878eb 100%) !important;
-  border-color: color-mix(in srgb, #ffffff 24%, rgba(8, 120, 235, 0.55)) !important;
-  color: #ffffff !important;
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-hover-top) 0%,
+    var(--app-category-save-light-hover-mid) 52%,
+    var(--app-category-save-light-hover-bot) 100%
+  ) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 2px 10px rgba(10, 132, 255, 0.2) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
 }
 
 html.dark body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--primary:hover {
-  background: linear-gradient(180deg, #4a94eb 0%, #0a84ff 100%) !important;
-  border-color: rgba(120, 190, 255, 0.42) !important;
+  background: linear-gradient(180deg, #6e6e73 0%, #545458 100%) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
   color: #ffffff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 2px 10px rgba(10, 132, 255, 0.28) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
 }
 
 html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
@@ -2033,15 +2201,20 @@ html.dark body.category-manage-sort-dragging .category-manage-dialog .category-r
     0 2px 8px rgba(0, 0, 0, 0.26) !important;
 }
 
-/* 底部「保存」、关闭钮、输入框后缀/字数 hover（此前未覆盖仍会透出蓝） */
+/* 底部「保存」、关闭钮、输入框后缀/字数 hover（拖拽排序时强制覆盖默认态） */
 html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
 html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
-  background: linear-gradient(180deg, #52a3ff 0%, #0a84ff 52%, #0878eb 100%) !important;
-  border-color: color-mix(in srgb, #ffffff 24%, rgba(8, 120, 235, 0.55)) !important;
-  color: #ffffff !important;
+  background: linear-gradient(
+    180deg,
+    var(--app-category-save-light-hover-top) 0%,
+    var(--app-category-save-light-hover-mid) 52%,
+    var(--app-category-save-light-hover-bot) 100%
+  ) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    0 2px 10px rgba(10, 132, 255, 0.2) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
 }
 
 html.dark body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
@@ -2168,26 +2341,26 @@ html.dark .category-manage-dialog .category-create-btn--add.el-button:active {
   transform: scale(0.98);
 }
 
-/* 深色：行内按钮与页脚胶囊一致；确认蓝略收阴影 */
+/* 深色：行内「确定」与页脚保存一致 — 锌灰胶囊，避免再叠一层系统蓝 */
 html.dark .category-manage-dialog .category-row-actions .el-button--primary {
   border-radius: 980px !important;
   font-weight: 500 !important;
   font-size: 0.8125rem !important;
   padding: 0.32rem 0.72rem !important;
-  background: linear-gradient(180deg, #4a94eb 0%, #0a84ff 52%, #0870d8 100%) !important;
-  border: 1px solid rgba(140, 200, 255, 0.38) !important;
-  color: #ffffff !important;
+  background: linear-gradient(180deg, #626266 0%, #4a4a4e 52%, #424246 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #fafafa !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 2px 10px rgba(10, 132, 255, 0.28) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
 }
 
 html.dark .category-manage-dialog .category-row-actions .el-button--primary:hover {
-  background: linear-gradient(180deg, #58a0f5 0%, #1e8fff 52%, #0a7ad4 100%) !important;
-  border-color: rgba(160, 210, 255, 0.48) !important;
+  background: linear-gradient(180deg, #6e6e73 0%, #56565a 52%, #4c4c50 100%) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 4px 14px rgba(10, 132, 255, 0.32) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 14px rgba(0, 0, 0, 0.34) !important;
 }
 
 html.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger) {

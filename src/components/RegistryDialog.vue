@@ -222,7 +222,7 @@ function focusNameInput() {
               show-word-limit
               clearable
             />
-            <el-button @click="toggleCategoryInputMode">
+            <el-button class="registry-dialog-category-toggle" @click="toggleCategoryInputMode">
               {{ useCustomCategoryInput ? t('registryDialog.category.usePreset') : t('registryDialog.category.useCustom') }}
             </el-button>
           </div>
