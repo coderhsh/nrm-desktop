@@ -26,7 +26,7 @@ const registryListIntroClass = computed(() => {
   if (introPhase.value === 'run') return 'registry-list-intro-run'
   return ''
 })
-const { filteredRegistries, currentRegistry, searchQuery, loading, latencyResults, latencyLoading } = storeToRefs(store)
+const { filteredRegistries, currentRegistry, searchQuery, loading, latencyResults } = storeToRefs(store)
 
 /** 左侧列表中「未分类」分组标题，随界面语言变化。 */
 const uncategorizedLabel = computed(() => t('registryList.uncategorized'))
@@ -48,19 +48,23 @@ function normalizeRegistryOrderRecord(v: unknown): Record<string, string[]> {
 }
 
 /** 各分类下源的展示顺序（registry name）；未记录的分类回退为按名称排序 */
-const registryOrderByCategory = useLocalStorage<Record<string, string[]>>(REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY, {}, {
-  serializer: {
-    read: (raw: string) => {
-      try {
-        const v = JSON.parse(raw) as unknown
-        return normalizeRegistryOrderRecord(v)
-      } catch {
-        return {}
-      }
+const registryOrderByCategory = useLocalStorage<Record<string, string[]>>(
+  REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY,
+  {},
+  {
+    serializer: {
+      read: (raw: string) => {
+        try {
+          const v = JSON.parse(raw) as unknown
+          return normalizeRegistryOrderRecord(v)
+        } catch {
+          return {}
+        }
+      },
+      write: (v: Record<string, string[]>) => JSON.stringify(normalizeRegistryOrderRecord(v)),
     },
-    write: (v: Record<string, string[]>) => JSON.stringify(normalizeRegistryOrderRecord(v)),
-  },
-})
+  }
+)
 
 const categoryLabels = useLocalStorage<string[]>('nrm-desktop-category-labels', [])
 const categoryExpanded = useLocalStorage<Record<string, boolean>>('nrm-desktop-category-expanded', {})
@@ -243,7 +247,7 @@ watch(
       if (g.items.length > 0) next[g.label] = true
     }
     categoryExpanded.value = next
-  },
+  }
 )
 
 const showDialog = ref(false)
@@ -308,7 +312,7 @@ watch(
   v => {
     if (typeof document === 'undefined') return
     document.body.classList.toggle('registry-list-sort-dragging', Boolean(v))
-  },
+  }
 )
 
 const dragOverCategoryLabel = ref<string | null>(null)
@@ -497,9 +501,7 @@ function collapseAllCategories() {
   categoryExpanded.value = next
 }
 
-const categoryFoldActionsDisabled = computed(
-  () => loading.value || holdCategoriesCollapsedUntilEntrance.value,
-)
+const categoryFoldActionsDisabled = computed(() => loading.value || holdCategoriesCollapsedUntilEntrance.value)
 
 function openEdit(registry: Registry) {
   editingRegistry.value = registry
@@ -848,21 +850,11 @@ function onWindowMouseUp() {
   const dragName = pointerDragRegistryName.value
   const srcCat = pointerDragSourceCategory.value
 
-  if (
-    isPointerDragging.value &&
-    dragOverCategoryLabel.value &&
-    srcCat &&
-    dragOverCategoryLabel.value !== srcCat
-  ) {
+  if (isPointerDragging.value && dragOverCategoryLabel.value && srcCat && dragOverCategoryLabel.value !== srcCat) {
     moveRegistryToCategory(dragName, dragOverCategoryLabel.value)
     reorderStorageAfterCrossCategoryMove(dragName, srcCat, dragOverCategoryLabel.value)
     suppressNextClick.value = true
-  } else if (
-    isPointerDragging.value &&
-    registrySortActive.value &&
-    srcCat &&
-    !searchQuery.value.trim()
-  ) {
+  } else if (isPointerDragging.value && registrySortActive.value && srcCat && !searchQuery.value.trim()) {
     commitRegistryOrderWithinCategory(srcCat, dragName, registrySortDropIndex.value)
     suppressNextClick.value = true
   }
@@ -953,13 +945,7 @@ function manageDropKAfterGapFollowingVisualRow(i: number, labelsVis: string[], d
  * 仅用指针 Y 与当前 DOM 几何判定：必须在「目标分支正上/正下」窄带或两行之间的空隙内才更新插入下标，
  * 避免此前用 rest 静态下标与预览重排后视觉顺序不一致导致的错位。
  */
-function pickManageDropIndexFromPointerY(
-  clientY: number,
-  rects: DOMRect[],
-  labelsVis: string[],
-  drag: string,
-  restLen: number,
-): { k: number } | null {
+function pickManageDropIndexFromPointerY(clientY: number, rects: DOMRect[], labelsVis: string[], drag: string, restLen: number): { k: number } | null {
   const n = rects.length
   if (n === 0 || labelsVis.length !== n) return null
 
@@ -1150,11 +1136,7 @@ function addCategoryLabelToDraft(): boolean {
     ElMessage.error(t('categoryDialog.nameRequired'))
     return false
   }
-  if (
-    normalized === uncategorizedLabel.value ||
-    normalized === draftPresetCategoryLabel.value ||
-    categoryManageDraftLabels.value.includes(normalized)
-  ) {
+  if (normalized === uncategorizedLabel.value || normalized === draftPresetCategoryLabel.value || categoryManageDraftLabels.value.includes(normalized)) {
     ElMessage.error(t('categoryDialog.nameExists'))
     return false
   }
@@ -1241,11 +1223,7 @@ function confirmRenameInManageDraft(oldLabel: string) {
     editingCategoryLabel.value = null
     return
   }
-  if (
-    newLabel === uncategorizedLabel.value ||
-    newLabel === draftPresetCategoryLabel.value ||
-    categoryManageDraftLabels.value.some(l => l !== oldLabel && l === newLabel)
-  ) {
+  if (newLabel === uncategorizedLabel.value || newLabel === draftPresetCategoryLabel.value || categoryManageDraftLabels.value.some(l => l !== oldLabel && l === newLabel)) {
     ElMessage.error(t('categoryDialog.nameExists'))
     return
   }
@@ -1399,13 +1377,7 @@ type RegistrySlot = { registry: Registry; isDragPreview?: boolean }
 function getRegistrySlotsForGroup(group: { label: string; items: Registry[] }): RegistrySlot[] {
   const dragName = pointerDragRegistryName.value
   const srcCat = pointerDragSourceCategory.value
-  if (
-    !isPointerDragging.value ||
-    !registrySortActive.value ||
-    !dragName ||
-    srcCat !== group.label ||
-    searchQuery.value.trim()
-  ) {
+  if (!isPointerDragging.value || !registrySortActive.value || !dragName || srcCat !== group.label || searchQuery.value.trim()) {
     return group.items.map(registry => ({ registry }))
   }
   const restItems = group.items.filter(r => r.name !== dragName)
@@ -1494,11 +1466,7 @@ function registryFlipTransitionName(categoryLabel: string): string {
             :class="[
               'relative flex flex-col gap-2 rounded border border-transparent transition-colors',
               {
-                'bg-gray-50 border-primary/60 shadow-sm':
-                  dragOverCategoryLabel === group.label &&
-                  isPointerDragging &&
-                  pointerDragSourceCategory &&
-                  dragOverCategoryLabel !== pointerDragSourceCategory,
+                'bg-gray-50 border-primary/60 shadow-sm': dragOverCategoryLabel === group.label && isPointerDragging && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory,
               },
             ]"
             @mouseenter="onCategoryMouseEnter(group.label)"
@@ -1507,10 +1475,7 @@ function registryFlipTransitionName(categoryLabel: string): string {
               :class="[
                 'px-1.5 pt-0.5 text-xs font-semibold text-gray-400 cursor-pointer select-none flex items-center gap-1 rounded',
                 {
-                  'bg-gray-100':
-                    dragOverCategoryLabel === group.label &&
-                    pointerDragSourceCategory &&
-                    dragOverCategoryLabel !== pointerDragSourceCategory,
+                  'bg-gray-100': dragOverCategoryLabel === group.label && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory,
                 },
               ]"
               @click="toggleCategoryExpanded(group.label)"
@@ -1520,12 +1485,7 @@ function registryFlipTransitionName(categoryLabel: string): string {
               <span>{{ group.label }} ({{ group.items.length }})</span>
             </div>
             <div
-              v-if="
-                dragOverCategoryLabel === group.label &&
-                isPointerDragging &&
-                pointerDragSourceCategory &&
-                dragOverCategoryLabel !== pointerDragSourceCategory
-              "
+              v-if="dragOverCategoryLabel === group.label && isPointerDragging && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory"
               class="category-drop-overlay absolute inset-0 z-20 pointer-events-none rounded-lg bg-white/55 border border-primary/25 backdrop-blur-[2px] flex items-center justify-center"
             >
               <div class="category-drop-hint px-3.5 py-2 text-xs font-medium text-primary bg-white/88 rounded-lg border border-white shadow-sm flex items-center gap-1.5">
@@ -1545,8 +1505,7 @@ function registryFlipTransitionName(categoryLabel: string): string {
                       {
                         'is-active': currentRegistry?.name === slot.registry.name,
                         'is-idle': currentRegistry?.name !== slot.registry.name,
-                        'opacity-40 cursor-grabbing':
-                          pointerDragRegistryName === slot.registry.name && isPointerDragging && !slot.isDragPreview,
+                        'opacity-40 cursor-grabbing': pointerDragRegistryName === slot.registry.name && isPointerDragging && !slot.isDragPreview,
                         'registry-item--sort-preview': slot.isDragPreview,
                       },
                     ]"
@@ -1606,17 +1565,14 @@ function registryFlipTransitionName(categoryLabel: string): string {
       <div v-if="contextMenu" ref="contextMenuRef" class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-36" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
         <div
           class="context-menu-item px-3 py-2 text-sm cursor-pointer"
-          @click="
-            openDetail(contextMenu!.registry);
-            contextMenu = null;
-          "
+          @click="openDetail(contextMenu.registry); contextMenu = null"
         >
           {{ t('registryList.context.viewDetail') }}
         </div>
-        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openEdit(contextMenu!.registry)">
+        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openEdit(contextMenu.registry)">
           {{ t('registryList.context.edit') }}
         </div>
-        <div class="context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer text-red-500" @click="handleDelete(contextMenu!.registry)">
+        <div class="context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer text-red-500" @click="handleDelete(contextMenu.registry)">
           {{ t('registryList.context.delete') }}
         </div>
       </div>
@@ -1656,28 +1612,10 @@ function registryFlipTransitionName(categoryLabel: string): string {
       </template>
     </el-dialog>
 
-    <el-dialog
-      v-model="showCategoryManageDialog"
-      :title="t('categoryDialog.title')"
-      width="520px"
-      class="category-manage-dialog app-dialog"
-      modal-class="category-manage-modal"
-      align-center
-      :close-on-click-modal="false"
-      @opened="focusNewCategoryLabelInput"
-      @closed="onCategoryManageDialogClosed"
-    >
+    <el-dialog v-model="showCategoryManageDialog" :title="t('categoryDialog.title')" width="520px" class="category-manage-dialog app-dialog" modal-class="category-manage-modal" align-center :close-on-click-modal="false" @opened="focusNewCategoryLabelInput" @closed="onCategoryManageDialogClosed">
       <div class="category-manage-content">
         <div class="category-create-row">
-          <el-input
-            ref="newCategoryLabelInputRef"
-            v-model="newCategoryLabel"
-            :placeholder="t('categoryDialog.newPlaceholder')"
-            :maxlength="categoryLabelMaxLength"
-            show-word-limit
-            clearable
-            @keyup.enter="addCategoryLabelToDraft"
-          />
+          <el-input ref="newCategoryLabelInputRef" v-model="newCategoryLabel" :placeholder="t('categoryDialog.newPlaceholder')" :maxlength="categoryLabelMaxLength" show-word-limit clearable @keyup.enter="addCategoryLabelToDraft" />
           <el-button class="category-create-btn category-create-btn--add" @click="addCategoryLabelToDraft">
             {{ t('categoryDialog.add') }}
           </el-button>
@@ -1687,45 +1625,33 @@ function registryFlipTransitionName(categoryLabel: string): string {
         </div>
         <div v-else ref="categoryManageScrollRef" class="category-list-scroll-host">
           <TransitionGroup :name="isManageDragging ? 'cat-manage-flip' : 'cat-manage-idle'" tag="div" class="category-list-wrap">
-          <div
-            v-for="slot in manageCategoryListSlots"
-            :key="slot.label"
-            class="category-manage-flip-item"
-            :data-manage-row-label="slot.label"
-          >
-            <div
-              :class="[
-                'category-list-row',
-                {
-                  'category-list-row--drag-preview': slot.isDragPreview,
-                },
-              ]"
-            >
-              <div class="category-drag-handle" @mousedown.left.stop.prevent="startManageDrag(slot.label, $event)" :title="t('categoryDialog.dragSort')">
-                <el-icon><Rank /></el-icon>
-              </div>
-              <el-input
-                :ref="getCategoryRenameRefCallback(slot.label)"
-                v-model="categoryRenameInputs[slot.label]"
-                class="category-input"
-                :maxlength="categoryLabelMaxLength"
-                show-word-limit
-                :disabled="editingCategoryLabel !== slot.label"
-              />
-              <div class="category-row-actions">
-                <el-button size="small" :disabled="editingCategoryLabel !== null && editingCategoryLabel !== slot.label" @click="editingCategoryLabel === slot.label ? cancelRenameCategory(slot.label) : startRenameCategory(slot.label)">
-                  {{ editingCategoryLabel === slot.label ? t('common.cancel') : t('categoryDialog.rename') }}
-                </el-button>
-                <el-button v-if="editingCategoryLabel === slot.label" size="small" type="primary" @click="confirmRenameInManageDraft(slot.label)">
-                  {{ t('common.confirm') }}
-                </el-button>
-                <el-button size="small" type="danger" @click="deleteCategoryLabel(slot.label)">
-                  <el-icon class="mr-1"><Delete /></el-icon>
-                  {{ t('common.delete') }}
-                </el-button>
+            <div v-for="slot in manageCategoryListSlots" :key="slot.label" class="category-manage-flip-item" :data-manage-row-label="slot.label">
+              <div
+                :class="[
+                  'category-list-row',
+                  {
+                    'category-list-row--drag-preview': slot.isDragPreview,
+                  },
+                ]"
+              >
+                <div class="category-drag-handle" @mousedown.left.stop.prevent="startManageDrag(slot.label, $event)" :title="t('categoryDialog.dragSort')">
+                  <el-icon><Rank /></el-icon>
+                </div>
+                <el-input :ref="getCategoryRenameRefCallback(slot.label)" v-model="categoryRenameInputs[slot.label]" class="category-input" :maxlength="categoryLabelMaxLength" show-word-limit :disabled="editingCategoryLabel !== slot.label" />
+                <div class="category-row-actions">
+                  <el-button size="small" :disabled="editingCategoryLabel !== null && editingCategoryLabel !== slot.label" @click="editingCategoryLabel === slot.label ? cancelRenameCategory(slot.label) : startRenameCategory(slot.label)">
+                    {{ editingCategoryLabel === slot.label ? t('common.cancel') : t('categoryDialog.rename') }}
+                  </el-button>
+                  <el-button v-if="editingCategoryLabel === slot.label" size="small" type="primary" @click="confirmRenameInManageDraft(slot.label)">
+                    {{ t('common.confirm') }}
+                  </el-button>
+                  <el-button size="small" type="danger" @click="deleteCategoryLabel(slot.label)">
+                    <el-icon class="mr-1"><Delete /></el-icon>
+                    {{ t('common.delete') }}
+                  </el-button>
+                </div>
               </div>
             </div>
-          </div>
           </TransitionGroup>
         </div>
       </div>
@@ -1839,7 +1765,6 @@ function registryFlipTransitionName(categoryLabel: string): string {
         </div>
       </div>
     </Teleport>
-
   </div>
 </template>
 
