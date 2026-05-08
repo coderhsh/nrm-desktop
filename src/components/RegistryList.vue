@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { onClickOutside, useLocalStorage } from '@vueuse/core'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -13,8 +13,12 @@ import { testSingleSpeed } from '@/api/speedtest'
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/latency-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
 import RegistryDialog from './RegistryDialog.vue'
+import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 
 const store = useRegistryStore()
+/** 入场结束前强制全部分类折叠；结束后由 onMounted 里 expandAllCategories 全部展开 */
+const holdCategoriesCollapsedUntilEntrance = ref(true)
+const entranceSettled = inject(appEntranceSettledKey, Promise.resolve())
 const { t, language } = useI18n()
 const { introPhase } = useShellIntro()
 const registryListIntroClass = computed(() => {
@@ -454,11 +458,13 @@ function openAdd() {
 }
 
 function isCategoryExpanded(label: string): boolean {
+  if (holdCategoriesCollapsedUntilEntrance.value) return false
   if (categoryExpanded.value[label] === undefined) return true
   return categoryExpanded.value[label]
 }
 
 function toggleCategoryExpanded(label: string) {
+  if (holdCategoriesCollapsedUntilEntrance.value) return
   categoryExpanded.value = {
     ...categoryExpanded.value,
     [label]: !isCategoryExpanded(label),
@@ -491,7 +497,9 @@ function collapseAllCategories() {
   categoryExpanded.value = next
 }
 
-const categoryFoldActionsDisabled = computed(() => loading.value)
+const categoryFoldActionsDisabled = computed(
+  () => loading.value || holdCategoriesCollapsedUntilEntrance.value,
+)
 
 function openEdit(registry: Registry) {
   editingRegistry.value = registry
@@ -861,7 +869,7 @@ function onWindowMouseUp() {
   clearPointerDragState()
 }
 
-onMounted(() => {
+onMounted(async () => {
   debugLogRegistryFoldTooltip('run-tooltip', 'H1', 'registry list mounted', {
     isDark: document.documentElement.classList.contains('dark'),
     locationHref: window.location.href,
@@ -870,6 +878,10 @@ onMounted(() => {
   normalizeCustomRegistryCategories()
   window.addEventListener('mousemove', onWindowMouseMove)
   window.addEventListener('mouseup', onWindowMouseUp)
+
+  await entranceSettled
+  holdCategoriesCollapsedUntilEntrance.value = false
+  expandAllCategories()
 })
 
 onBeforeUnmount(() => {

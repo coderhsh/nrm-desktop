@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, ref, onBeforeUnmount, onMounted, watch, provide } from 'vue'
+import { useAppBlocksEntrance, appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
 import { open as openExternal } from '@tauri-apps/plugin-shell'
@@ -22,7 +23,18 @@ import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 
 const store = useRegistryStore()
 const theme = useTheme()
-const { introPhase, scheduleIntro } = useShellIntro()
+const { introPhase, scheduleIntro, introFinished } = useShellIntro()
+const introWasFinishedAtBoot = introFinished.value
+const entranceSidebarEl = ref<HTMLElement | null>(null)
+const entranceCurrentSourceEl = ref<HTMLElement | null>(null)
+const entranceSpeedTestEl = ref<HTMLElement | null>(null)
+const { entranceSettled } = useAppBlocksEntrance(
+  entranceSidebarEl,
+  entranceCurrentSourceEl,
+  entranceSpeedTestEl,
+  introWasFinishedAtBoot,
+)
+provide(appEntranceSettledKey, entranceSettled)
 const shellIntroClass = computed(() => ({
   'app-shell-intro-prep': introPhase.value === 'prep',
   'app-shell-intro-run': introPhase.value === 'run',
@@ -388,7 +400,11 @@ async function handleCloseDialogClosed() {
       <div class="app-shell-body">
         <!-- Sidebar -->
         <aside class="app-sidebar">
-          <div class="registry-sidebar-card">
+          <div
+            ref="entranceSidebarEl"
+            class="registry-sidebar-card app-entrance-pane"
+            data-entrance="left"
+          >
             <RegistryList />
           </div>
         </aside>
@@ -397,8 +413,20 @@ async function handleCloseDialogClosed() {
         <main class="app-main-area">
           <div class="app-main-stage flex flex-1 flex-col min-h-0">
             <div class="flex-1 flex flex-col min-h-0 overflow-hidden pt-6 pb-6 pr-6 pl-3 gap-4">
-              <CurrentSource class="shrink-0" />
-              <SpeedTest class="min-h-0 flex-1 flex flex-col overflow-hidden" />
+              <div
+                ref="entranceCurrentSourceEl"
+                class="app-entrance-pane shrink-0 min-w-0"
+                data-entrance="top"
+              >
+                <CurrentSource />
+              </div>
+              <div
+                ref="entranceSpeedTestEl"
+                class="app-entrance-pane min-h-0 flex-1 flex flex-col overflow-hidden min-w-0"
+                data-entrance="bottom"
+              >
+                <SpeedTest />
+              </div>
             </div>
           </div>
         </main>

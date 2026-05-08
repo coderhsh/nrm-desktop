@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, inject } from 'vue'
 import { ElMessage } from 'element-plus'
 import { RefreshRight } from '@element-plus/icons-vue'
 import { useDark } from '@vueuse/core'
@@ -10,8 +10,10 @@ import { testAllSpeed, testSingleSpeed } from '@/api/speedtest'
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/latency-error-i18n'
 import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
+import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 
 const store = useRegistryStore()
+const entranceSettled = inject(appEntranceSettledKey, Promise.resolve())
 const { t } = useI18n()
 const isDark = useDark()
 
@@ -157,7 +159,8 @@ const maxLatency = computed(() => {
   return vals.length > 0 ? Math.max(...vals, 100) : 100
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await entranceSettled
   void runAllTests()
 })
 

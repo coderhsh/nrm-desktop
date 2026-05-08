@@ -475,7 +475,7 @@ html.dark .app-sidebar {
   border-right-color: rgba(255, 255, 255, 0.07) !important;
 }
 
-/* 左侧源列表：卡片容器，避免整列铺满后与通栏底栏视觉上「顶死」 */
+/* 左侧源列表：卡片容器；阴影与 .current-source-card 一致 */
 .registry-sidebar-card {
   flex: 1 1 auto;
   min-height: 0;
@@ -485,32 +485,32 @@ html.dark .app-sidebar {
   border-radius: var(--app-radius-lg);
   border: 0.5px solid color-mix(in srgb, var(--app-separator) 85%, transparent);
   background-color: var(--app-surface);
-  /* 与测速卡同级，避免大模糊在侧栏槽底色上摊成半透明灰块 */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 0 0 0.5px rgba(140, 156, 178, 0.4),
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 4px 16px rgba(0, 0, 0, 0.05);
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12);
   transition:
-    border-color 0.36s var(--app-ease-out),
-    box-shadow 0.36s var(--app-ease-out);
+    border-color 260ms var(--app-ease-out),
+    box-shadow 260ms var(--app-ease-out);
 }
 
 .registry-sidebar-card:hover {
-  border-color: color-mix(in srgb, var(--el-color-primary) 20%, #c8d1dd);
+  border-color: color-mix(in srgb, var(--el-color-primary) 22%, #c8d1dd);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 0 0 0.5px rgba(140, 156, 178, 0.4),
-    0 3px 8px rgba(26, 38, 60, 0.09),
-    0 14px 28px rgba(24, 36, 56, 0.13);
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    0 0 0 0.5px rgba(140, 156, 178, 0.42),
+    0 3px 8px rgba(26, 38, 60, 0.1),
+    0 14px 30px rgba(24, 36, 56, 0.15);
 }
 
 html.dark .registry-sidebar-card {
   border-color: color-mix(in srgb, var(--app-separator) 70%, transparent);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 3px 14px rgba(0, 0, 0, 0.32),
-    0 1px 3px rgba(0, 0, 0, 0.22);
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
 html.dark .registry-sidebar-card:hover {
@@ -522,37 +522,37 @@ html.dark .registry-sidebar-card:hover {
     0 16px 30px rgba(0, 0, 0, 0.24);
 }
 
-/* 测速卡片：与当前源卡统一的克制层次 */
+/* 测速卡片：阴影与 .current-source-card 一致（渐变略不同以区分功能区） */
 .speed-test-card {
   border: 1px solid color-mix(in srgb, #c8d1dd 68%, #ffffff);
   background: linear-gradient(164deg, #fbfcfe 0%, #f5f7fb 52%, #eff2f7 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 0 0 0.5px rgba(156, 170, 188, 0.3),
-    0 2px 6px rgba(33, 44, 62, 0.07),
-    0 10px 24px rgba(28, 40, 60, 0.11);
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12);
   transition:
-    border-color var(--app-duration-mid) var(--app-ease-spring),
-    box-shadow 0.24s var(--app-ease-out);
+    border-color 260ms var(--app-ease-out),
+    box-shadow 260ms var(--app-ease-out);
 }
 
 .speed-test-card:hover {
-  border-color: color-mix(in srgb, var(--el-color-primary) 20%, #c8d1dd);
+  border-color: color-mix(in srgb, var(--el-color-primary) 22%, #c8d1dd);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 0 0 0.5px rgba(140, 156, 178, 0.4),
-    0 3px 8px rgba(26, 38, 60, 0.09),
-    0 14px 28px rgba(24, 36, 56, 0.13);
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    0 0 0 0.5px rgba(140, 156, 178, 0.42),
+    0 3px 8px rgba(26, 38, 60, 0.1),
+    0 14px 30px rgba(24, 36, 56, 0.15);
 }
 
 html.dark .speed-test-card {
   border-color: rgba(255, 255, 255, 0.08);
   background: linear-gradient(170deg, #2a2b2f 0%, #2e3035 52%, #31343a 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 0 0.5px rgba(255, 255, 255, 0.06),
-    0 3px 10px rgba(0, 0, 0, 0.34),
-    0 10px 24px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
 html.dark .speed-test-card:hover {
@@ -817,6 +817,36 @@ html.dark .app-statusbar .el-button.el-button--danger:not(.is-disabled):active {
 
   .app-statusbar .el-button:not(.is-disabled):active {
     transform: none;
+  }
+}
+
+/*
+ * 三大板块入场首帧：与 useAppBlocksEntrance 的 GSAP 终点一致，刷新时先保持外侧+透明，再 to 收拢，避免先闪终态。
+ * 动画结束后脚本会移除 data-entrance。
+ */
+.app-entrance-pane[data-entrance='left'] {
+  opacity: 0;
+  transform: translate3d(-72px, 0, 0) scale(0.94);
+  pointer-events: none;
+}
+
+.app-entrance-pane[data-entrance='top'] {
+  opacity: 0;
+  transform: translate3d(0, -48px, 0) scale(0.96);
+  pointer-events: none;
+}
+
+.app-entrance-pane[data-entrance='bottom'] {
+  opacity: 0;
+  transform: translate3d(0, 56px, 0) scale(0.96);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-entrance-pane[data-entrance] {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
   }
 }
 
@@ -2740,34 +2770,37 @@ body.category-manage-sort-dragging .category-manage-dialog .el-input__suffix-inn
 body.category-manage-sort-dragging .registry-sidebar-card:hover {
   border-color: color-mix(in srgb, var(--app-separator) 85%, transparent) !important;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 4px 16px rgba(0, 0, 0, 0.05) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12) !important;
 }
 
 html.dark body.category-manage-sort-dragging .registry-sidebar-card:hover {
   border-color: color-mix(in srgb, var(--app-separator) 70%, transparent) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 3px 14px rgba(0, 0, 0, 0.32),
-    0 1px 3px rgba(0, 0, 0, 0.22) !important;
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2) !important;
 }
 
 body.category-manage-sort-dragging .speed-test-card:hover {
   border-color: color-mix(in srgb, #c8d1dd 68%, #ffffff) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 0 0 0.5px rgba(156, 170, 188, 0.3),
-    0 2px 6px rgba(33, 44, 62, 0.07),
-    0 10px 24px rgba(28, 40, 60, 0.11) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12) !important;
 }
 
 html.dark body.category-manage-sort-dragging .speed-test-card:hover {
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 0 0.5px rgba(255, 255, 255, 0.06),
-    0 3px 10px rgba(0, 0, 0, 0.34),
-    0 10px 24px rgba(0, 0, 0, 0.2) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2) !important;
 }
 
 body.category-manage-sort-dragging .current-source-card:hover {
