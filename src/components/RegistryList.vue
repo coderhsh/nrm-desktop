@@ -520,7 +520,12 @@ async function handleDelete(registry: Registry) {
     await ElMessageBox.confirm(t('registryList.confirmDeleteContent', { name: registry.name }), t('registryList.confirmDeleteTitle'), {
       confirmButtonText: t('common.delete'),
       cancelButtonText: t('common.cancel'),
-      type: 'warning',
+      customClass: 'category-delete-confirm-messagebox',
+      confirmButtonClass: 'category-delete-confirm-messagebox__btn-confirm',
+      cancelButtonClass: 'category-delete-confirm-messagebox__btn-cancel',
+      showClose: false,
+      closeOnClickModal: false,
+      distinguishCancelAndClose: true,
     })
     await store.deleteRegistry(registry.name)
     pruneRegistryOrder(registry.name)
