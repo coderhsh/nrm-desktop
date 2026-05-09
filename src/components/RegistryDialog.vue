@@ -19,7 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useRegistryStore()
-const { t } = useI18n()
+const { t, isEnglish } = useI18n()
 
 const formRef = ref()
 const nameInputRef = ref<InputInstance>()
@@ -177,7 +177,7 @@ function focusNameInput() {
   <el-dialog
     :model-value="visible"
     :title="isEdit() ? t('registryDialog.editTitle') : t('registryDialog.addTitle')"
-    width="420px"
+    :width="isEnglish ? '500px' : '420px'"
     :close-on-click-modal="false"
     class="registry-dialog category-manage-dialog app-dialog"
     modal-class="category-manage-modal"
@@ -186,7 +186,7 @@ function focusNameInput() {
     @update:model-value="(v: boolean) => !v && handleClose()"
   >
     <div class="category-manage-content">
-      <el-form ref="formRef" :model="{ name, url }" label-width="60px" label-position="left" @submit.prevent="handleSubmit" class="registry-dialog-form">
+      <el-form ref="formRef" :model="{ name, url }" :label-width="isEnglish ? '80px' : '60px'" label-position="left" @submit.prevent="handleSubmit" class="registry-dialog-form">
         <el-form-item :label="t('registryDialog.label.name')" prop="name" :rules="[{ required: true, validator: validateName, trigger: 'blur' }]">
           <el-input
             ref="nameInputRef"
