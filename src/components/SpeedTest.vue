@@ -165,26 +165,48 @@ onMounted(async () => {
   void runAllTests()
 })
 
-/** 源重命名后 store 已迁移 latency 键，本地 results 仍带旧 name，需与 registries 对齐 */
+/**
+ * 增量同步到右侧测速列表：
+ * - 不触发全量测速
+ * - 新增源只新增一行，并使用该源单次测速结果
+ */
 watch(
-  () => store.registries.map(r => r.name).join('\n'),
-  (nextKey, prevKey) => {
-    if (prevKey === undefined || nextKey === prevKey || testing.value) return
-    if (results.value.length === 0) return
-    const map = store.latencyResults
-    const rebuilt = store.registries.map(reg => {
-      const hit = map[reg.name]
-      if (hit) return { ...hit }
-      return {
-        name: reg.name,
-        url: reg.url,
-        latency_ms: null,
-        error: null,
-        is_custom: !!reg.is_custom,
+  () => ({
+    registries: store.registries.map(r => ({ name: r.name, url: r.url, is_custom: !!r.is_custom })),
+    latency: store.latencyResults,
+  }),
+  ({ registries, latency }, prev) => {
+    if (prev === undefined || testing.value) return
+
+    const regNameSet = new Set(registries.map(r => r.name))
+    const byName = new Map(results.value.map(item => [item.name, item]))
+
+    // 删除已不存在的源
+    for (const name of Array.from(byName.keys())) {
+      if (!regNameSet.has(name)) byName.delete(name)
+    }
+
+    // 按当前源列表维护行，并仅更新已有或新增的单条结果
+    for (const reg of registries) {
+      const hit = latency[reg.name]
+      if (hit) {
+        byName.set(reg.name, { ...hit })
+        continue
       }
-    })
-    results.value = sortLatencyResults(rebuilt)
-  }
+      if (!byName.has(reg.name)) {
+        byName.set(reg.name, {
+          name: reg.name,
+          url: reg.url,
+          latency_ms: null,
+          error: null,
+          is_custom: reg.is_custom,
+        })
+      }
+    }
+
+    results.value = sortLatencyResults(Array.from(byName.values()))
+  },
+  { deep: true }
 )
 </script>
 

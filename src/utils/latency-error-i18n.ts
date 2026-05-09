@@ -11,7 +11,7 @@ export function formatLatencyErrorMessage(
   maxLen = 18,
 ): string {
   const raw = (error ?? "").trim();
-  if (!raw) return t("speedTest.timeout");
+  if (!raw) return t("speedTest.notTested");
   if (raw === "超时") return t("speedTest.timeout");
   if (raw === "连接失败") return t("speedTest.connectFail");
   const http = /^HTTP (\d{3})$/.exec(raw);

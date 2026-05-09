@@ -116,24 +116,27 @@ export const useRegistryStore = defineStore("registry", () => {
 
   /**
    * 对指定源执行单次延迟测试并写入结果；失败时静默（与 `fetchLatency` 一致）。
+   * 返回测速结果，便于调用方决定是否等待测速完成后再继续流程。
    */
-  async function measureRegistryLatency(name: string) {
+  async function measureRegistryLatency(name: string): Promise<LatencyResult | null> {
     try {
       const result = await testSingleSpeed(name);
       setSingleLatencyResult(result);
+      return result;
     } catch {
       // best-effort
+      return null;
     }
   }
 
   /**
-   * 添加自定义源；成功后立即在后台对该源测速一次，更新列表中的延迟显示。
+   * 添加自定义源；成功后立即同步测速一次，确保列表可直接显示延迟结果。
    */
   async function addRegistry(name: string, url: string) {
     try {
       await api.addRegistry(name, url);
+      await measureRegistryLatency(name);
       registries.value.push({ name, url, is_custom: true });
-      void measureRegistryLatency(name);
     } catch (e) {
       ElMessage.error(
         t("registryStore.addFailed", { error: formatInvokeErrorMessage(t, e) }),
