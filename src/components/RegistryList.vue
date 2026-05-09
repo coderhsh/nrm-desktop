@@ -567,6 +567,22 @@ function onCategoryContextMenu(e: MouseEvent, label: string) {
   e.preventDefault()
   contextMenu.value = null
   categoryContextMenu.value = { x: e.clientX, y: e.clientY, label }
+  // 防止右键菜单贴边或越界：先按点击位置渲染，再按真实尺寸回退到视口内。
+  void nextTick(() => {
+    const menu = categoryContextMenuRef.value
+    const current = categoryContextMenu.value
+    if (!menu || !current) return
+    const viewportW = window.innerWidth
+    const viewportH = window.innerHeight
+    const pad = 8
+    const maxX = Math.max(pad, viewportW - menu.offsetWidth - pad)
+    const maxY = Math.max(pad, viewportH - menu.offsetHeight - pad)
+    categoryContextMenu.value = {
+      ...current,
+      x: Math.min(Math.max(current.x, pad), maxX),
+      y: Math.min(Math.max(current.y, pad), maxY),
+    }
+  })
 }
 
 function isUncategorizedCategory(label: string): boolean {
