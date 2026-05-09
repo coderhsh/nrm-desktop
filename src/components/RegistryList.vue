@@ -628,6 +628,14 @@ async function deleteCategoryFromContext(label: string) {
   await deleteCategoryLabel(label)
 }
 
+async function onDeleteCategoryFromContextClick(label: string) {
+  if (isUncategorizedCategory(label)) {
+    ElMessage.info(t('registryList.categoryContext.deleteDisabledHint'))
+    return
+  }
+  await deleteCategoryFromContext(label)
+}
+
 function toggleCategoryFromContext(label: string) {
   toggleCategoryExpanded(label)
   categoryContextMenu.value = null
@@ -1613,7 +1621,14 @@ function registryFlipTransitionName(categoryLabel: string): string {
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openCategoryManageFromContext">
           {{ t('registryList.categoryContext.manage') }}
         </div>
-        <div :class="['context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer text-red-500', { 'opacity-40 pointer-events-none': isUncategorizedCategory(categoryContextMenu.label) }]" @click="deleteCategoryFromContext(categoryContextMenu.label)">
+        <div
+          :class="[
+            'context-menu-item context-menu-item--danger px-3 py-2 text-sm text-red-500',
+            isUncategorizedCategory(categoryContextMenu.label) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+          ]"
+          :title="isUncategorizedCategory(categoryContextMenu.label) ? t('registryList.categoryContext.deleteDisabledHint') : ''"
+          @click="onDeleteCategoryFromContextClick(categoryContextMenu.label)"
+        >
           {{ t('registryList.categoryContext.delete') }}
         </div>
       </div>
