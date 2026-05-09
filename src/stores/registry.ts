@@ -148,7 +148,8 @@ export const useRegistryStore = defineStore("registry", () => {
   /**
    * 删除源；若删除的是当前正在使用的源，后端会测速并自动切换到延迟最低（测速失败则用列表首项）的源。
    */
-  async function deleteRegistry(name: string) {
+  async function deleteRegistry(name: string, options?: { silent?: boolean }) {
+    const silent = options?.silent === true;
     const prevCurrentName = currentRegistry.value?.name ?? null;
     try {
       await api.deleteRegistry(name);
@@ -159,15 +160,41 @@ export const useRegistryStore = defineStore("registry", () => {
         prevCurrentName === name &&
         current !== null &&
         current.name !== name;
-      if (autoSwitched) {
-        ElMessage.success(
-          t("registryStore.deleteSuccessWithAutoSwitch", {
-            deleted: name,
-            current: current.name,
-          })
-        );
-      } else {
-        ElMessage.success(t("registryStore.deleteSuccess", { name }));
+      if (!silent) {
+        if (autoSwitched) {
+          ElMessage.success(
+            t("registryStore.deleteSuccessWithAutoSwitch", {
+              deleted: name,
+              current: current.name,
+            })
+          );
+        } else {
+          ElMessage.success(t("registryStore.deleteSuccess", { name }));
+        }
+      }
+    } catch (e) {
+      ElMessage.error(
+        t("registryStore.deleteFailed", { error: formatInvokeErrorMessage(t, e) }),
+      );
+      throw e;
+    }
+  }
+
+  async function deleteRegistriesBulk(names: string[], options?: { silent?: boolean }) {
+    const targets = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+    if (targets.length === 0) return;
+    const silent = options?.silent === true;
+    try {
+      await api.deleteRegistriesBulk(targets);
+      const removed = new Set(targets);
+      registries.value = registries.value.filter((r) => !removed.has(r.name));
+      const nextLatency = { ...latencyResults.value };
+      for (const name of removed) delete nextLatency[name];
+      latencyResults.value = nextLatency;
+      const current = await api.getCurrentRegistry();
+      currentRegistry.value = current;
+      if (!silent) {
+        ElMessage.success(t("registryStore.deleteBulkSuccess", { count: targets.length }));
       }
     } catch (e) {
       ElMessage.error(
@@ -262,6 +289,7 @@ export const useRegistryStore = defineStore("registry", () => {
     switchRegistry,
     addRegistry,
     deleteRegistry,
+    deleteRegistriesBulk,
     updateRegistry,
   };
 });

@@ -255,6 +255,7 @@ pub fn run() {
             commands::set_registry,
             commands::add_registry,
             commands::delete_registry,
+            commands::delete_registries_bulk,
             commands::update_registry,
             commands::test_all_speed,
             commands::test_single_speed,

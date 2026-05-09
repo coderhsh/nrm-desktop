@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, h, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { onClickOutside, useLocalStorage } from '@vueuse/core'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -1285,10 +1285,48 @@ function confirmRenameInManageDraft(oldLabel: string) {
 }
 
 async function deleteCategoryLabel(label: string) {
+  const categoryMappingForDelete = showCategoryManageDialog.value ? draftCategoryByRegistry.value : categoryByRegistry.value
+  const categoryLabelsForDelete = showCategoryManageDialog.value ? categoryManageDraftLabels.value : categoryLabels.value
+  const presetCategoryForDelete = showCategoryManageDialog.value ? draftPresetCategoryLabel.value : presetCategoryLabel.value
+  const categoryRegistries = store.registries
+    .filter(registry => {
+      const assignedCategory = categoryMappingForDelete[registry.name]
+      const category =
+        assignedCategory ||
+        (registry.is_custom
+          ? uncategorizedLabel.value
+          : categoryLabelsForDelete.includes(presetCategoryForDelete)
+            ? presetCategoryForDelete
+            : uncategorizedLabel.value)
+      return category === label
+    })
+    .map(registry => registry.name)
+  let shouldDeleteCategoryRegistries = false
+
   try {
-    await ElMessageBox.confirm(t('categoryDialog.confirmDeleteContent', { label }), t('categoryDialog.confirmDeleteTitle'), {
+    const hasRegistries = categoryRegistries.length > 0
+    await ElMessageBox({
+      title: t('categoryDialog.confirmDeleteTitle'),
+      message: h('div', { class: 'category-delete-confirm-content' }, [
+        h('p', { class: 'category-delete-confirm-content__text' }, t('categoryDialog.confirmDeleteContent', { label })),
+        hasRegistries
+          ? h('label', { class: 'category-delete-confirm-checkbox' }, [
+              h('input', {
+                class: 'category-delete-confirm-checkbox__input',
+                type: 'checkbox',
+                checked: shouldDeleteCategoryRegistries,
+                onChange: (event: Event) => {
+                  const target = event.target as HTMLInputElement | null
+                  shouldDeleteCategoryRegistries = Boolean(target?.checked)
+                },
+              }),
+              h('span', { class: 'category-delete-confirm-checkbox__label' }, t('categoryDialog.confirmDeleteWithSources', { count: categoryRegistries.length })),
+            ])
+          : null,
+      ]),
       confirmButtonText: t('common.delete'),
       cancelButtonText: t('common.cancel'),
+      showCancelButton: true,
       customClass: 'category-delete-confirm-messagebox',
       confirmButtonClass: 'category-delete-confirm-messagebox__btn-confirm',
       cancelButtonClass: 'category-delete-confirm-messagebox__btn-cancel',
@@ -1298,6 +1336,23 @@ async function deleteCategoryLabel(label: string) {
     })
   } catch {
     return
+  }
+
+  if (shouldDeleteCategoryRegistries && categoryRegistries.length > 0) {
+    const deletingMsg = ElMessage({
+      type: 'info',
+      message: t('categoryDialog.deletingWithSourcesProgress', { label, count: categoryRegistries.length }),
+      duration: 0,
+      showClose: true,
+    })
+    try {
+      await store.deleteRegistriesBulk(categoryRegistries, { silent: true })
+      for (const registryName of categoryRegistries) {
+        pruneRegistryOrder(registryName)
+      }
+    } finally {
+      deletingMsg.close()
+    }
   }
 
   if (showCategoryManageDialog.value) {
@@ -1351,7 +1406,11 @@ async function deleteCategoryLabel(label: string) {
   delete renameInputs[label]
   categoryRenameInputs.value = renameInputs
 
-  ElMessage.success(t('categoryDialog.deleted'))
+  ElMessage.success(
+    shouldDeleteCategoryRegistries && categoryRegistries.length > 0
+      ? t('categoryDialog.deletedWithSources', { label, count: categoryRegistries.length })
+      : t('categoryDialog.deleted', { label })
+  )
 }
 
 function getLatencyText(name: string): string {

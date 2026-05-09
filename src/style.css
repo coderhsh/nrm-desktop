@@ -226,6 +226,38 @@ html:not(.dark) .el-message-box.category-delete-confirm-messagebox .el-message-b
   color: var(--app-text-muted);
 }
 
+.el-message-box.category-delete-confirm-messagebox .category-delete-confirm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.el-message-box.category-delete-confirm-messagebox .category-delete-confirm-content__text {
+  margin: 0;
+}
+
+.el-message-box.category-delete-confirm-messagebox .category-delete-confirm-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.el-message-box.category-delete-confirm-messagebox .category-delete-confirm-checkbox__input {
+  margin-top: 0.1rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 3px;
+  accent-color: var(--el-color-primary);
+  cursor: pointer;
+}
+
+.el-message-box.category-delete-confirm-messagebox .category-delete-confirm-checkbox__label {
+  white-space: normal;
+  line-height: 1.4;
+}
+
 .el-message-box.category-delete-confirm-messagebox .el-message-box__btns {
   display: flex;
   justify-content: flex-end;
@@ -1818,6 +1850,10 @@ html.dark .el-message-box.category-delete-confirm-messagebox .el-message-box__co
 
 html.dark .el-message-box.category-delete-confirm-messagebox .el-message-box__message {
   color: rgba(235, 235, 245, 0.72);
+}
+
+html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-confirm-checkbox__label {
+  color: rgba(235, 235, 245, 0.86);
 }
 
 html.dark .el-message-box.category-delete-confirm-messagebox .el-message-box__btns {

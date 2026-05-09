@@ -34,6 +34,10 @@ export async function deleteRegistry(name: string): Promise<void> {
   return invoke<void>("delete_registry", { name });
 }
 
+export async function deleteRegistriesBulk(names: string[]): Promise<void> {
+  return invoke<void>("delete_registries_bulk", { names });
+}
+
 export async function updateRegistry(
   name: string,
   newName: string,

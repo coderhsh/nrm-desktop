@@ -1,6 +1,7 @@
 use crate::models::Registry;
 use crate::{app_settings, npmrc, project_registry, proxy, registries, speedtest};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use tauri::{Emitter, Manager};
 
 /// 系统 PATH 中 `node` / `npm` 的版本输出（与 `.npmrc` 实际使用的 CLI 一致）。
@@ -203,6 +204,51 @@ pub async fn delete_registry(app: tauri::AppHandle, name: String) -> Result<(), 
         }
         let best_name = speedtest::fastest_registry_name_with_fallback().await?;
         switch_to_registry_named(&app, &best_name)?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_registries_bulk(app: tauri::AppHandle, names: Vec<String>) -> Result<(), String> {
+    if names.is_empty() {
+        return Ok(());
+    }
+
+    let unique_names: Vec<String> = {
+        let mut seen = HashSet::new();
+        let mut out = Vec::new();
+        for name in names {
+            if seen.insert(name.clone()) {
+                out.push(name);
+            }
+        }
+        out
+    };
+
+    let current_url = npmrc::read_current_registry().map_err(|e| e.to_string())?;
+    let all_before = registries::get_all().map_err(|e| e.to_string())?;
+    let mut deleted_current = false;
+
+    for name in &unique_names {
+        if let (Some(cu), Some(reg)) = (&current_url, all_before.iter().find(|r| &r.name == name)) {
+            if registry_url_key(cu) == registry_url_key(&reg.url) {
+                deleted_current = true;
+            }
+        }
+        registries::delete(name).map_err(|e| e.to_string())?;
+    }
+
+    if deleted_current {
+        let all_after = registries::get_all().map_err(|e| e.to_string())?;
+        if all_after.is_empty() {
+            eprintln!("[nrm-desktop] 批量删除后已无可用源，registry 可能仍指向已删除地址");
+        } else {
+            let best_name = speedtest::fastest_registry_name_with_fallback().await?;
+            switch_to_registry_named(&app, &best_name)?;
+        }
+    } else {
+        crate::refresh_tray_menu(&app).map_err(|e| e.to_string())?;
     }
 
     Ok(())
