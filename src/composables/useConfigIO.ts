@@ -1,12 +1,14 @@
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import * as api from '@/api/tauri'
 import { useRegistryStore } from '@/stores/registry'
-import { useI18n } from '@/composables/useI18n'
+import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
 import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
+import { useLocalStorage } from '@vueuse/core'
 
 export function useConfigIO() {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const store = useRegistryStore()
+  const categoryByRegistry = useLocalStorage<Record<string, string>>(CATEGORY_BY_REGISTRY_STORAGE_KEY, {})
 
   async function handleExport() {
     try {
@@ -42,5 +44,34 @@ export function useConfigIO() {
     }
   }
 
-  return { handleExport, handleImport }
+  async function handleResetDefaults(): Promise<boolean> {
+    try {
+      await ElMessageBox.confirm(
+        t('app.resetConfirm.message'),
+        t('app.resetConfirm.title'),
+        {
+          confirmButtonText: t('app.resetConfirm.confirm'),
+          cancelButtonText: t('common.cancel'),
+          customClass: 'app-reset-defaults-messagebox',
+          confirmButtonClass: 'app-reset-defaults-messagebox__btn-confirm',
+          cancelButtonClass: 'app-reset-defaults-messagebox__btn-cancel',
+          showClose: false,
+          closeOnClickModal: false,
+          distinguishCancelAndClose: true,
+        },
+      )
+      const lang = await api.resetDefaults()
+      if (lang === 'en' || lang === 'zh-CN') {
+        language.value = lang
+      }
+      categoryByRegistry.value = {}
+      await store.fetchRegistries()
+      ElMessage.success(t('app.resetConfirm.success'))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  return { handleExport, handleImport, handleResetDefaults }
 }

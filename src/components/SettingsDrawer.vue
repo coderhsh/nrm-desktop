@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { invoke } from '@tauri-apps/api/core'
-import { useLocalStorage } from '@vueuse/core'
 import { useTheme } from '@/composables/useTheme'
-import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
+import { useI18n } from '@/composables/useI18n'
 import { useAutostart } from '@/composables/useAutostart'
-import { useRegistryStore } from '@/stores/registry'
-import * as api from '@/api/tauri'
 import { useConfigIO } from '@/composables/useConfigIO'
 
 const props = defineProps<{
@@ -16,10 +13,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
-  (e: 'reset'): void
 }>()
 
-const store = useRegistryStore()
 const theme = useTheme()
 const { t, language } = useI18n()
 const {
@@ -30,12 +25,7 @@ const {
   applyAutostartDraft,
 } = useAutostart()
 
-const { handleExport, handleImport } = useConfigIO()
-
-const categoryByRegistry = useLocalStorage<Record<string, string>>(
-  CATEGORY_BY_REGISTRY_STORAGE_KEY,
-  {}
-)
+const { handleExport, handleImport, handleResetDefaults } = useConfigIO()
 
 const draftLanguage = ref<'zh-CN' | 'en'>('zh-CN')
 const draftTheme = ref<'light' | 'dark' | 'auto'>('auto')
@@ -103,33 +93,10 @@ async function openAboutInfo() {
 }
 
 async function handleReset() {
-  try {
-    await ElMessageBox.confirm(
-      t('app.resetConfirm.message'),
-      t('app.resetConfirm.title'),
-      {
-        confirmButtonText: t('app.resetConfirm.confirm'),
-        cancelButtonText: t('common.cancel'),
-        customClass: 'app-reset-defaults-messagebox',
-        confirmButtonClass: 'app-reset-defaults-messagebox__btn-confirm',
-        cancelButtonClass: 'app-reset-defaults-messagebox__btn-cancel',
-        showClose: false,
-        closeOnClickModal: false,
-        distinguishCancelAndClose: true,
-      },
-    )
-    const lang = await api.resetDefaults()
-    if (lang === 'en' || lang === 'zh-CN') {
-      language.value = lang
-      draftLanguage.value = lang
-    }
-    ElMessage.success(t('app.resetConfirm.success'))
-    categoryByRegistry.value = {}
-    store.fetchRegistries()
+  const success = await handleResetDefaults()
+  if (success) {
+    draftLanguage.value = language.value
     emit('update:visible', false)
-    emit('reset')
-  } catch {
-    // cancelled
   }
 }
 </script>

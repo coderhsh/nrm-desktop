@@ -3,7 +3,6 @@ import { computed, ref, watch, onBeforeUnmount, onMounted, provide } from 'vue'
 import { useAppBlocksEntrance, appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 import { Setting } from '@element-plus/icons-vue'
 import { open as openExternal } from '@tauri-apps/plugin-shell'
-import { useLocalStorage } from '@vueuse/core'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 import { useRegistryStore } from '@/stores/registry'
@@ -17,7 +16,7 @@ import * as api from '@/api/tauri'
 import type { NodeNpmVersions } from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
 import { useShellIntro } from '@/composables/useShellIntro'
-import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, coerceAppLanguage } from '@/composables/useI18n'
+import { useI18n, coerceAppLanguage } from '@/composables/useI18n'
 import { useCloseBehavior } from '@/composables/useCloseBehavior'
 import { useConfigIO } from '@/composables/useConfigIO'
 
@@ -52,10 +51,6 @@ const nodeNpmVersionsLabel = computed(() => {
   })
 })
 const isProxyFeatureVisible = false
-const categoryByRegistry = useLocalStorage<Record<string, string>>(
-  CATEGORY_BY_REGISTRY_STORAGE_KEY,
-  {}
-)
 
 const {
   showCloseConfirmDialog,
@@ -67,7 +62,7 @@ const {
   cleanup: cleanupCloseHandler,
 } = useCloseBehavior()
 
-const { handleExport, handleImport } = useConfigIO()
+const { handleExport, handleImport, handleResetDefaults } = useConfigIO()
 
 const elementLocale = computed(() => (coerceAppLanguage(language.value) === 'en' ? en : zhCn))
 /** 底部状态栏：只在浅色 / 深色间切换，不出现「跟随系统」作为下一状态 */
@@ -138,10 +133,6 @@ async function openGithubHome() {
   }
 }
 
-function handleSettingsReset() {
-  categoryByRegistry.value = {}
-  store.fetchRegistries()
-}
 </script>
 
 <template>
@@ -234,7 +225,7 @@ function handleSettingsReset() {
             </svg>
           </el-button>
 
-        <el-button text size="small" type="danger" @click="showSettingsDialog = true" :title="t('app.resetDefaults')">
+        <el-button text size="small" type="danger" @click="handleResetDefaults" :title="t('app.resetDefaults')">
           {{ t('common.reset') }}
         </el-button>
       </div>
@@ -245,7 +236,6 @@ function handleSettingsReset() {
       <!-- Settings Drawer -->
       <SettingsDrawer
         v-model:visible="showSettingsDialog"
-        @reset="handleSettingsReset"
       />
 
       <!-- Close Confirm Dialog -->
