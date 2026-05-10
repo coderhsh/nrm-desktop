@@ -17,6 +17,10 @@ export function formatLatencyErrorMessage(
   const http = /^HTTP (\d{3})$/.exec(raw);
   if (http) return t("speedTest.httpErr", { code: http[1] });
   if (raw.startsWith("请求错误:")) return t("speedTest.requestFail");
+  if (raw.startsWith("任务失败:")) {
+    const detail = raw.slice("任务失败:".length).trim();
+    return t("speedTest.runError", { detail: detail || t("speedTest.requestFail") });
+  }
   if (raw.length > maxLen) return `${raw.slice(0, Math.max(0, maxLen - 1))}…`;
   return raw;
 }

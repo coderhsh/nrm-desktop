@@ -1,8 +1,5 @@
 import type { Registry } from '@/types'
 
-/** 默认预设分类标签 */
-export const DEFAULT_PRESET_LABEL = '预设源'
-
 /** 分类标签最大长度 */
 export const CATEGORY_LABEL_MAX_LENGTH = 20
 

@@ -46,6 +46,8 @@ export function formatInvokeErrorMessage(t: TranslateFn, error: unknown): string
     不支持的语言: "backend.unsupportedLanguage",
     无可用源: "backend.noRegistriesAvailable",
     备份文件不存在: "backend.backupFileNotFound",
+    "未找到主窗口": "backend.mainWindowNotFound",
+    "URL 不能为空": "backend.urlEmpty",
   };
   const key = exact[raw];
   if (key) return t(key);

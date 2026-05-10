@@ -10,6 +10,7 @@ import { storeToRefs } from 'pinia'
 import type { Registry } from '@/types'
 import { testSingleSpeed } from '@/api/speedtest'
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/latency-error-i18n'
+import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
 import RegistryDialog from './RegistryDialog.vue'
 import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
@@ -328,7 +329,7 @@ async function handleTest(registry: Registry) {
     }
     ElMessage.warning(formatLatencyErrorMessage(t, result.error))
   } catch (error) {
-    ElMessage.error(t('speedTest.runError', { detail: truncateSpeedTestRunError(String(error)) }))
+    ElMessage.error(t('speedTest.runError', { detail: truncateSpeedTestRunError(formatInvokeErrorMessage(t, error)) }))
   } finally {
     testingByRegistry.value = {
       ...testingByRegistry.value,

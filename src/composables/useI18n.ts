@@ -127,6 +127,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'registryList.expandAllCategories': '全部展开',
     'registryList.collapseAllCategories': '全部折叠',
     'registryList.uncategorized': '未分类',
+    'registryList.presetCategory': '预设源',
     'registryList.dropHint': '释放以移动到「{label}」',
     'registryList.moveToCategorySuccess': '已将 "{name}" 移动到分类 "{label}"',
     'registryList.context.viewDetail': '查看详情',
@@ -194,6 +195,9 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'backend.unsupportedLanguage': '不支持的语言',
     'backend.noRegistriesAvailable': '无可用源',
     'backend.backupFileNotFound': '备份文件不存在',
+    'backend.mainWindowNotFound': '未找到主窗口',
+    'backend.taskFailed': '任务失败: {detail}',
+    'backend.urlEmpty': 'URL 不能为空',
 
     // category-manage-dialog
     'categoryDialog.title': '分类管理',
@@ -346,6 +350,7 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'registryList.expandAllCategories': 'Expand all',
     'registryList.collapseAllCategories': 'Collapse all',
     'registryList.uncategorized': 'Uncategorized',
+    'registryList.presetCategory': 'Preset',
     'registryList.dropHint': 'Release to move to "{label}"',
     'registryList.moveToCategorySuccess': 'Moved "{name}" to category "{label}"',
     'registryList.context.viewDetail': 'View Details',
@@ -411,6 +416,9 @@ const messages: Record<AppLanguage, LocaleMessages> = {
     'backend.unsupportedLanguage': 'Unsupported language',
     'backend.noRegistriesAvailable': 'No registries available',
     'backend.backupFileNotFound': 'Backup file does not exist',
+    'backend.mainWindowNotFound': 'Main window not found',
+    'backend.taskFailed': 'Task failed: {detail}',
+    'backend.urlEmpty': 'URL cannot be empty',
 
     'categoryDialog.title': 'Category Management',
     'categoryDialog.newPlaceholder': 'Enter new category name',

@@ -6,6 +6,7 @@ import { RefreshRight } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n } from '@/composables/useI18n'
 import { testUrlSpeed } from '@/api/speedtest'
+import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
 import type { Registry } from '@/types'
 
@@ -66,7 +67,7 @@ async function handleUrlSpeedTest() {
       urlLatencyError.value = result.error ?? 'Unknown error'
     }
   } catch (e: any) {
-    urlLatencyError.value = String(e)
+    urlLatencyError.value = formatInvokeErrorMessage(t, e)
   } finally {
     urlTesting.value = false
   }

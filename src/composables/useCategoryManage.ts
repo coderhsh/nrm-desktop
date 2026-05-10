@@ -4,10 +4,15 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY } from '@/composables/useI18n'
 import { useRegistryStore } from '@/stores/registry'
 import { storeToRefs } from 'pinia'
-import { DEFAULT_PRESET_LABEL } from '@/components/RegistryList/constants'
 import { normalizeRegistryOrderRecord, normalizeCategoryLabel } from '@/components/RegistryList/utils'
 import type { InputInstance } from 'element-plus'
 import type { Registry } from '@/types'
+
+/** 预设分类标签的各语言默认值，用于语言切换时的迁移匹配 */
+const PRESET_CATEGORY_DEFAULTS: Record<string, string> = {
+  'zh-CN': '预设源',
+  en: 'Preset',
+}
 
 export function useCategoryManage() {
   const { t, language } = useI18n()
@@ -35,7 +40,14 @@ export function useCategoryManage() {
   )
   const categoryLabels = useLocalStorage<string[]>('nrm-desktop-category-labels', [])
   const categoryExpanded = useLocalStorage<Record<string, boolean>>('nrm-desktop-category-expanded', {})
-  const presetCategoryLabel = useLocalStorage<string>('nrm-desktop-preset-category-label', DEFAULT_PRESET_LABEL)
+
+  /** 当前语言下的预设分类标签默认值 */
+  const currentPresetDefault = computed(() => {
+    const lang = language.value
+    return PRESET_CATEGORY_DEFAULTS[lang] ?? PRESET_CATEGORY_DEFAULTS['zh-CN']!
+  })
+
+  const presetCategoryLabel = useLocalStorage<string>('nrm-desktop-preset-category-label', currentPresetDefault.value)
 
   // 初始化：确保预设分类标签存在于列表中
   if (!categoryLabels.value.includes(presetCategoryLabel.value)) {
@@ -46,6 +58,51 @@ export function useCategoryManage() {
   const uncategorizedLabel = computed(() => t('registryList.uncategorized'))
 
   // ==================== 分类存储迁移 ====================
+  /**
+   * 迁移预设分类标签：当语言切换时，如果存储的值是另一种语言的默认预设标签，
+   * 则迁移到当前语言的默认值。用户自定义重命名不受影响。
+   */
+  function migratePresetCategoryLabel() {
+    const stored = presetCategoryLabel.value
+    const currentDefault = currentPresetDefault.value
+    // 如果已经是当前语言的默认值，无需处理
+    if (stored === currentDefault) return
+    // 如果存储的值是已知的其他语言默认值，迁移到当前语言
+    const isKnownDefault = Object.values(PRESET_CATEGORY_DEFAULTS).includes(stored)
+    if (isKnownDefault) {
+      // 从 categoryLabels 中移除旧标签
+      const idx = categoryLabels.value.indexOf(stored)
+      if (idx !== -1) {
+        categoryLabels.value = categoryLabels.value.filter(l => l !== stored)
+      }
+      // 从 categoryExpanded 中迁移
+      const expanded = { ...categoryExpanded.value }
+      if (expanded[stored] !== undefined) {
+        if (expanded[currentDefault] === undefined) {
+          expanded[currentDefault] = expanded[stored]
+        }
+        delete expanded[stored]
+        categoryExpanded.value = expanded
+      }
+      // 清理 categoryByRegistry 中引用旧预设标签的条目（预设源应无显式分配）
+      const mapping = { ...categoryByRegistry.value }
+      let mapChanged = false
+      for (const [name, cat] of Object.entries(mapping)) {
+        if (cat === stored) {
+          delete mapping[name]
+          mapChanged = true
+        }
+      }
+      if (mapChanged) categoryByRegistry.value = mapping
+      // 更新预设标签
+      presetCategoryLabel.value = currentDefault
+      // 确保新标签在列表中
+      if (!categoryLabels.value.includes(currentDefault)) {
+        categoryLabels.value = [currentDefault, ...categoryLabels.value]
+      }
+    }
+  }
+
   function migrateUncategorizedCategoryStorage() {
     const cur = uncategorizedLabel.value
     const expanded = { ...categoryExpanded.value }
@@ -70,7 +127,11 @@ export function useCategoryManage() {
     if (mapChanged) categoryByRegistry.value = mapping
   }
 
+  // 初始化：迁移预设分类标签（语言可能已切换）
+  migratePresetCategoryLabel()
+
   watch(language, () => {
+    migratePresetCategoryLabel()
     migrateUncategorizedCategoryStorage()
   })
 
