@@ -3411,6 +3411,8 @@ html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow:before,
 html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::before {
   background: #252b3a !important;
   border: 1px solid rgba(108, 124, 150, 0.34) !important;
+  border-left: 1px solid transparent !important;
+  border-top: 1px solid transparent !important;
 }
 
 /* RegistryList 深色模式样式 */
