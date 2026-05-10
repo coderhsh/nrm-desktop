@@ -13,6 +13,7 @@ interface CategoryManageContext {
   moveRegistryToCategory: (registryName: string, label: string) => void
   reorderStorageAfterCrossCategoryMove: (registryName: string, fromCat: string, toCat: string) => void
   commitRegistryOrderWithinCategory: (categoryLabel: string, dragName: string, dropK: number) => void
+  applyCategoryManageOrder: (newOrder: string[]) => void
 }
 
 export function useRegistryDragSort(ctx: CategoryManageContext) {
@@ -42,6 +43,8 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
   const categoryManageScrollRef = ref<HTMLElement | null>(null)
   const manageGhostPosition = ref({ x: 0, y: 0 })
   const manageDragPointerOffset = ref({ x: 0, y: 0 })
+  const manageDraftLabelsRef = ref<string[]>([])
+  const categoryManageWrapRef = ref<HTMLElement | null>(null)
 
   // ==================== 计算属性 ====================
   const draggingRegistry = computed(() =>
@@ -163,15 +166,29 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
   }
 
   // ==================== 分类拖拽函数 ====================
-  function startManageDrag(label: string, event: MouseEvent) {
+  function startManageDrag(label: string, event: MouseEvent, draftLabels?: string[]) {
     if (event.button !== 0) return
     window.getSelection()?.removeAllRanges()
     manageDragLabel.value = label
     manageDragStart.value = { x: event.clientX, y: event.clientY }
     isManageDragging.value = false
     manageDropIndex.value = 0 // Will be set by parent
-    const rowEl = (event.currentTarget as HTMLElement).closest('.category-list-row') as HTMLElement | null
-    const rect = rowEl?.getBoundingClientRect() ?? (event.currentTarget as HTMLElement).getBoundingClientRect()
+    if (draftLabels) {
+      manageDraftLabelsRef.value = draftLabels
+    }
+
+    // 获取滚动容器的 DOM 元素
+    // el-scrollbar 组件实例可能没有直接暴露 DOM，但可以通过 $el 访问
+    const scrollComponent = categoryManageScrollRef.value as any
+    if (scrollComponent) {
+      // 如果是组件实例，尝试获取 $el
+      const scrollEl = scrollComponent.$el || scrollComponent
+      categoryManageWrapRef.value = scrollEl as HTMLElement | null
+    }
+
+    const target = event.currentTarget as HTMLElement
+    const rowEl = target.closest('.category-list-row') as HTMLElement | null
+    const rect = rowEl?.getBoundingClientRect() ?? target.getBoundingClientRect()
     manageDragPointerOffset.value = {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
@@ -182,26 +199,33 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
   function finishManageDrag(draftLabels: string[]) {
     if (!manageDragLabel.value) return null
 
+    let newOrder: string[] | null = null
+
     if (isManageDragging.value) {
       const drag = manageDragLabel.value
       const rest = draftLabels.filter(l => l !== drag)
       const k = Math.min(Math.max(manageDropIndex.value, 0), rest.length)
-      const newOrder = [...rest.slice(0, k), drag, ...rest.slice(k)]
-      return newOrder
+      newOrder = [...rest.slice(0, k), drag, ...rest.slice(k)]
     }
 
+    // 清理拖拽状态
     manageDragLabel.value = null
     manageDragStart.value = null
     isManageDragging.value = false
+    manageDropIndex.value = 0
+    manageDraftLabelsRef.value = []
+    categoryManageWrapRef.value = null
 
-    return null
+    return newOrder
   }
 
   function updateManageDropIndexFromPointerY(clientY: number, draftLabels: string[]) {
     if (!isManageDragging.value || !manageDragLabel.value) return
 
     const drag = manageDragLabel.value
-    const scrollEl = categoryManageScrollRef.value
+
+    // 使用在 startManageDrag 时捕获的滚动容器
+    const scrollEl = categoryManageWrapRef.value
     if (!scrollEl) return
 
     const wrap = scrollEl.querySelector('.category-list-wrap')
@@ -245,7 +269,7 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
           x: event.clientX - manageDragPointerOffset.value.x,
           y: event.clientY - manageDragPointerOffset.value.y,
         }
-        // updateManageDropIndexFromPointerY will be called by parent
+        updateManageDropIndexFromPointerY(event.clientY, manageDraftLabelsRef.value)
       }
       return
     }
@@ -327,7 +351,8 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
   function onWindowMouseUp(draftLabels?: string[]) {
     // 分类管理拖拽完成
     if (manageDragLabel.value) {
-      const newOrder = finishManageDrag(draftLabels ?? [])
+      const labels = draftLabels ?? manageDraftLabelsRef.value
+      const newOrder = finishManageDrag(labels)
       document.documentElement.style.removeProperty('cursor')
       document.body.style.removeProperty('cursor')
       return newOrder
@@ -352,7 +377,10 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
 
   // ==================== 生命周期 ====================
   function handleMouseUp() {
-    onWindowMouseUp()
+    const newOrder = onWindowMouseUp()
+    if (newOrder) {
+      ctx.applyCategoryManageOrder(newOrder)
+    }
   }
 
   onMounted(() => {

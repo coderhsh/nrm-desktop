@@ -81,6 +81,7 @@ const {
   persistRenamedCategory,
   confirmRenameInManageDraft,
   deleteCategoryLabel,
+  applyCategoryManageOrder,
 } = categoryManage
 
 // ==================== 拖拽排序 ====================
@@ -92,6 +93,7 @@ const dragSort = useRegistryDragSort({
   reorderStorageAfterCrossCategoryMove,
   commitRegistryOrderWithinCategory,
   getRegistryCategory,
+  applyCategoryManageOrder,
 })
 
 const {
@@ -227,7 +229,7 @@ const categoryManageDragSlots = computed((): ManageCategorySlot[] => {
 })
 
 function onStartManageDrag(label: string, event: MouseEvent) {
-  startManageDrag(label, event)
+  startManageDrag(label, event, categoryManageDraftLabels.value)
   manageDropIndex.value = categoryManageDraftLabels.value.indexOf(label)
 }
 

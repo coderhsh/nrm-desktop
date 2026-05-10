@@ -605,6 +605,10 @@ export function useCategoryManage() {
     categoryByRegistry.value = nextMapping
   }
 
+  function applyCategoryManageOrder(newOrder: string[]) {
+    categoryManageDraftLabels.value = newOrder
+  }
+
   return {
     // 持久化状态
     categoryByRegistry,
@@ -660,5 +664,6 @@ export function useCategoryManage() {
     persistRenamedCategory,
     confirmRenameInManageDraft,
     deleteCategoryLabel,
+    applyCategoryManageOrder,
   }
 }
