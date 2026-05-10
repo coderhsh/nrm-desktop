@@ -2047,6 +2047,70 @@ html:not(.dark) .registry-dialog .registry-dialog-category-toggle.el-button:acti
   transform: scale(0.98);
 }
 
+/* 深色：添加/编辑源弹窗 — 表单标签 */
+html.dark .registry-dialog.category-manage-dialog .el-form-item__label {
+  color: var(--el-text-color-regular);
+  font-weight: 600;
+}
+
+/* 深色：与必填项红色星号占位对齐 */
+html.dark .registry-dialog .el-form-item:not(.is-required) .el-form-item__label {
+  padding-left: 0.72em;
+}
+
+/* 深色：分类切换按钮 — 与分类管理 sheet 中次要按钮一致 */
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  background: rgba(72, 72, 74, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button:hover,
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button:focus {
+  background: rgba(82, 82, 84, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 12px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.dark .registry-dialog .registry-dialog-category-toggle.el-button:active {
+  transform: scale(0.98);
+}
+
+/* 深色：添加/编辑源弹窗 — 输入框 */
+html.dark .registry-dialog .registry-dialog-input .el-input__wrapper,
+html.dark .registry-dialog .registry-dialog-input .el-select__wrapper {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+  border-radius: 0.72rem !important;
+}
+
+html.dark .registry-dialog .registry-dialog-input .el-input__wrapper:hover,
+html.dark .registry-dialog .registry-dialog-input .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
+}
+
+html.dark .registry-dialog .registry-dialog-input .el-input__wrapper.is-focus,
+html.dark .registry-dialog .registry-dialog-input .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px rgba(10, 132, 255, 0.65) inset,
+    0 0 0 3px rgba(10, 132, 255, 0.18) !important;
+}
+
 /* 分类管理弹窗：浅色 sheet + 标题栏 */
 html:not(.dark) .category-manage-dialog .el-dialog {
   background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
@@ -2447,40 +2511,6 @@ html.dark .category-manage-modal.el-overlay {
 /* 与 Element Plus dialog-fade 同期：sheet 轻微缩放弹出 */
 .dialog-fade-enter-active .category-manage-dialog.el-dialog {
   animation: category-manage-dialog-enter 0.42s var(--app-ease-spring) both;
-}
-
-/* 与必填项红色星号占位对齐，避免「分类」标签左移 */
-html.dark .registry-dialog .el-form-item:not(.is-required) .el-form-item__label {
-  padding-left: 0.72em;
-}
-
-html.dark .registry-dialog .registry-dialog-category-toggle.el-button {
-  background: rgba(72, 72, 74, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: rgba(242, 244, 248, 0.94) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.28) !important;
-  transition:
-    background-color 0.2s var(--app-ease-out),
-    border-color 0.2s var(--app-ease-out),
-    box-shadow 0.2s var(--app-ease-out),
-    color 0.2s var(--app-ease-out),
-    transform 0.15s var(--app-ease-spring) !important;
-}
-
-html.dark .registry-dialog .registry-dialog-category-toggle.el-button:hover,
-html.dark .registry-dialog .registry-dialog-category-toggle.el-button:focus {
-  background: rgba(82, 82, 84, 0.98) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: #ffffff !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 3px 12px rgba(0, 0, 0, 0.32) !important;
-}
-
-html.dark .registry-dialog .registry-dialog-category-toggle.el-button:active {
-  transform: scale(0.98);
 }
 
 /* 分类管理弹窗（Teleport）：深色 sheet + 列表区覆写浅色 scoped 样式 */

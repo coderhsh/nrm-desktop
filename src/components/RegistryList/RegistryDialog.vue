@@ -165,10 +165,14 @@ function validateUrl(_rule: any, value: string, callback: any) {
   callback()
 }
 
-/** 弹窗打开后再聚焦，避免与 Element Plus 焦点管理冲突 */
+/** 弹窗打开后再聚焦，编辑模式下光标置于末尾 */
 function focusNameInput() {
   nextTick(() => {
     nameInputRef.value?.focus()
+    if (isEdit()) {
+      const len = name.value.length
+      nameInputRef.value?.input?.setSelectionRange(len, len)
+    }
   })
 }
 </script>
@@ -185,27 +189,27 @@ function focusNameInput() {
     @opened="focusNameInput"
     @update:model-value="(v: boolean) => !v && handleClose()"
   >
-    <div class="category-manage-content">
-      <el-form ref="formRef" :model="{ name, url }" :label-width="isEnglish ? '80px' : '60px'" label-position="left" @submit.prevent="handleSubmit" class="registry-dialog-form">
+    <div class="category-manage-content registry-dialog-content">
+      <el-form ref="formRef" :model="{ name, url }" :label-width="isEnglish ? '80px' : '72px'" label-position="left" @submit.prevent="handleSubmit" class="registry-dialog-form">
         <el-form-item :label="t('registryDialog.label.name')" prop="name" :rules="[{ required: true, validator: validateName, trigger: 'blur' }]">
           <el-input
             ref="nameInputRef"
             v-model="name"
-            class="category-input"
+            class="category-input registry-dialog-input"
             :placeholder="t('registryDialog.placeholder.name')"
             :maxlength="nameMaxLength"
             show-word-limit
           />
         </el-form-item>
         <el-form-item :label="t('registryDialog.label.url')" prop="url" :rules="[{ required: true, validator: validateUrl, trigger: 'blur' }]">
-          <el-input v-model="url" class="category-input" :placeholder="t('registryDialog.placeholder.url')" />
+          <el-input v-model="url" class="category-input registry-dialog-input" :placeholder="t('registryDialog.placeholder.url')" />
         </el-form-item>
         <el-form-item :label="t('registryDialog.label.category')">
-          <div class="flex items-center gap-2 w-full">
+          <div class="registry-dialog-category-row">
             <el-select
               v-if="!useCustomCategoryInput"
               v-model="selectedCategoryLabel"
-              class="category-input flex-1 min-w-0"
+              class="category-input registry-dialog-input flex-1 min-w-0"
               :placeholder="t('registryDialog.category.selectPlaceholder')"
               clearable
               filterable
@@ -216,7 +220,7 @@ function focusNameInput() {
               v-else
               ref="categoryCustomInputRef"
               v-model="categoryInput"
-              class="category-input flex-1 min-w-0"
+              class="category-input registry-dialog-input flex-1 min-w-0"
               :placeholder="t('registryDialog.category.inputPlaceholder')"
               :maxlength="categoryLabelMaxLength"
               show-word-limit
@@ -242,5 +246,24 @@ function focusNameInput() {
 <style scoped>
 .registry-dialog-form {
   padding-top: 0;
+}
+
+.registry-dialog-content {
+  gap: 1.25rem !important;
+}
+
+.registry-dialog-form :deep(.el-form-item) {
+  margin-bottom: 1.15rem;
+}
+
+.registry-dialog-form :deep(.el-form-item:last-child) {
+  margin-bottom: 0;
+}
+
+.registry-dialog-category-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
 }
 </style>
