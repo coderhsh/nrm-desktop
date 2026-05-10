@@ -40,7 +40,7 @@ function applyTheme(val: Theme) {
 
 /** 用户切换时使用 startViewTransition 实现平滑过渡 */
 function transitionTheme(val: Theme) {
-  const doc = document as any;
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
   if (typeof doc.startViewTransition === "function") {
     doc.startViewTransition(() => setDarkClass(resolveIsDark(val)));
   } else {

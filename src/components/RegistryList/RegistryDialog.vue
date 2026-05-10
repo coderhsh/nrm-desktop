@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { InputInstance } from 'element-plus'
+import type { FormInstance, InputInstance } from 'element-plus'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n } from '@/composables/useI18n'
 import type { Registry } from '@/types'
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 const store = useRegistryStore()
 const { t, isEnglish } = useI18n()
 
-const formRef = ref()
+const formRef = ref<FormInstance | null>(null)
 const nameInputRef = ref<InputInstance>()
 const categoryCustomInputRef = ref<InputInstance>()
 const name = ref('')

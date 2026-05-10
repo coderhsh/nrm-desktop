@@ -54,21 +54,14 @@ const fastestResult = computed(() => {
  * Sync full latency results to the registry store for sidebar display.
  */
 function syncAllLatencyResults(items: LatencyResult[]) {
-  const map: Record<string, LatencyResult> = {}
-  for (const item of items) {
-    map[item.name] = item
-  }
-  store.latencyResults = map
+  store.setLatencyResults(items)
 }
 
 /**
  * Sync one latency result to the registry store after re-test.
  */
 function syncSingleLatencyResult(item: LatencyResult) {
-  store.latencyResults = {
-    ...store.latencyResults,
-    [item.name]: item,
-  }
+  store.setSingleLatencyResult(item)
 }
 
 const speedRevealStepMs = 76

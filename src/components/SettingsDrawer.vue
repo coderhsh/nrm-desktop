@@ -127,8 +127,8 @@ async function handleImport() {
     if (!path) return
     const json = await api.readTextFile(path as string)
     await api.importConfig(json)
+    await store.fetchRegistries()
     ElMessage.success(t('app.import.success'))
-    store.fetchRegistries()
   } catch (e) {
     ElMessage.error(t('app.import.failed', { error: formatInvokeErrorMessage(t, e) }))
   }

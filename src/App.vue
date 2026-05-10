@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount, onMounted, provide } from 'vue'
 import { useAppBlocksEntrance, appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
+import { ElMessage } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
 import { open as openExternal } from '@tauri-apps/plugin-shell'
 import { useLocalStorage } from '@vueuse/core'
@@ -139,7 +140,7 @@ async function handleExport() {
     if (!path) return
     await api.writeTextFile(path, json)
   } catch (e) {
-    // error handled by caller
+    ElMessage.error(t('app.export.failed', { error: String(e) }))
   }
 }
 
@@ -153,9 +154,10 @@ async function handleImport() {
     if (!path) return
     const json = await api.readTextFile(path as string)
     await api.importConfig(json)
-    store.fetchRegistries()
+    await store.fetchRegistries()
+    ElMessage.success(t('app.import.success'))
   } catch (e) {
-    // error handled by caller
+    ElMessage.error(t('app.import.failed', { error: String(e) }))
   }
 }
 
