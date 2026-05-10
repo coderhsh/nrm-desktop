@@ -177,11 +177,13 @@ pub fn set_registry(app: tauri::AppHandle, name: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn add_registry(name: &str, url: &str) -> Result<(), String> {
+pub fn add_registry(app: tauri::AppHandle, name: &str, url: &str) -> Result<(), String> {
     if !url.starts_with("http://") && !url.starts_with("https://") {
         return Err("URL 必须以 http:// 或 https:// 开头".to_string());
     }
-    registries::add(name, url).map_err(|e| e.to_string())
+    registries::add(name, url).map_err(|e| e.to_string())?;
+    crate::refresh_tray_menu(&app).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
