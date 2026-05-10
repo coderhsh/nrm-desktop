@@ -231,6 +231,25 @@ function onStartManageDrag(label: string, event: MouseEvent) {
   manageDropIndex.value = categoryManageDraftLabels.value.indexOf(label)
 }
 
+/** 新增分类后自动滚动到底部 */
+function handleAddCategoryToDraft() {
+  const added = addCategoryLabelToDraft()
+  if (added) {
+    nextTick(() => {
+      const scrollEl = categoryManageScrollRef.value as any
+      if (scrollEl) {
+        // el-scrollbar 实例上有 scrollTo 方法
+        if (typeof scrollEl.scrollTo === 'function') {
+          scrollEl.scrollTo({ top: scrollEl.scrollHeight ?? 99999, behavior: 'smooth' })
+        } else if (scrollEl.$el) {
+          const wrap = scrollEl.$el.querySelector('.el-scrollbar__wrap')
+          if (wrap) wrap.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' })
+        }
+      }
+    })
+  }
+}
+
 // 注意：事件监听已在 useRegistryDragSort composable 中处理
 
 // ==================== 源操作 ====================
@@ -706,15 +725,15 @@ onMounted(async () => {
     <el-dialog v-model="showCategoryManageDialog" :title="t('categoryDialog.title')" width="520px" class="category-manage-dialog app-dialog" modal-class="category-manage-modal" align-center :close-on-click-modal="false" @opened="focusNewCategoryLabelInput" @closed="onCategoryManageDialogClosed">
       <div class="category-manage-content">
         <div class="category-create-row">
-          <el-input ref="newCategoryLabelInputRef" v-model="newCategoryLabel" :placeholder="t('categoryDialog.newPlaceholder')" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="addCategoryLabelToDraft" />
-          <el-button class="category-create-btn category-create-btn--add" @click="addCategoryLabelToDraft">
+          <el-input ref="newCategoryLabelInputRef" v-model="newCategoryLabel" :placeholder="t('categoryDialog.newPlaceholder')" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="handleAddCategoryToDraft" />
+          <el-button class="category-create-btn category-create-btn--add" @click="handleAddCategoryToDraft">
             {{ t('categoryDialog.add') }}
           </el-button>
         </div>
         <div v-if="categoryManageDraftLabels.length === 0" class="category-empty-state">
           {{ t('categoryDialog.empty') }}
         </div>
-        <div v-else ref="categoryManageScrollRef" class="category-list-scroll-host">
+        <el-scrollbar v-else ref="categoryManageScrollRef" class="app-scrollbar category-list-scroll-host">
           <TransitionGroup :name="isManageDragging ? 'cat-manage-flip' : 'cat-manage-idle'" tag="div" class="category-list-wrap">
             <div v-for="slot in categoryManageDragSlots" :key="slot.label" class="category-manage-flip-item" :data-manage-row-label="slot.label">
               <div
@@ -744,7 +763,7 @@ onMounted(async () => {
               </div>
             </div>
           </TransitionGroup>
-        </div>
+        </el-scrollbar>
       </div>
       <template #footer>
         <div class="category-manage-dialog-footer">

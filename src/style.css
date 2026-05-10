@@ -985,7 +985,7 @@ html.dark .app-statusbar .el-button.el-button--danger:not(.is-disabled):active {
 }
 .app-scrollbar .el-scrollbar__bar.is-vertical {
   width: 6px;
-  right: 0;
+  right: 2px;
 }
 .app-scrollbar .el-scrollbar__thumb {
   background-color: rgba(60, 60, 67, 0.28);
