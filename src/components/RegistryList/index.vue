@@ -465,19 +465,6 @@ async function copyText(content: string, label: string) {
   }
 }
 
-function copyDetailField(field: 'name' | 'url' | 'latency') {
-  if (!selectedRegistry.value) return
-  if (field === 'name') {
-    copyText(selectedRegistry.value.name, t('registryList.detail.copyLabel.name'))
-    return
-  }
-  if (field === 'url') {
-    copyText(selectedRegistry.value.url, t('registryList.detail.copyLabel.url'))
-    return
-  }
-  copyText(getLatencyText(selectedRegistry.value.name), t('registryList.detail.copyLabel.latency'))
-}
-
 function copyAllDetails() {
   if (!selectedRegistry.value) return
   const registry = selectedRegistry.value
@@ -834,39 +821,32 @@ onMounted(async () => {
     </el-dialog>
 
     <!-- Registry Detail Dialog -->
-    <el-dialog v-model="showDetailDialog" :title="t('registryList.detail.title')" width="520px" :close-on-click-modal="true" destroy-on-close>
-      <div v-if="selectedRegistry" class="space-y-4">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-xs text-gray-400">{{ t('registryList.detail.name') }}</div>
-            <div class="text-sm font-semibold break-all">{{ selectedRegistry.name }}</div>
+    <el-dialog v-model="showDetailDialog" :title="t('registryList.detail.title')" width="520px" class="registry-detail-dialog category-manage-dialog app-dialog" modal-class="category-manage-modal" align-center :close-on-click-modal="true" destroy-on-close>
+      <div v-if="selectedRegistry" class="category-manage-content registry-detail-content">
+        <dl class="registry-detail-dl">
+          <div class="registry-detail-row">
+            <dt>{{ t('registryList.detail.name') }}</dt>
+            <dd class="registry-detail-dd--bold">{{ selectedRegistry.name }}</dd>
           </div>
-          <el-button text size="small" @click="copyDetailField('name')">{{ t('common.copy') }}</el-button>
-        </div>
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-xs text-gray-400">{{ t('registryList.detail.url') }}</div>
-            <div class="text-sm break-all">{{ selectedRegistry.url }}</div>
+          <div class="registry-detail-row">
+            <dt>{{ t('registryList.detail.url') }}</dt>
+            <dd class="registry-detail-dd--mono">{{ selectedRegistry.url }}</dd>
           </div>
-          <el-button text size="small" @click="copyDetailField('url')">{{ t('common.copy') }}</el-button>
-        </div>
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-xs text-gray-400">{{ t('registryList.detail.latency') }}</div>
-            <div class="text-sm font-mono" :style="{ color: latencyBarColor(latencyResults[selectedRegistry.name]?.latency_ms ?? null) }">
+          <div class="registry-detail-row">
+            <dt>{{ t('registryList.detail.latency') }}</dt>
+            <dd class="registry-detail-dd--mono" :style="{ color: latencyBarColor(latencyResults[selectedRegistry.name]?.latency_ms ?? null) }">
               {{ getLatencyText(selectedRegistry.name) }}
-            </div>
+            </dd>
           </div>
-          <el-button text size="small" @click="copyDetailField('latency')">{{ t('common.copy') }}</el-button>
-        </div>
-        <div>
-          <div class="text-xs text-gray-400">{{ t('registryList.detail.category') }}</div>
-          <div class="text-sm">{{ getRegistryCategory(selectedRegistry) }}</div>
-        </div>
+          <div class="registry-detail-row">
+            <dt>{{ t('registryList.detail.category') }}</dt>
+            <dd>{{ getRegistryCategory(selectedRegistry) }}</dd>
+          </div>
+        </dl>
       </div>
       <template #footer>
-        <div class="flex justify-end gap-2">
-          <el-button @click="showDetailDialog = false">{{ t('common.close') }}</el-button>
+        <div class="category-manage-dialog-footer">
+          <el-button class="category-manage-dialog-footer__close" @click="showDetailDialog = false">{{ t('common.close') }}</el-button>
           <el-button type="primary" @click="copyAllDetails">{{ t('registryList.detail.copyAll') }}</el-button>
         </div>
       </template>
@@ -925,4 +905,66 @@ onMounted(async () => {
 
 <style scoped lang="less">
 @import './index.less';
+</style>
+
+<style>
+.registry-detail-content {
+  gap: 0 !important;
+  padding-top: 0.25rem !important;
+}
+
+.registry-detail-dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+.registry-detail-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-separator) 72%, transparent);
+}
+
+.registry-detail-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0.1rem;
+}
+
+.registry-detail-row dt {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.9375rem;
+  color: var(--app-text-muted);
+  font-weight: 500;
+}
+
+.registry-detail-row dd {
+  margin: 0;
+  text-align: right;
+  font-size: 0.9375rem;
+  color: var(--app-text);
+  word-break: break-word;
+}
+
+.registry-detail-dd--bold {
+  font-weight: 600;
+}
+
+.registry-detail-dd--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 深色模式：详情行分隔线 */
+html.dark .registry-detail-row {
+  border-bottom-color: var(--app-separator);
+}
+
+html.dark .registry-detail-row dd {
+  color: var(--el-text-color-primary);
+}
 </style>
