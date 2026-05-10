@@ -108,6 +108,8 @@ watch(language, () => {
  * 自定义源（含首次启动合并进来的当前源）不应出现在「预设源」分组下；并清理已不存在源的分类映射。
  */
 function normalizeCustomRegistryCategories() {
+  if (store.loading || store.registries.length === 0) return
+
   const presetCat = presetCategoryLabel.value
   const validNames = new Set(store.registries.map(r => r.name))
   const next = { ...categoryByRegistry.value }
