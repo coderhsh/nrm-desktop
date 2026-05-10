@@ -3403,3 +3403,27 @@ html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::before {
   background: #252b3a !important;
   border: 1px solid rgba(108, 124, 150, 0.34) !important;
 }
+
+/* RegistryList 深色模式样式 */
+html.dark .registry-fold-toolbar {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color-blank);
+  box-shadow: 0 1px 0 var(--app-separator);
+}
+
+html.dark .registry-fold-split {
+  background: var(--app-separator);
+}
+
+html.dark .registry-fold-btn.el-button.is-text:not(.is-disabled):hover {
+  background: color-mix(in srgb, var(--el-color-primary) 14%, var(--el-fill-color-blank));
+}
+
+html.dark .context-menu-item:hover {
+  background-color: #3a3a3c;
+}
+
+html.dark .context-menu-item--danger:hover {
+  background-color: rgba(255, 59, 48, 0.14);
+  color: #ff6961;
+}
