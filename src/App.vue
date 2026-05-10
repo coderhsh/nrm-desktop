@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount, onMounted, provide } from 'vue'
 import { useAppBlocksEntrance, appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
-import { ElMessage } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
 import { open as openExternal } from '@tauri-apps/plugin-shell'
 import { useLocalStorage } from '@vueuse/core'
@@ -20,6 +19,7 @@ import { useTheme } from '@/composables/useTheme'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, coerceAppLanguage } from '@/composables/useI18n'
 import { useCloseBehavior } from '@/composables/useCloseBehavior'
+import { useConfigIO } from '@/composables/useConfigIO'
 
 const store = useRegistryStore()
 const theme = useTheme()
@@ -66,6 +66,8 @@ const {
   initCloseHandler,
   cleanup: cleanupCloseHandler,
 } = useCloseBehavior()
+
+const { handleExport, handleImport } = useConfigIO()
 
 const elementLocale = computed(() => (coerceAppLanguage(language.value) === 'en' ? en : zhCn))
 /** 底部状态栏：只在浅色 / 深色间切换，不出现「跟随系统」作为下一状态 */
@@ -127,39 +129,6 @@ onBeforeUnmount(() => {
   }
   cleanupCloseHandler()
 })
-
-async function handleExport() {
-  try {
-    const data = await api.exportConfig()
-    const json = JSON.stringify(data, null, 2)
-    const { save } = await import('@tauri-apps/plugin-dialog')
-    const path = await save({
-      defaultPath: 'nrm-registries.json',
-      filters: [{ name: 'JSON', extensions: ['json'] }],
-    })
-    if (!path) return
-    await api.writeTextFile(path, json)
-  } catch (e) {
-    ElMessage.error(t('app.export.failed', { error: String(e) }))
-  }
-}
-
-async function handleImport() {
-  try {
-    const { open } = await import('@tauri-apps/plugin-dialog')
-    const path = await open({
-      filters: [{ name: 'JSON', extensions: ['json'] }],
-      multiple: false,
-    })
-    if (!path) return
-    const json = await api.readTextFile(path as string)
-    await api.importConfig(json)
-    await store.fetchRegistries()
-    ElMessage.success(t('app.import.success'))
-  } catch (e) {
-    ElMessage.error(t('app.import.failed', { error: String(e) }))
-  }
-}
 
 async function openGithubHome() {
   try {
