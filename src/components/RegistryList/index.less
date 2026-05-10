@@ -101,6 +101,31 @@
   :deep(.el-scrollbar__wrap) {
     padding-right: 6px;
   }
+
+  :deep(.el-scrollbar__bar.is-vertical) {
+    width: 5px;
+    right: 1px;
+  }
+
+  :deep(.el-scrollbar__bar.is-vertical .el-scrollbar__thumb) {
+    background-color: rgba(60, 60, 67, 0.18);
+    border-radius: 980px;
+    transition: background-color 0.2s var(--app-ease-out);
+
+    &:hover {
+      background-color: rgba(60, 60, 67, 0.36);
+    }
+  }
+}
+
+html.dark .category-list-scroll-host {
+  :deep(.el-scrollbar__bar.is-vertical .el-scrollbar__thumb) {
+    background-color: rgba(235, 235, 245, 0.14);
+
+    &:hover {
+      background-color: rgba(235, 235, 245, 0.3);
+    }
+  }
 }
 
 .category-list-wrap {

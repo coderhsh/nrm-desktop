@@ -248,15 +248,11 @@ function handleAddCategoryToDraft() {
   const added = addCategoryLabelToDraft()
   if (added) {
     nextTick(() => {
-      const scrollEl = categoryManageScrollRef.value as any
-      if (scrollEl) {
-        // el-scrollbar 实例上有 scrollTo 方法
-        if (typeof scrollEl.scrollTo === 'function') {
-          scrollEl.scrollTo({ top: scrollEl.scrollHeight ?? 99999, behavior: 'smooth' })
-        } else if (scrollEl.$el) {
-          const wrap = scrollEl.$el.querySelector('.el-scrollbar__wrap')
-          if (wrap) wrap.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' })
-        }
+      const scrollbar = categoryManageScrollRef.value as any
+      if (!scrollbar) return
+      const wrap = scrollbar.wrapRef ?? scrollbar.$el?.querySelector('.el-scrollbar__wrap')
+      if (wrap) {
+        wrap.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' })
       }
     })
   }
