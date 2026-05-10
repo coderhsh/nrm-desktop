@@ -100,6 +100,43 @@ pub async fn test_single(name: &str) -> Result<LatencyResult, String> {
     Ok(result)
 }
 
+/// 测试任意 URL 的延迟（不依赖已保存的源列表）
+pub async fn test_url(url: &str) -> Result<LatencyResult, String> {
+    let trimmed = url.trim();
+    if trimmed.is_empty() {
+        return Err("URL 不能为空".to_string());
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(TIMEOUT)
+        .build()
+        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
+
+    let start = Instant::now();
+    let request_url = trimmed.trim_end_matches('/');
+
+    let result = try_request(&client, request_url).await;
+    match result {
+        Ok(()) => {
+            let elapsed = start.elapsed().as_millis() as u64;
+            Ok(LatencyResult {
+                name: String::new(),
+                url: trimmed.to_string(),
+                latency_ms: Some(elapsed),
+                error: None,
+                is_custom: false,
+            })
+        }
+        Err(e) => Ok(LatencyResult {
+            name: String::new(),
+            url: trimmed.to_string(),
+            latency_ms: None,
+            error: Some(e),
+            is_custom: false,
+        }),
+    }
+}
+
 async fn test_registry(client: &reqwest::Client, registry: &Registry) -> LatencyResult {
     let start = Instant::now();
 

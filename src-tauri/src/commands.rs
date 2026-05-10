@@ -280,6 +280,11 @@ pub async fn test_single_speed(name: &str) -> Result<speedtest::LatencyResult, S
 }
 
 #[tauri::command]
+pub async fn test_url_speed(url: &str) -> Result<speedtest::LatencyResult, String> {
+    speedtest::test_url(url).await
+}
+
+#[tauri::command]
 pub fn export_config() -> Result<registries::ExportData, String> {
     registries::export_all().map_err(|e| e.to_string())
 }

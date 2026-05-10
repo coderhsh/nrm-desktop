@@ -259,6 +259,7 @@ pub fn run() {
             commands::update_registry,
             commands::test_all_speed,
             commands::test_single_speed,
+            commands::test_url_speed,
             commands::export_config,
             commands::import_config,
             commands::reset_defaults,

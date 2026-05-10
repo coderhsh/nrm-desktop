@@ -15,3 +15,7 @@ export async function testAllSpeed(): Promise<LatencyResult[]> {
 export async function testSingleSpeed(name: string): Promise<LatencyResult> {
   return invoke<LatencyResult>("test_single_speed", { name });
 }
+
+export async function testUrlSpeed(url: string): Promise<LatencyResult> {
+  return invoke<LatencyResult>("test_url_speed", { url });
+}

@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, InputInstance } from 'element-plus'
+import { RefreshRight } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n } from '@/composables/useI18n'
+import { testUrlSpeed } from '@/api/speedtest'
+import { latencyBarColor } from '@/utils/latency-bar-color'
 import type { Registry } from '@/types'
 
 const props = defineProps<{
@@ -33,6 +36,41 @@ const useCustomCategoryInput = ref(false)
 const selectedCategoryLabel = ref('')
 const categoryInput = ref('')
 const isEdit = () => props.registry !== null && props.registry !== undefined
+
+// URL 测速
+const urlTesting = ref(false)
+const urlLatencyMs = ref<number | null>(null)
+const urlLatencyError = ref<string | null>(null)
+
+const urlLatencyColor = computed(() => latencyBarColor(urlLatencyMs.value))
+const urlLatencyText = computed(() => {
+  if (urlLatencyError.value) return urlLatencyError.value
+  if (urlLatencyMs.value !== null) return `${urlLatencyMs.value}ms`
+  return ''
+})
+
+async function handleUrlSpeedTest() {
+  const trimmedUrl = url.value.trim()
+  if (!trimmedUrl) {
+    ElMessage.warning(t('registryDialog.validate.urlRequired'))
+    return
+  }
+  urlTesting.value = true
+  urlLatencyMs.value = null
+  urlLatencyError.value = null
+  try {
+    const result = await testUrlSpeed(trimmedUrl)
+    if (result.latency_ms !== null) {
+      urlLatencyMs.value = result.latency_ms
+    } else {
+      urlLatencyError.value = result.error ?? 'Unknown error'
+    }
+  } catch (e: any) {
+    urlLatencyError.value = String(e)
+  } finally {
+    urlTesting.value = false
+  }
+}
 
 watch(
   () => props.visible,
@@ -70,6 +108,9 @@ function resetFormState() {
   selectedCategoryLabel.value = ''
   categoryInput.value = ''
   submitting.value = false
+  urlTesting.value = false
+  urlLatencyMs.value = null
+  urlLatencyError.value = null
   formRef.value?.resetFields?.()
   formRef.value?.clearValidate?.()
 }
@@ -202,7 +243,16 @@ function focusNameInput() {
           />
         </el-form-item>
         <el-form-item :label="t('registryDialog.label.url')" prop="url" :rules="[{ required: true, validator: validateUrl, trigger: 'blur' }]">
-          <el-input v-model="url" class="category-input registry-dialog-input" :placeholder="t('registryDialog.placeholder.url')" />
+          <el-input v-model="url" class="category-input registry-dialog-input" :placeholder="t('registryDialog.placeholder.url')">
+            <template #suffix>
+              <div class="registry-dialog-url-suffix" @click.stop="handleUrlSpeedTest">
+                <span v-if="urlLatencyText" class="registry-dialog-url-latency" :style="{ color: urlLatencyColor }">{{ urlLatencyText }}</span>
+                <el-icon class="registry-dialog-url-test-btn" :class="{ 'is-loading': urlTesting }">
+                  <RefreshRight />
+                </el-icon>
+              </div>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item :label="t('registryDialog.label.category')">
           <div class="registry-dialog-category-row">
@@ -265,5 +315,40 @@ function focusNameInput() {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
+}
+
+.registry-dialog-url-suffix {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  padding-right: 0.15rem;
+}
+
+.registry-dialog-url-latency {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.registry-dialog-url-test-btn {
+  font-size: 0.875rem;
+  color: var(--el-text-color-placeholder);
+  transition: color 0.15s var(--app-ease-out);
+  flex-shrink: 0;
+}
+
+.registry-dialog-url-suffix:hover .registry-dialog-url-test-btn {
+  color: var(--el-color-primary);
+}
+
+.registry-dialog-url-test-btn.is-loading {
+  animation: registry-dialog-url-spin 0.8s linear infinite;
+}
+
+@keyframes registry-dialog-url-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
