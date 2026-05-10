@@ -3,7 +3,7 @@ import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { onClickOutside } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
-import { Delete, Expand, Fold, Rank, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
+import { Delete, DocumentCopy, Expand, Fold, Rank, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n } from '@/composables/useI18n'
 import { storeToRefs } from 'pinia'
@@ -465,6 +465,11 @@ async function copyText(content: string, label: string) {
   }
 }
 
+function copyUrl() {
+  if (!selectedRegistry.value) return
+  copyText(selectedRegistry.value.url, t('registryList.detail.copyLabel.url'))
+}
+
 function copyAllDetails() {
   if (!selectedRegistry.value) return
   const registry = selectedRegistry.value
@@ -828,9 +833,15 @@ onMounted(async () => {
             <dt>{{ t('registryList.detail.name') }}</dt>
             <dd class="registry-detail-dd--bold">{{ selectedRegistry.name }}</dd>
           </div>
-          <div class="registry-detail-row">
+          <div class="registry-detail-row registry-detail-row--url">
             <dt>{{ t('registryList.detail.url') }}</dt>
-            <dd class="registry-detail-dd--mono">{{ selectedRegistry.url }}</dd>
+            <dd class="registry-detail-dd--url">
+              <span class="registry-detail-url-text">{{ selectedRegistry.url }}</span>
+              <button class="registry-detail-copy-chip" @click.stop="copyUrl">
+                <el-icon><DocumentCopy /></el-icon>
+                <span>{{ t('common.copy') }}</span>
+              </button>
+            </dd>
           </div>
           <div class="registry-detail-row">
             <dt>{{ t('registryList.detail.latency') }}</dt>
@@ -957,6 +968,75 @@ onMounted(async () => {
 .registry-detail-dd--mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-variant-numeric: tabular-nums;
+}
+
+/* URL 行：值 + 复制按钮 */
+.registry-detail-dd--url {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.registry-detail-url-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+  color: var(--app-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registry-detail-copy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 980px;
+  border: 0.5px solid color-mix(in srgb, var(--app-separator) 80%, transparent);
+  background: color-mix(in srgb, var(--el-fill-color-lighter) 60%, var(--el-fill-color-blank) 40%);
+  color: var(--app-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.15s var(--app-ease-out),
+    border-color 0.15s var(--app-ease-out),
+    color 0.15s var(--app-ease-out),
+    box-shadow 0.15s var(--app-ease-out),
+    transform 0.12s var(--app-ease-spring);
+  line-height: 1;
+}
+
+.registry-detail-copy-chip .el-icon {
+  font-size: 0.72rem;
+}
+
+.registry-detail-copy-chip:hover {
+  background: color-mix(in srgb, var(--el-color-primary) 6%, var(--el-fill-color-blank) 94%);
+  border-color: color-mix(in srgb, var(--el-color-primary) 30%, var(--app-separator));
+  color: var(--el-color-primary);
+  box-shadow: 0 1px 4px rgba(10, 132, 255, 0.08);
+}
+
+.registry-detail-copy-chip:active {
+  transform: scale(0.96);
+}
+
+html.dark .registry-detail-copy-chip {
+  background: rgba(72, 72, 74, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(242, 244, 248, 0.7);
+}
+
+html.dark .registry-detail-copy-chip:hover {
+  background: rgba(82, 82, 84, 0.9);
+  border-color: rgba(10, 132, 255, 0.4);
+  color: #5ab0ff;
+  box-shadow: 0 1px 6px rgba(10, 132, 255, 0.15);
 }
 
 /* 深色模式：详情行分隔线 */
