@@ -944,6 +944,15 @@ html.dark .app-statusbar .el-button.el-button--danger:not(.is-disabled):active {
   box-sizing: border-box;
 }
 
+/* 搜索时禁用折叠动画，瞬间展开/收起 */
+.is-search-active .reg-category-fold-shell {
+  transition: none !important;
+}
+
+.is-search-active .category-row-chevron {
+  transition: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reg-category-fold-shell {
     transition-duration: 0.01s;

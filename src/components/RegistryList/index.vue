@@ -173,11 +173,37 @@ const groupedRegistries = computed((): GroupedRegistries[] => {
       return ai - bi
     })
   if (labels.includes(ucat)) orderedLabels.push(ucat)
-  return orderedLabels.map(label => ({
-    label,
-    items: applyStoredOrderForCategory(label, groups[label]),
-  }))
+  const hasQuery = searchQuery.value.trim().length > 0
+  return orderedLabels
+    .map(label => ({
+      label,
+      items: hasQuery ? groups[label] : applyStoredOrderForCategory(label, groups[label]),
+    }))
+    .filter(g => !hasQuery || g.items.length > 0)
 })
+
+// ==================== 搜索自动展开 ====================
+const isSearchActive = ref(false)
+
+watch(
+  () => searchQuery.value.trim(),
+  q => {
+    isSearchActive.value = !!q
+    if (!q) return
+    const cats = new Set<string>()
+    for (const r of filteredRegistries.value) {
+      const assigned = categoryByRegistry.value[r.name]
+      cats.add(assigned || (r.is_custom ? uncategorizedLabel.value : categoryLabels.value.includes(presetCategoryLabel.value) ? presetCategoryLabel.value : uncategorizedLabel.value))
+    }
+    if (cats.size === 0) return
+    const next = { ...categoryExpanded.value }
+    for (const label of cats) {
+      next[label] = true
+    }
+    categoryExpanded.value = next
+  },
+  { flush: 'pre' },
+)
 
 // ==================== 分类折叠状态 ====================
 function isCategoryExpandedLocal(label: string): boolean {
@@ -197,19 +223,6 @@ function collapseAllCategories() {
 }
 
 const categoryFoldActionsDisabled = computed(() => loading.value || holdCategoriesCollapsedUntilEntrance.value)
-
-// ==================== 搜索自动展开 ====================
-watch(
-  () => searchQuery.value.trim(),
-  q => {
-    if (!q) return
-    const next = { ...categoryExpanded.value }
-    for (const g of groupedRegistries.value) {
-      if (g.items.length > 0) next[g.label] = true
-    }
-    categoryExpanded.value = next
-  }
-)
 
 // ==================== 分类管理拖拽 ====================
 const categoryManageDragSlots = computed((): ManageCategorySlot[] => {
@@ -495,10 +508,6 @@ function getRegistrySlotsForGroup(group: { label: string; items: Registry[] }): 
   }))
 }
 
-function registryFlipTransitionName(categoryLabel: string): string {
-  return registrySortActive.value && pointerDragSourceCategory.value === categoryLabel && isPointerDragging.value ? 'reg-sort-flip' : 'reg-sort-idle'
-}
-
 // ==================== 初始化 ====================
 onMounted(async () => {
   await entranceSettled
@@ -516,6 +525,7 @@ onMounted(async () => {
         'registry-list-root--dragging': isPointerDragging || isManageDragging || manageDragLabel,
         'registry-list-root--pointer-dragging': isPointerDragging,
         'registry-list-root--registry-sort-dragging': registrySortActive && isPointerDragging,
+        'is-search-active': isSearchActive,
       },
     ]"
   >
@@ -603,7 +613,7 @@ onMounted(async () => {
             </div>
             <div class="reg-category-fold-shell" :class="{ 'reg-category-fold-shell--open': isCategoryExpandedLocal(group.label) }">
               <div class="reg-category-fold-inner flex flex-col gap-2.5">
-                <transition-group :name="registryFlipTransitionName(group.label)" tag="div" class="flex flex-col gap-2.5">
+                <div class="flex flex-col gap-2.5">
                   <div
                     v-for="slot in getRegistrySlotsForGroup(group)"
                     :key="slot.registry.name"
@@ -652,7 +662,7 @@ onMounted(async () => {
                       </div>
                     </div>
                   </div>
-                </transition-group>
+                </div>
               </div>
             </div>
           </div>

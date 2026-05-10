@@ -127,15 +127,17 @@ export function useCategoryManage() {
     if (!order?.length) {
       return [...items].sort((a, b) => a.name.localeCompare(b.name))
     }
-    const set = new Set(items.map(i => i.name))
+    const byName = new Map(items.map(i => [i.name, i]))
     const ordered: Registry[] = []
     for (const name of order) {
-      if (!set.has(name)) continue
-      const r = items.find(i => i.name === name)
-      if (r) ordered.push(r)
+      const r = byName.get(name)
+      if (r) {
+        ordered.push(r)
+        byName.delete(name)
+      }
     }
-    for (const r of items) {
-      if (!ordered.some(o => o.name === r.name)) ordered.push(r)
+    for (const r of byName.values()) {
+      ordered.push(r)
     }
     return ordered
   }
