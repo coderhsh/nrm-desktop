@@ -26,13 +26,7 @@ const { t } = useI18n()
 const { introPhase } = useShellIntro()
 const entranceSettled = inject(appEntranceSettledKey, Promise.resolve())
 
-const {
-  filteredRegistries,
-  currentRegistry,
-  searchQuery,
-  loading,
-  latencyResults,
-} = storeToRefs(store)
+const { filteredRegistries, currentRegistry, searchQuery, loading, latencyResults } = storeToRefs(store)
 
 // ==================== 入场动画 ====================
 const holdCategoriesCollapsedUntilEntrance = ref(true)
@@ -203,7 +197,7 @@ watch(
     }
     categoryExpanded.value = next
   },
-  { flush: 'pre' },
+  { flush: 'pre' }
 )
 
 // ==================== 分类折叠状态 ====================
@@ -292,6 +286,7 @@ function openEdit(registry: Registry) {
 function openDetail(registry: Registry) {
   selectedRegistry.value = registry
   showDetailDialog.value = true
+  contextMenu.value = null
 }
 
 async function handleDelete(registry: Registry) {
@@ -366,8 +361,12 @@ function onCategoryContextMenu(e: MouseEvent, label: string) {
   })
 }
 
-onClickOutside(contextMenuRef, () => { contextMenu.value = null })
-onClickOutside(categoryContextMenuRef, () => { categoryContextMenu.value = null })
+onClickOutside(contextMenuRef, () => {
+  contextMenu.value = null
+})
+onClickOutside(categoryContextMenuRef, () => {
+  categoryContextMenu.value = null
+})
 
 // 右键菜单操作
 function openCategoryContextPrompt(mode: 'rename' | 'create', renameFromLabel?: string) {
@@ -524,7 +523,8 @@ onMounted(async () => {
   >
     <!-- Header -->
     <div class="rl-intro-header flex items-center gap-2 px-4 pt-4 pb-2">
-      <h2 class="text-base font-bold">{{ t('registryList.title') }}</h2>
+      <!-- 字体大小 改小-->
+      <h2 class="text-base font-bold text-sm">{{ t('registryList.title') }}</h2>
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">
         {{ filteredRegistries.length }}
       </span>
@@ -721,7 +721,7 @@ onMounted(async () => {
     <!-- Context Menu -->
     <Teleport to="body">
       <div v-if="contextMenu" ref="contextMenuRef" class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-36" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
-        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openDetail(contextMenu.registry); contextMenu = null">
+        <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openDetail(contextMenu.registry)">
           {{ t('registryList.context.viewDetail') }}
         </div>
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openEdit(contextMenu.registry)">
@@ -749,10 +749,7 @@ onMounted(async () => {
           {{ t('registryList.categoryContext.manage') }}
         </div>
         <div
-          :class="[
-            'context-menu-item context-menu-item--danger px-3 py-2 text-sm text-red-500',
-            isUncategorizedCategory(categoryContextMenu.label) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-          ]"
+          :class="['context-menu-item context-menu-item--danger px-3 py-2 text-sm text-red-500', isUncategorizedCategory(categoryContextMenu.label) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer']"
           :title="isUncategorizedCategory(categoryContextMenu.label) ? t('registryList.categoryContext.deleteDisabledHint') : ''"
           @click="onDeleteCategoryFromContextClick(categoryContextMenu.label)"
         >
