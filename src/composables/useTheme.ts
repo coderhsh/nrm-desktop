@@ -39,22 +39,24 @@ function transitionToDarkClass(val: boolean) {
   apply();
 }
 
+/** 模块级共享状态，确保 watcher 只创建一次 */
+const isDarkPreferred = usePreferredDark();
+const isDark = computed(() => {
+  if (theme.value === "auto") return isDarkPreferred.value;
+  return theme.value === "dark";
+});
+
+// 只在模块加载时创建一次 watcher，避免多处调用 useTheme() 导致重复触发
+watch(
+  isDark,
+  (val) => {
+    transitionToDarkClass(val);
+  },
+  { immediate: true }
+);
+
 export function useTheme() {
   const { t } = useI18n();
-  const isDarkPreferred = usePreferredDark();
-
-  const isDark = computed(() => {
-    if (theme.value === "auto") return isDarkPreferred.value;
-    return theme.value === "dark";
-  });
-
-  watch(
-    isDark,
-    (val) => {
-      transitionToDarkClass(val);
-    },
-    { immediate: true }
-  );
 
   function toggle() {
     if (theme.value === "auto") theme.value = "dark";
