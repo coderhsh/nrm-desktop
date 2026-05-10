@@ -613,7 +613,7 @@ onMounted(async () => {
             </div>
             <div class="reg-category-fold-shell" :class="{ 'reg-category-fold-shell--open': isCategoryExpandedLocal(group.label) }">
               <div class="reg-category-fold-inner flex flex-col gap-2.5">
-                <div class="flex flex-col gap-2.5">
+                <TransitionGroup v-if="registrySortActive && isPointerDragging && pointerDragSourceCategory === group.label" name="reg-sort-flip" tag="div" class="flex flex-col gap-2.5">
                   <div
                     v-for="slot in getRegistrySlotsForGroup(group)"
                     :key="slot.registry.name"
@@ -625,6 +625,54 @@ onMounted(async () => {
                         'is-idle': currentRegistry?.name !== slot.registry.name,
                         'opacity-40 cursor-grabbing': pointerDragRegistryName === slot.registry.name && isPointerDragging && !slot.isDragPreview,
                         'registry-item--sort-preview': slot.isDragPreview,
+                      },
+                    ]"
+                    @click="handleSwitch(slot.registry)"
+                    @mousedown.left="onRegistryMouseDown(slot.registry, $event)"
+                    @dblclick.stop="openEdit(slot.registry)"
+                    @contextmenu="onContextMenu($event, slot.registry)"
+                  >
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span :class="['text-sm font-semibold truncate', { 'text-primary': currentRegistry?.name === slot.registry.name }]">
+                          {{ slot.registry.name }}
+                        </span>
+                      </div>
+                      <div class="text-xs text-gray-400 truncate mt-0.5">
+                        {{ slot.registry.url }}
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 ml-2 flex-shrink-0">
+                      <template v-if="latencyResults[slot.registry.name]">
+                        <span class="text-xs font-mono font-medium" :style="{ color: latencyBarColor(latencyResults[slot.registry.name].latency_ms) }">
+                          <template v-if="latencyResults[slot.registry.name].latency_ms !== null"> {{ latencyResults[slot.registry.name].latency_ms }}ms </template>
+                          <template v-else class="text-gray-400">
+                            {{ latencyFailLabel(latencyResults[slot.registry.name].error) }}
+                          </template>
+                        </span>
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ backgroundColor: latencyBarColor(latencyResults[slot.registry.name].latency_ms) }"></span>
+                      </template>
+                      <div v-else-if="currentRegistry?.name === slot.registry.name" class="w-2 h-2 rounded-full" style="background: var(--el-color-primary); box-shadow: 0 0 6px rgba(79, 110, 247, 0.4)"></div>
+                      <div class="w-8 h-8 flex items-center justify-center flex-shrink-0" @mousedown.stop>
+                        <el-button link size="small" class="registry-speed-btn registry-speed-btn-fixed" :loading="!!testingByRegistry[slot.registry.name]" :disabled="!!testingByRegistry[slot.registry.name]" @click.stop="handleTest(slot.registry)">
+                          <el-icon v-if="!testingByRegistry[slot.registry.name]" class="text-base leading-none">
+                            <RefreshRight />
+                          </el-icon>
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
+                </TransitionGroup>
+                <div v-else class="flex flex-col gap-2.5">
+                  <div
+                    v-for="slot in getRegistrySlotsForGroup(group)"
+                    :key="slot.registry.name"
+                    :data-registry-sort-row="slot.registry.name"
+                    :class="[
+                      'registry-item flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer border-l-3 border-transparent select-none cursor-grab',
+                      {
+                        'is-active': currentRegistry?.name === slot.registry.name,
+                        'is-idle': currentRegistry?.name !== slot.registry.name,
                       },
                     ]"
                     @click="handleSwitch(slot.registry)"

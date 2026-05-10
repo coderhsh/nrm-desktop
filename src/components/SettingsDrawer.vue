@@ -149,17 +149,13 @@ async function handleReset() {
         {{ t('app.settings.general') }}
       </div>
       <div class="settings-drawer-inline-row flex items-center gap-2">
-        <span class="settings-item-label settings-drawer-inline-label text-sm text-gray-500 shrink-0">{{
-          t('app.settings.language')
-        }}</span>
+        <span class="settings-item-label settings-drawer-inline-label text-sm text-gray-500 shrink-0 w-16">{{ t('app.settings.language') }}</span>
         <el-select v-model="draftLanguage" class="min-w-0 flex-1" :placeholder="t('app.settings.language')">
           <el-option v-for="item in languageOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </div>
       <div class="settings-drawer-inline-row flex items-center gap-2">
-        <span class="settings-item-label settings-drawer-inline-label text-sm text-gray-500 shrink-0">{{
-          t('app.settings.theme')
-        }}</span>
+        <span class="settings-item-label settings-drawer-inline-label text-sm text-gray-500 shrink-0 w-16">{{ t('app.settings.theme') }}</span>
         <el-select v-model="draftTheme" class="min-w-0 flex-1" :placeholder="t('app.settings.theme')">
           <el-option v-for="item in themeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
