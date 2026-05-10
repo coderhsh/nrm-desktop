@@ -248,11 +248,10 @@ function handleAddCategoryToDraft() {
   const added = addCategoryLabelToDraft()
   if (added) {
     nextTick(() => {
-      const scrollbar = categoryManageScrollRef.value as any
-      if (!scrollbar) return
-      const wrap = scrollbar.wrapRef ?? scrollbar.$el?.querySelector('.el-scrollbar__wrap')
-      if (wrap) {
-        wrap.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' })
+      const scrollComp = categoryManageScrollRef.value as any
+      if (scrollComp) {
+        const wrap = scrollComp.$el?.querySelector?.('.el-scrollbar__wrap') as HTMLElement | null
+        wrap?.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' })
       }
     })
   }

@@ -107,7 +107,7 @@ async function handleReset() {
     :title="t('app.settingsDialogTitle')"
     size="360px"
     direction="rtl"
-    :destroy-on-close="false"
+    :destroy-on-close="true"
     class="settings-drawer"
     @update:model-value="(v: boolean) => emit('update:visible', v)"
   >

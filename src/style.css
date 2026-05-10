@@ -980,6 +980,16 @@ html.dark .app-statusbar .el-button.el-button--danger:not(.is-disabled):active {
   transition-timing-function: var(--app-ease-spring) !important;
 }
 
+/* Overlay backdrop-filter transition: prevent residual blur on close */
+.el-overlay {
+  transition:
+    opacity var(--app-duration-mid) var(--app-ease),
+    backdrop-filter var(--app-duration-mid) var(--app-ease) !important;
+  -webkit-transition:
+    opacity var(--app-duration-mid) var(--app-ease),
+    -webkit-backdrop-filter var(--app-duration-mid) var(--app-ease) !important;
+}
+
 /* Element Plus 滚动条统一样式：左侧源列表与测速柱状图共用（高度由使用处 h-full / flex-1+h-0 决定，避免全局 100% 压过 flex 收起） */
 .app-scrollbar.el-scrollbar {
   width: 100%;
@@ -2206,6 +2216,17 @@ html.dark .app-about-dl__row dd {
   padding-top: 0.125rem;
   font-family: var(--el-font-family);
   letter-spacing: -0.01em;
+}
+
+/* 分类列表滚动区：内容少时随内容高度，多时限制最大高度并出现滚动条 */
+.category-manage-dialog .category-list-scroll-host.el-scrollbar {
+  height: auto !important;
+  max-height: 19rem;
+  overflow: auto !important;
+}
+.category-manage-dialog .category-list-scroll-host .el-scrollbar__wrap {
+  height: auto !important;
+  max-height: 19rem;
 }
 
 .category-manage-dialog .category-create-row {
