@@ -21,7 +21,7 @@ const isDark = useDark()
 const results = ref<LatencyResult[]>([])
 /** 首屏为 true，避免挂载前出现「请点击测速」空态；与重新测速时的 loading 一致 */
 const testing = ref(true)
-const singleTesting = ref<Set<string>>(new Set())
+const singleTesting = ref<Record<string, boolean>>({})
 
 const hasResults = computed(() => results.value.length > 0)
 
@@ -106,7 +106,7 @@ async function runAllTests() {
 }
 
 async function runSingleTest(name: string) {
-  singleTesting.value.add(name)
+  singleTesting.value = { ...singleTesting.value, [name]: true }
   try {
     const result = await testSingleSpeed(name)
     syncSingleLatencyResult(result)
@@ -124,7 +124,8 @@ async function runSingleTest(name: string) {
       })
     )
   } finally {
-    singleTesting.value.delete(name)
+    const { [name]: _, ...rest } = singleTesting.value
+    singleTesting.value = rest
   }
 }
 
@@ -303,8 +304,8 @@ watch(
 
             <!-- Re-test button：固定占位，避免 loading 与图标切换时抖动 -->
             <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center">
-              <el-button link size="small" class="speed-retest-btn speed-retest-btn-fixed speed-retest-pill" :loading="singleTesting.has(result.name)" :disabled="testing || singleTesting.has(result.name)" @click="runSingleTest(result.name)">
-                <el-icon v-if="!singleTesting.has(result.name)" class="text-base leading-none">
+              <el-button link size="small" class="speed-retest-btn speed-retest-btn-fixed speed-retest-pill" :loading="singleTesting[result.name]" :disabled="testing || singleTesting[result.name]" @click="runSingleTest(result.name)">
+                <el-icon v-if="!singleTesting[result.name]" class="text-base leading-none">
                   <RefreshRight />
                 </el-icon>
               </el-button>

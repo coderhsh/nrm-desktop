@@ -393,58 +393,6 @@ onClickOutside(categoryContextMenuRef, () => {
   categoryContextMenu.value = null
 })
 
-function debugLogRegistryFoldTooltip(runId: string, hypothesisId: string, message: string, data: Record<string, unknown>) {
-  const payload = {
-    sessionId: '77e62b',
-    runId,
-    hypothesisId,
-    location: 'src/components/RegistryList.vue:debugLogRegistryFoldTooltip',
-    message,
-    data,
-    timestamp: Date.now(),
-  }
-  // #region agent log
-  fetch('http://127.0.0.1:7699/ingest/c0d39d9f-6e52-430a-89fa-d646e6e3ca47', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '77e62b' }, body: JSON.stringify(payload) }).catch(() => {})
-  // #endregion
-  // #region agent log
-  try {
-    navigator.sendBeacon('http://127.0.0.1:7699/ingest/c0d39d9f-6e52-430a-89fa-d646e6e3ca47', JSON.stringify(payload))
-  } catch {
-    // ignore
-  }
-  // #endregion
-}
-
-function collectFoldTooltipSnapshot(trigger: 'expand' | 'collapse'): Record<string, unknown> {
-  const poppers = Array.from(document.querySelectorAll<HTMLElement>('.registry-fold-tooltip.el-popper'))
-  const first = poppers[0] ?? null
-  const style = first ? window.getComputedStyle(first) : null
-  const arrow = first?.querySelector<HTMLElement>('.el-popper__arrow') ?? null
-  const arrowBefore = arrow ? window.getComputedStyle(arrow, '::before') : null
-  const arrowAfter = arrow ? window.getComputedStyle(arrow, '::after') : null
-  return {
-    trigger,
-    isDark: document.documentElement.classList.contains('dark'),
-    popperCount: poppers.length,
-    popperClass: first?.className ?? null,
-    popperBackground: style?.backgroundColor ?? null,
-    popperBorderTopColor: style?.borderTopColor ?? null,
-    arrowBeforeBackground: arrowBefore?.backgroundColor ?? null,
-    arrowBeforeBorderTopColor: arrowBefore?.borderTopColor ?? null,
-    arrowBeforeBorderTopWidth: arrowBefore?.borderTopWidth ?? null,
-    arrowAfterBackground: arrowAfter?.backgroundColor ?? null,
-    arrowAfterBorderTopColor: arrowAfter?.borderTopColor ?? null,
-    arrowAfterBorderTopWidth: arrowAfter?.borderTopWidth ?? null,
-  }
-}
-
-async function onFoldTooltipShow(trigger: 'expand' | 'collapse') {
-  await nextTick()
-  requestAnimationFrame(() => {
-    debugLogRegistryFoldTooltip('run-tooltip', 'H2', 'fold tooltip shown snapshot', collectFoldTooltipSnapshot(trigger))
-  })
-}
-
 const draggingRegistry = computed(() => (pointerDragRegistryName.value ? store.registries.find(item => item.name === pointerDragRegistryName.value) || null : null))
 
 function handleSwitch(registry: Registry) {
@@ -476,9 +424,6 @@ function toggleCategoryExpanded(label: string) {
 }
 
 function expandAllCategories() {
-  debugLogRegistryFoldTooltip('run-tooltip', 'H4', 'expand all clicked', {
-    isDark: document.documentElement.classList.contains('dark'),
-  })
   const groups = groupedRegistries.value
   if (groups.length === 0) return
   const next = { ...categoryExpanded.value }
@@ -489,9 +434,6 @@ function expandAllCategories() {
 }
 
 function collapseAllCategories() {
-  debugLogRegistryFoldTooltip('run-tooltip', 'H4', 'collapse all clicked', {
-    isDark: document.documentElement.classList.contains('dark'),
-  })
   const groups = groupedRegistries.value
   if (groups.length === 0) return
   const next = { ...categoryExpanded.value }
@@ -891,10 +833,6 @@ function onWindowMouseUp() {
 }
 
 onMounted(async () => {
-  debugLogRegistryFoldTooltip('run-tooltip', 'H1', 'registry list mounted', {
-    isDark: document.documentElement.classList.contains('dark'),
-    locationHref: window.location.href,
-  })
   migrateUncategorizedCategoryStorage()
   normalizeCustomRegistryCategories()
   window.addEventListener('mousemove', onWindowMouseMove)
@@ -1517,13 +1455,13 @@ function registryFlipTransitionName(categoryLabel: string): string {
           </template>
         </el-input>
         <div class="registry-fold-toolbar inline-flex shrink-0 items-stretch rounded-md overflow-hidden" role="group">
-          <el-tooltip :content="t('registryList.expandAllCategories')" placement="top" :show-after="280" popper-class="registry-fold-tooltip" @show="onFoldTooltipShow('expand')">
+          <el-tooltip :content="t('registryList.expandAllCategories')" placement="top" :show-after="280" popper-class="registry-fold-tooltip">
             <el-button text class="registry-fold-btn" :disabled="categoryFoldActionsDisabled" :aria-label="t('registryList.expandAllCategories')" @click="expandAllCategories">
               <el-icon class="text-[17px]"><Expand /></el-icon>
             </el-button>
           </el-tooltip>
           <span class="registry-fold-split" aria-hidden="true" />
-          <el-tooltip :content="t('registryList.collapseAllCategories')" placement="top" :show-after="280" popper-class="registry-fold-tooltip" @show="onFoldTooltipShow('collapse')">
+          <el-tooltip :content="t('registryList.collapseAllCategories')" placement="top" :show-after="280" popper-class="registry-fold-tooltip">
             <el-button text class="registry-fold-btn" :disabled="categoryFoldActionsDisabled" :aria-label="t('registryList.collapseAllCategories')" @click="collapseAllCategories">
               <el-icon class="text-[17px]"><Fold /></el-icon>
             </el-button>
