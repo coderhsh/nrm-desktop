@@ -82,13 +82,11 @@ const dockNextThemeLabel = computed(() => {
 
 function toggleDockTheme() {
   if (theme.theme.value === 'auto') {
-    theme.theme.value = theme.isDark.value ? 'light' : 'dark'
-    return
-  }
-  if (theme.theme.value === 'dark') {
-    theme.theme.value = 'light'
+    theme.setTheme(theme.isDark.value ? 'light' : 'dark')
+  } else if (theme.theme.value === 'dark') {
+    theme.setTheme('light')
   } else {
-    theme.theme.value = 'dark'
+    theme.setTheme('dark')
   }
 }
 

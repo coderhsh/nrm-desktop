@@ -69,7 +69,7 @@ async function handleSaveSettings() {
   if (!success) return
 
   language.value = draftLanguage.value
-  theme.theme.value = draftTheme.value
+  theme.setTheme(draftTheme.value)
   void invoke('set_app_language', { lang: draftLanguage.value }).catch(() => {
     ElMessage.error(t('app.settings.trayLanguageUpdateFailed'))
   })

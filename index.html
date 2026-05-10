@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>nrm-desktop</title>
+    <!-- 同步设置深色类，避免刷新时闪烁浅色 -->
+    <script>
+      (function() {
+        try {
+          var raw = localStorage.getItem('nrm-desktop-theme');
+          if (raw === '"dark"') {
+            document.documentElement.classList.add('dark');
+          } else if (raw === '"auto"' || raw === null) {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
