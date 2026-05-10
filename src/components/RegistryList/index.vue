@@ -3,6 +3,7 @@ import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { onClickOutside } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
+import type { InputInstance } from 'element-plus'
 import { Delete, DocumentCopy, Expand, Fold, Rank, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n } from '@/composables/useI18n'
@@ -130,6 +131,7 @@ const showCategoryContextPromptDialog = ref(false)
 const categoryContextPromptMode = ref<'rename' | 'create' | null>(null)
 const categoryContextPromptRenameFrom = ref<string | null>(null)
 const categoryContextPromptInput = ref('')
+const categoryContextPromptInputRef = ref<InputInstance>()
 
 const categoryContextPromptTitle = computed(() => {
   if (categoryContextPromptMode.value === 'rename') return t('registryList.categoryContext.renameTitle')
@@ -384,6 +386,12 @@ function onCategoryContextPromptDialogClosed() {
   categoryContextPromptMode.value = null
   categoryContextPromptRenameFrom.value = null
   categoryContextPromptInput.value = ''
+}
+
+function focusCategoryContextPromptInput() {
+  nextTick(() => {
+    categoryContextPromptInputRef.value?.focus()
+  })
 }
 
 function confirmCategoryContextPrompt() {
@@ -761,9 +769,9 @@ onMounted(async () => {
     <!-- Add/Edit Dialog -->
     <RegistryDialog :visible="showDialog" :registry="editingRegistry" :category-labels="categoryLabels" :current-category="editingRegistry ? categoryByRegistry[editingRegistry.name] || '' : ''" @save-category="saveCategoryFromDialog" @close="showDialog = false" />
 
-    <el-dialog v-model="showCategoryContextPromptDialog" :title="categoryContextPromptTitle" width="420px" class="app-dialog" :close-on-click-modal="false" destroy-on-close @closed="onCategoryContextPromptDialogClosed">
-      <p class="text-sm text-gray-500 mb-3 m-0">{{ categoryContextPromptHint }}</p>
-      <el-input v-model="categoryContextPromptInput" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="confirmCategoryContextPrompt" />
+    <el-dialog v-model="showCategoryContextPromptDialog" :title="categoryContextPromptTitle" width="420px" class="category-context-prompt-dialog app-dialog" :close-on-click-modal="false" destroy-on-close @opened="focusCategoryContextPromptInput" @closed="onCategoryContextPromptDialogClosed">
+      <p class="category-context-prompt-hint">{{ categoryContextPromptHint }}</p>
+      <el-input ref="categoryContextPromptInputRef" v-model="categoryContextPromptInput" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="confirmCategoryContextPrompt" />
       <template #footer>
         <el-button @click="closeCategoryContextPrompt">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" @click="confirmCategoryContextPrompt">
