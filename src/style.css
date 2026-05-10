@@ -336,29 +336,30 @@ html:not(.dark) .el-message-box.category-delete-confirm-messagebox .el-message-b
   transform: scale(0.98);
 }
 
-/* 恢复默认确认：与分类管理 / 删除分类同系 sheet；确认键为警示色（非删除红） */
+/* 恢复默认确认：与删除分类同系 sheet 风格；确认键为警示橙（非删除红） */
 .el-message-box.app-reset-defaults-messagebox {
-  width: min(28rem, calc(100vw - 2rem));
-  max-width: 28rem;
+  width: min(26rem, calc(100vw - 2rem));
+  max-width: 26rem;
   padding: 0;
   overflow: hidden;
   border-radius: var(--app-radius-lg);
 }
 
 html:not(.dark) .el-message-box.app-reset-defaults-messagebox {
-  border: 1px solid rgba(193, 203, 218, 0.62);
-  background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
+  border: 1px solid rgba(193, 203, 218, 0.55);
+  background: linear-gradient(165deg, #ffffff 0%, #f6f8fc 55%, #eef2f8 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 18px 40px rgba(30, 42, 60, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 20px 48px rgba(22, 34, 52, 0.14),
+    0 4px 14px rgba(22, 34, 52, 0.06);
 }
 
 .el-message-box.app-reset-defaults-messagebox .el-message-box__header {
-  padding: 1.1rem 1.25rem 0.75rem;
+  padding: 1.25rem 1.35rem 0.35rem;
 }
 
 html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__header {
-  border-bottom: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+  border-bottom: none;
 }
 
 .el-message-box.app-reset-defaults-messagebox .el-message-box__headerbtn {
@@ -367,18 +368,18 @@ html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__h
 
 .el-message-box.app-reset-defaults-messagebox .el-message-box__title {
   text-align: left;
-  font-size: 1.0625rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
+  font-size: 1.125rem;
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
 }
 
 html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__title {
-  color: #1f2632;
+  color: #141922;
 }
 
 .el-message-box.app-reset-defaults-messagebox .el-message-box__content {
-  padding: 0.85rem 1.25rem 0.25rem;
+  padding: 0.55rem 1.35rem 0.15rem;
 }
 
 .el-message-box.app-reset-defaults-messagebox .el-message-box__status {
@@ -397,14 +398,15 @@ html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__t
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.625rem;
-  padding: 1rem 1.25rem 1.1rem;
+  gap: 0.65rem;
+  padding: 1.15rem 1.35rem 1.25rem;
   margin: 0;
 }
 
 html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__btns {
-  border-top: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+  border-top: none;
   background: transparent;
+  padding-top: 1.35rem;
 }
 
 .el-message-box.app-reset-defaults-messagebox .el-message-box__btns .el-button {
@@ -446,23 +448,23 @@ html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__b
 
 .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary {
   min-width: 5.5rem;
-  padding: 0 1.15rem;
-  background: rgba(255, 255, 255, 0.96) !important;
-  border: 1px solid rgba(217, 119, 6, 0.52) !important;
-  color: #b45309 !important;
+  padding: 0 1.2rem;
+  background: linear-gradient(180deg, #ff9f0a 0%, #e68a00 100%) !important;
+  border: 1px solid color-mix(in srgb, #ff9500 55%, #b35900 45%) !important;
+  color: #ffffff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    0 1px 2px rgba(15, 23, 42, 0.05) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 2px 8px rgba(230, 138, 0, 0.35) !important;
 }
 
 .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:hover,
 .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:focus {
-  background: rgba(254, 243, 199, 0.45) !important;
-  border-color: rgba(217, 119, 6, 0.65) !important;
-  color: #92400e !important;
+  background: linear-gradient(180deg, #ffad33 0%, #f09500 100%) !important;
+  border-color: color-mix(in srgb, #ffad33 50%, #cc7a00 50%) !important;
+  color: #ffffff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 2px 10px rgba(217, 119, 6, 0.12) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 4px 14px rgba(230, 138, 0, 0.42) !important;
 }
 
 .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:active {
@@ -1905,72 +1907,83 @@ html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-co
     0 4px 16px rgba(255, 69, 58, 0.35) !important;
 }
 
+/* 恢复默认确认（深色）：与删除分类同系 sheet 风格；确认键为警示橙 */
 html.dark .el-message-box.app-reset-defaults-messagebox {
-  border: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
-  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
-  box-shadow: var(--el-box-shadow);
+  border: 0.5px solid color-mix(in srgb, var(--el-border-color) 70%, transparent);
+  background: linear-gradient(160deg, #3d3d40 0%, #2d2d30 48%, #252528 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.04) inset,
+    0 24px 56px rgba(0, 0, 0, 0.45),
+    0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__header {
-  border-bottom: 1px solid var(--app-separator);
+  border-bottom: none;
+  padding: 1.25rem 1.35rem 0.35rem;
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__title {
-  color: var(--el-text-color-primary);
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  font-size: 1.0625rem;
+  color: rgba(248, 248, 250, 0.96);
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  font-size: 1.125rem;
+}
+
+html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__content {
+  padding: 0.55rem 1.35rem 0.15rem;
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__message {
-  color: var(--el-text-color-regular);
+  color: rgba(235, 235, 245, 0.72);
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .el-message-box__btns {
-  border-top: 1px solid var(--app-separator);
+  border-top: none;
   background: transparent;
+  padding: 1.15rem 1.35rem 1.25rem;
+  gap: 0.65rem;
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button {
   min-width: 5rem;
-  padding: 0 1.05rem;
-  background: rgba(72, 72, 74, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: rgba(242, 244, 248, 0.94) !important;
+  padding: 0 1.1rem;
+  background: color-mix(in srgb, #48484a 88%, #1c1c1e) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(242, 244, 248, 0.95) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 10px rgba(0, 0, 0, 0.35) !important;
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button:hover,
 html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-cancel.el-button:focus {
-  background: rgba(82, 82, 84, 0.98) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  background: color-mix(in srgb, #5a5a5c 75%, #2c2c2e) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 3px 12px rgba(0, 0, 0, 0.32) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 3px 14px rgba(0, 0, 0, 0.4) !important;
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary {
   min-width: 5.5rem;
-  padding: 0 1.15rem;
-  background: rgba(58, 52, 40, 0.75) !important;
-  border: 1px solid rgba(251, 191, 36, 0.42) !important;
-  color: #fcd34d !important;
+  padding: 0 1.2rem;
+  background: linear-gradient(180deg, #ff9f0a 0%, #e68a00 100%) !important;
+  border: 1px solid color-mix(in srgb, #ff9500 40%, #804c00 60%) !important;
+  color: #ffffff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 2px 12px rgba(230, 138, 0, 0.45) !important;
 }
 
 html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:hover,
 html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-messagebox__btn-confirm.el-button--primary:focus {
-  background: rgba(68, 58, 36, 0.88) !important;
-  border-color: rgba(252, 211, 77, 0.55) !important;
-  color: #fde68a !important;
+  background: linear-gradient(180deg, #ffad33 0%, #f09500 100%) !important;
+  border-color: color-mix(in srgb, #ffad33 35%, #996600 65%) !important;
+  color: #ffffff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 230, 180, 0.08),
-    0 2px 12px rgba(251, 191, 36, 0.12) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 4px 16px rgba(230, 138, 0, 0.35) !important;
 }
 
 /* Dark: loading mask */
