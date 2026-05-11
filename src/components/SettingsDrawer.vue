@@ -29,6 +29,7 @@ const { handleExport, handleImport, handleResetDefaults } = useConfigIO()
 
 const draftLanguage = ref<'zh-CN' | 'en'>('zh-CN')
 const draftTheme = ref<'light' | 'dark' | 'auto'>('auto')
+const pendingThemeOnClose = ref<'light' | 'dark' | 'auto' | null>(null)
 const showAboutDialog = ref(false)
 const aboutLoading = ref(false)
 const aboutInfo = ref<{ name: string; version: string; tauriVersion: string } | null>(null)
@@ -61,12 +62,25 @@ async function handleSaveSettings() {
   if (!success) return
 
   language.value = draftLanguage.value
-  theme.setTheme(draftTheme.value)
   void invoke('set_app_language', { lang: draftLanguage.value }).catch(() => {
     ElMessage.error(t('app.settings.trayLanguageUpdateFailed'))
   })
+
+  // 若主题有变动，先关闭抽屉，等关闭动画结束后再触发主题过渡，
+  // 避免 startViewTransition 与抽屉退场动画同时运行导致卡顿与效果消失。
+  if (draftTheme.value !== theme.theme.value) {
+    pendingThemeOnClose.value = draftTheme.value
+  }
+
   emit('update:visible', false)
   ElMessage.success(t('app.settings.saveSuccess'))
+}
+
+function handleDrawerClosed() {
+  if (pendingThemeOnClose.value !== null) {
+    theme.setTheme(pendingThemeOnClose.value)
+    pendingThemeOnClose.value = null
+  }
 }
 
 async function openAboutInfo() {
@@ -110,6 +124,7 @@ async function handleReset() {
     :destroy-on-close="true"
     class="settings-drawer"
     @update:model-value="(v: boolean) => emit('update:visible', v)"
+    @closed="handleDrawerClosed"
   >
     <div class="settings-panel flex flex-col gap-3">
       <div class="settings-section-title text-xs font-semibold text-gray-500 uppercase tracking-wide">

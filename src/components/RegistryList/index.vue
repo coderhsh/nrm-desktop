@@ -527,8 +527,8 @@ onMounted(async () => {
     <!-- Header -->
     <div class="rl-intro-header flex items-center gap-2 px-4 pt-4 pb-2">
       <!-- 字体大小 改小-->
-      <h2 class="text-base font-bold text-sm">{{ t('registryList.title') }}</h2>
-      <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">
+      <h2 class="registry-list-title text-base font-bold text-sm">{{ t('registryList.title') }}</h2>
+      <span class="registry-list-count px-2 py-0.5 rounded-full text-xs font-semibold">
         {{ filteredRegistries.length }}
       </span>
       <el-button text size="small" @click="openCategoryManageDialog">
@@ -568,7 +568,7 @@ onMounted(async () => {
           <div v-for="i in 6" :key="i" class="registry-list-skeleton-shimmer h-14 rounded-lg animate-pulse"></div>
         </div>
 
-        <div v-else-if="filteredRegistries.length === 0" class="flex-center py-10 text-sm text-gray-400">
+        <div v-else-if="filteredRegistries.length === 0" class="registry-list-empty flex-center py-10 text-sm">
           {{ t('registryList.empty') }}
         </div>
 
@@ -578,31 +578,31 @@ onMounted(async () => {
             :key="group.label"
             :data-registry-category-host="group.label"
             :class="[
-              'relative flex flex-col gap-2 rounded border border-transparent transition-colors',
+              'registry-category-host relative flex flex-col gap-2 rounded border border-transparent',
               {
-                'bg-gray-50 border-primary/60 shadow-sm': dragOverCategoryLabel === group.label && isPointerDragging && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory,
+                'registry-category-host--drop-target': dragOverCategoryLabel === group.label && isPointerDragging && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory,
               },
             ]"
             @mouseenter="onCategoryMouseEnter(group.label)"
           >
             <div
               :class="[
-                'px-1.5 pt-0.5 text-xs font-semibold text-gray-400 cursor-pointer select-none flex items-center gap-1 rounded',
+                'registry-category-heading px-1.5 pt-0.5 text-xs font-semibold cursor-pointer select-none flex items-center gap-1 rounded',
                 {
-                  'bg-gray-100': dragOverCategoryLabel === group.label && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory,
+                  'registry-category-heading--drop-target': dragOverCategoryLabel === group.label && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory,
                 },
               ]"
               @click="toggleCategoryExpandedLocal(group.label)"
               @contextmenu="onCategoryContextMenu($event, group.label)"
             >
-              <span class="category-row-chevron text-gray-400" :class="{ 'is-expanded': isCategoryExpandedLocal(group.label) }" aria-hidden="true">▸</span>
+              <span class="category-row-chevron" :class="{ 'is-expanded': isCategoryExpandedLocal(group.label) }" aria-hidden="true">▸</span>
               <span>{{ group.label }} ({{ group.items.length }})</span>
             </div>
             <div
               v-if="dragOverCategoryLabel === group.label && isPointerDragging && pointerDragSourceCategory && dragOverCategoryLabel !== pointerDragSourceCategory"
-              class="category-drop-overlay absolute inset-0 z-20 pointer-events-none rounded-lg bg-white/55 border border-primary/25 backdrop-blur-[2px] flex items-center justify-center"
+              class="category-drop-overlay absolute inset-0 z-20 pointer-events-none rounded-lg border backdrop-blur-[2px] flex items-center justify-center"
             >
-              <div class="category-drop-hint px-3.5 py-2 text-xs font-medium text-primary bg-white/88 rounded-lg border border-white shadow-sm flex items-center gap-1.5">
+              <div class="category-drop-hint px-3.5 py-2 text-xs font-medium rounded-lg border shadow-sm flex items-center gap-1.5">
                 <span class="text-[11px]">↳</span>
                 <span>{{ t('registryList.dropHint', { label: group.label }) }}</span>
               </div>
@@ -630,11 +630,11 @@ onMounted(async () => {
                   >
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-1.5">
-                        <span :class="['text-sm font-semibold truncate', { 'text-primary': currentRegistry?.name === slot.registry.name }]">
+                        <span class="registry-item-name text-sm font-semibold truncate">
                           {{ slot.registry.name }}
                         </span>
                       </div>
-                      <div class="text-xs text-gray-400 truncate mt-0.5">
+                      <div class="registry-item-url text-xs truncate mt-0.5">
                         {{ slot.registry.url }}
                       </div>
                     </div>
@@ -642,7 +642,7 @@ onMounted(async () => {
                       <template v-if="latencyResults[slot.registry.name]">
                         <span class="text-xs font-mono font-medium" :style="{ color: latencyBarColor(latencyResults[slot.registry.name].latency_ms) }">
                           <template v-if="latencyResults[slot.registry.name].latency_ms !== null"> {{ latencyResults[slot.registry.name].latency_ms }}ms </template>
-                          <template v-else class="text-gray-400">
+                          <template v-else>
                             {{ latencyFailLabel(latencyResults[slot.registry.name].error) }}
                           </template>
                         </span>
@@ -678,11 +678,11 @@ onMounted(async () => {
                   >
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-1.5">
-                        <span :class="['text-sm font-semibold truncate', { 'text-primary': currentRegistry?.name === slot.registry.name }]">
+                        <span class="registry-item-name text-sm font-semibold truncate">
                           {{ slot.registry.name }}
                         </span>
                       </div>
-                      <div class="text-xs text-gray-400 truncate mt-0.5">
+                      <div class="registry-item-url text-xs truncate mt-0.5">
                         {{ slot.registry.url }}
                       </div>
                     </div>
@@ -690,7 +690,7 @@ onMounted(async () => {
                       <template v-if="latencyResults[slot.registry.name]">
                         <span class="text-xs font-mono font-medium" :style="{ color: latencyBarColor(latencyResults[slot.registry.name].latency_ms) }">
                           <template v-if="latencyResults[slot.registry.name].latency_ms !== null"> {{ latencyResults[slot.registry.name].latency_ms }}ms </template>
-                          <template v-else class="text-gray-400">
+                          <template v-else>
                             {{ latencyFailLabel(latencyResults[slot.registry.name].error) }}
                           </template>
                         </span>
@@ -764,7 +764,7 @@ onMounted(async () => {
     <!-- Add/Edit Dialog -->
     <RegistryDialog :visible="showDialog" :registry="editingRegistry" :category-labels="categoryLabels" :current-category="editingRegistry ? categoryByRegistry[editingRegistry.name] || '' : ''" @save-category="saveCategoryFromDialog" @close="showDialog = false" />
 
-    <el-dialog v-model="showCategoryContextPromptDialog" :title="categoryContextPromptTitle" width="420px" class="category-context-prompt-dialog app-dialog" :close-on-click-modal="false" destroy-on-close @opened="focusCategoryContextPromptInput" @closed="onCategoryContextPromptDialogClosed">
+    <el-dialog v-model="showCategoryContextPromptDialog" :title="categoryContextPromptTitle" width="420px" class="category-context-prompt-dialog app-dialog" append-to-body :close-on-click-modal="false" destroy-on-close @opened="focusCategoryContextPromptInput" @closed="onCategoryContextPromptDialogClosed">
       <p class="category-context-prompt-hint">{{ categoryContextPromptHint }}</p>
       <el-input ref="categoryContextPromptInputRef" v-model="categoryContextPromptInput" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="confirmCategoryContextPrompt" />
       <template #footer>
@@ -775,7 +775,7 @@ onMounted(async () => {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showCategoryManageDialog" :title="t('categoryDialog.title')" width="520px" class="category-manage-dialog app-dialog" modal-class="category-manage-modal" align-center :close-on-click-modal="false" @opened="focusNewCategoryLabelInput" @closed="onCategoryManageDialogClosed">
+    <el-dialog v-model="showCategoryManageDialog" :title="t('categoryDialog.title')" width="520px" class="category-manage-dialog app-dialog" modal-class="category-manage-modal" append-to-body align-center :close-on-click-modal="false" @opened="focusNewCategoryLabelInput" @closed="onCategoryManageDialogClosed">
       <div class="category-manage-content">
         <div class="category-create-row">
           <el-input ref="newCategoryLabelInputRef" v-model="newCategoryLabel" :placeholder="t('categoryDialog.newPlaceholder')" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="handleAddCategoryToDraft" />
@@ -827,7 +827,7 @@ onMounted(async () => {
     </el-dialog>
 
     <!-- Registry Detail Dialog -->
-    <el-dialog v-model="showDetailDialog" :title="t('registryList.detail.title')" width="520px" class="registry-detail-dialog category-manage-dialog app-dialog" modal-class="category-manage-modal" align-center :close-on-click-modal="true" destroy-on-close>
+    <el-dialog v-model="showDetailDialog" :title="t('registryList.detail.title')" width="520px" class="registry-detail-dialog category-manage-dialog app-dialog" modal-class="category-manage-modal" append-to-body align-center :close-on-click-modal="true" destroy-on-close>
       <div v-if="selectedRegistry" class="category-manage-content registry-detail-content">
         <dl class="registry-detail-dl">
           <div class="registry-detail-row">
@@ -878,9 +878,9 @@ onMounted(async () => {
       >
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
-            <span class="text-sm font-semibold truncate">{{ draggingRegistry.name }}</span>
+            <span class="registry-item-name text-sm font-semibold truncate">{{ draggingRegistry.name }}</span>
           </div>
-          <div class="text-xs text-gray-400 truncate mt-0.5">{{ draggingRegistry.url }}</div>
+          <div class="registry-item-url text-xs truncate mt-0.5">{{ draggingRegistry.url }}</div>
         </div>
         <div class="flex items-center gap-2 ml-2 flex-shrink-0">
           <template v-if="latencyResults[draggingRegistry.name]">

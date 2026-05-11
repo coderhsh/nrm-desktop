@@ -4,6 +4,10 @@ import { useI18n } from "./useI18n";
 type Theme = "light" | "dark" | "auto";
 
 const STORAGE_KEY = "nrm-desktop-theme";
+const FALLBACK_TRANSITION_CLASS = "app-theme-fallback-transition";
+const FALLBACK_TRANSITION_DURATION_FALLBACK_MS = 580;
+
+let fallbackTransitionTimer: ReturnType<typeof window.setTimeout> | undefined;
 
 function readThemeFromStorage(): Theme {
   try {
@@ -38,13 +42,62 @@ function applyTheme(val: Theme) {
   setDarkClass(resolveIsDark(val));
 }
 
-/** 用户切换时使用 startViewTransition 实现平滑过渡 */
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function readThemeTransitionDurationMs() {
+  if (typeof window === "undefined") return FALLBACK_TRANSITION_DURATION_FALLBACK_MS;
+
+  const raw =
+    getComputedStyle(document.documentElement).getPropertyValue("--app-theme-transition-duration").trim() ||
+    getComputedStyle(document.documentElement).getPropertyValue("--app-theme-surface-duration").trim();
+
+  const match = raw.match(/^([\d.]+)(ms|s)$/);
+  if (!match) return FALLBACK_TRANSITION_DURATION_FALLBACK_MS;
+
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return FALLBACK_TRANSITION_DURATION_FALLBACK_MS;
+
+  return match[2] === "s" ? value * 1000 : value;
+}
+
+function runFallbackThemeTransition(apply: () => void) {
+  if (prefersReducedMotion()) {
+    apply();
+    return;
+  }
+
+  const root = document.documentElement;
+  const durationMs = readThemeTransitionDurationMs();
+  if (fallbackTransitionTimer !== undefined) {
+    window.clearTimeout(fallbackTransitionTimer);
+  }
+
+  root.classList.add(FALLBACK_TRANSITION_CLASS);
+  // Force a style pass so Safari applies the fallback transition before the theme class changes.
+  void root.offsetWidth;
+  apply();
+
+  fallbackTransitionTimer = window.setTimeout(() => {
+    root.classList.remove(FALLBACK_TRANSITION_CLASS);
+    fallbackTransitionTimer = undefined;
+  }, durationMs);
+}
+
+/** 用户切换时优先使用 startViewTransition；旧 Safari 回退到 CSS 过渡 */
 function transitionTheme(val: Theme) {
   const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+  const apply = () => setDarkClass(resolveIsDark(val));
+
   if (typeof doc.startViewTransition === "function") {
-    doc.startViewTransition(() => setDarkClass(resolveIsDark(val)));
+    doc.startViewTransition(apply);
   } else {
-    setDarkClass(resolveIsDark(val));
+    runFallbackThemeTransition(apply);
   }
 }
 

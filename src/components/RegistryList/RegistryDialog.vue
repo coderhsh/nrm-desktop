@@ -227,6 +227,7 @@ function focusNameInput() {
     :close-on-click-modal="false"
     class="registry-dialog category-manage-dialog app-dialog"
     modal-class="category-manage-modal"
+    append-to-body
     align-center
     @opened="focusNameInput"
     @update:model-value="(v: boolean) => !v && handleClose()"

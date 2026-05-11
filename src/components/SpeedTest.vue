@@ -2,10 +2,10 @@
 import { ref, computed, onMounted, watch, inject } from 'vue'
 import { ElMessage } from 'element-plus'
 import { RefreshRight } from '@element-plus/icons-vue'
-import { useDark } from '@vueuse/core'
 import { useRegistryStore } from '@/stores/registry'
 import AppSurfaceCard from '@/components/AppSurfaceCard.vue'
 import { useI18n } from '@/composables/useI18n'
+import { useTheme } from '@/composables/useTheme'
 import type { LatencyResult } from '@/api/speedtest'
 import { testAllSpeed, testSingleSpeed } from '@/api/speedtest'
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/latency-error-i18n'
@@ -16,7 +16,7 @@ import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 const store = useRegistryStore()
 const entranceSettled = inject(appEntranceSettledKey, Promise.resolve())
 const { t } = useI18n()
-const isDark = useDark()
+const { isDark } = useTheme()
 
 const results = ref<LatencyResult[]>([])
 /** 首屏为 true，避免挂载前出现「请点击测速」空态；与重新测速时的 loading 一致 */

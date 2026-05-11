@@ -43,11 +43,11 @@ async function handleOpenUrl() {
   >
     <div class="flex flex-col gap-0.5">
       <div class="current-source-kicker text-xs uppercase tracking-wide">{{ t("currentSource.title") }}</div>
-      <div class="current-source-name text-xl font-semibold leading-tight transition-colors duration-300 ease-out">
+      <div class="current-source-name text-xl font-semibold leading-tight">
         {{ currentRegistry?.name ?? t("currentSource.unset") }}
       </div>
       <div
-        class="current-source-url text-xs break-all cursor-pointer transition-colors duration-250 ease-out"
+        class="current-source-url text-xs break-all cursor-pointer"
         :title="currentRegistry?.url || ''"
         @click="handleOpenUrl"
       >
@@ -58,7 +58,7 @@ async function handleOpenUrl() {
       <el-button
         text
         size="small"
-        class="current-source-copy-btn !px-2.5 !py-1.5 !rounded-full !border-0 !transition-all !duration-250 !ease-out active:!scale-[0.97]"
+        class="current-source-copy-btn !px-2.5 !py-1.5 !rounded-full !border-0 active:!scale-[0.97]"
         :title="t('currentSource.copyUrlTooltip')"
         @click="handleCopyUrl"
       >

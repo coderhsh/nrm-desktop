@@ -15,9 +15,13 @@
   --app-duration: 0.22s;
   --app-duration-mid: 0.28s;
   --app-duration-slow: 0.36s;
+  --app-theme-transition-duration: 0.58s;
+  --app-theme-transition-ease: var(--app-ease);
+  --app-theme-view-duration: var(--app-theme-transition-duration);
+  --app-theme-surface-duration: var(--app-theme-transition-duration);
+  --app-theme-content-duration: var(--app-theme-transition-duration);
+  --app-theme-control-duration: var(--app-theme-transition-duration);
   /* 明暗主题切换：View Transitions 交叉淡化时长；无 API 时回退到 surface 过渡 */
-  --app-theme-view-duration: 0.58s;
-  --app-theme-surface-duration: 0.58s;
   /* 源列表分类折叠：外壳与箭头共用时长，曲线分开（高度 ease-out、旋转略弹） */
   --app-category-fold-duration: 0.38s;
   --app-category-fold-ease: var(--app-ease-out);
@@ -96,20 +100,42 @@ body,
 html {
   background-color: var(--app-bg);
   transition:
-    background-color var(--app-theme-surface-duration) var(--app-ease),
-    color var(--app-theme-surface-duration) var(--app-ease);
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease);
 }
 
 /* 整页主题切换：Chromium / Safari 18+ 用 root 交叉淡化，观感比瞬间换 class 更柔和 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: var(--app-theme-view-duration);
-  animation-timing-function: var(--app-ease);
+  animation-timing-function: var(--app-theme-transition-ease);
 }
 
 ::view-transition-group(root) {
   animation-duration: var(--app-theme-view-duration);
-  animation-timing-function: var(--app-ease);
+  animation-timing-function: var(--app-theme-transition-ease);
+}
+
+/* Safari < 18 lacks startViewTransition, so briefly enable normal CSS interpolation while toggling html.dark. */
+html.app-theme-fallback-transition,
+html.app-theme-fallback-transition *,
+html.app-theme-fallback-transition *::before,
+html.app-theme-fallback-transition *::after {
+  transition-property:
+    background-color,
+    border-color,
+    color,
+    outline-color,
+    fill,
+    stroke,
+    box-shadow,
+    text-shadow,
+    opacity,
+    filter,
+    backdrop-filter,
+    -webkit-backdrop-filter !important;
+  transition-duration: var(--app-theme-surface-duration) !important;
+  transition-timing-function: var(--app-theme-transition-ease) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -121,7 +147,11 @@ html {
 
   html,
   body,
-  #app {
+  #app,
+  html.app-theme-fallback-transition,
+  html.app-theme-fallback-transition *,
+  html.app-theme-fallback-transition *::before,
+  html.app-theme-fallback-transition *::after {
     transition-duration: 0.01ms !important;
   }
 }
@@ -133,8 +163,8 @@ body {
   background-color: var(--app-bg);
   color: var(--app-text);
   transition:
-    background-color var(--app-theme-surface-duration) var(--app-ease),
-    color var(--app-theme-surface-duration) var(--app-ease);
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease);
 }
 
 /* Light: frosted overlay behind modal / drawer (title bar unchanged) */
@@ -499,7 +529,9 @@ html.dark .app-sidebar {
 /* 公共表面卡片：纯色底、描边、阴影 — 当前源 / 测速 / 源列表三块共用；
    用 to bottom 极浅渐变替代斜向渐变，避免不同宽高比卡片视觉差异 */
 .app-surface-card {
-  background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+  position: relative;
+  isolation: isolate;
+  background-color: #f1f5f9;
   border: 1px solid color-mix(in srgb, #c8d1dd 68%, #ffffff);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
@@ -507,9 +539,39 @@ html.dark .app-sidebar {
     0 2px 6px rgba(33, 44, 62, 0.08),
     0 10px 26px rgba(28, 40, 60, 0.12);
   transition:
-    border-color 260ms var(--app-ease-out),
-    box-shadow 260ms var(--app-ease-out),
-    background-color 260ms var(--app-ease-out);
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.app-surface-card::before,
+.app-surface-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.app-surface-card::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.74) 0%,
+    rgba(255, 255, 255, 0.36) 48%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  opacity: 1;
+}
+
+.app-surface-card::after {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.05) 52%, rgba(0, 0, 0, 0) 100%);
+  opacity: 0;
+}
+
+.app-surface-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .app-surface-card:hover {
@@ -522,13 +584,21 @@ html.dark .app-sidebar {
 }
 
 html.dark .app-surface-card {
-  background: linear-gradient(to bottom, #2c2e33 0%, #303438 100%);
+  background-color: #303438;
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 0 0 0.5px rgba(255, 255, 255, 0.08),
     0 3px 10px rgba(0, 0, 0, 0.35),
     0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .app-surface-card::before {
+  opacity: 0;
+}
+
+html.dark .app-surface-card::after {
+  opacity: 1;
 }
 
 html.dark .app-surface-card:hover {
@@ -700,23 +770,50 @@ html.dark .speed-test-card .speed-retest-pill.el-button.is-link:focus {
 /* 通栏底栏：与主区测速/当前源卡片同系灰蓝渐变与描边（见 .speed-test-card / .current-source-card） */
 .app-statusbar {
   position: relative;
+  isolation: isolate;
   z-index: 2;
   border-top-width: 1px;
   border-top-style: solid;
   border-top-color: color-mix(in srgb, #c8d1dd 68%, #ffffff);
   background-color: #f5f7fb;
-  background-image: linear-gradient(168deg, #fbfcfe 0%, #f5f7fb 48%, #eff2f7 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     0 0 0 0.5px rgba(156, 170, 188, 0.28),
     0 -2px 6px rgba(33, 44, 62, 0.06),
     0 -10px 22px rgba(28, 40, 60, 0.09);
+  transition:
+    border-top-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.app-statusbar::before,
+.app-statusbar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.app-statusbar::before {
+  background-image: linear-gradient(168deg, #fbfcfe 0%, #f5f7fb 48%, #eff2f7 100%);
+  opacity: 1;
+}
+
+.app-statusbar::after {
+  background-image: linear-gradient(170deg, #2a2b2f 0%, #2e3035 52%, #31343a 100%);
+  opacity: 0;
+}
+
+.app-statusbar > * {
+  position: relative;
+  z-index: 1;
 }
 
 html.dark .app-statusbar {
   border-top-color: rgba(255, 255, 255, 0.08);
   background-color: #2e3035;
-  background-image: linear-gradient(170deg, #2a2b2f 0%, #2e3035 52%, #31343a 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 0 0 0.5px rgba(255, 255, 255, 0.06),
@@ -724,9 +821,20 @@ html.dark .app-statusbar {
     0 -12px 26px rgba(0, 0, 0, 0.18);
 }
 
+html.dark .app-statusbar::before {
+  opacity: 0;
+}
+
+html.dark .app-statusbar::after {
+  opacity: 1;
+}
+
 @media (prefers-reduced-transparency: reduce) {
-  .app-statusbar {
+  .app-statusbar::before {
     background-image: linear-gradient(168deg, #fafbfe 0%, #f3f5f9 100%);
+  }
+
+  .app-statusbar {
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.72),
       0 0 0 0.5px rgba(156, 170, 188, 0.26),
@@ -734,8 +842,11 @@ html.dark .app-statusbar {
       0 -10px 20px rgba(28, 40, 60, 0.085);
   }
 
-  html.dark .app-statusbar {
+  html.dark .app-statusbar::after {
     background-image: linear-gradient(170deg, #292a2e 0%, #2d2f34 100%);
+  }
+
+  html.dark .app-statusbar {
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.045),
       0 0 0 0.5px rgba(255, 255, 255, 0.055),
@@ -744,14 +855,36 @@ html.dark .app-statusbar {
   }
 }
 
+.app-statusbar-meta {
+  color: #5c6675;
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+html.dark .app-statusbar-meta {
+  color: rgba(235, 235, 245, 0.72);
+}
+
 /* 底栏 text 按钮：默认 Element 的 fill-color-light 贴在灰蓝条上对比度弱，hover 加深底与描边 */
 .app-statusbar .el-button {
   border-radius: 6px;
+  color: #4b5565;
   transition:
-    background-color 0.16s ease,
-    color 0.16s ease,
-    box-shadow 0.16s ease,
+    background-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-control-duration) var(--app-theme-transition-ease),
     transform 0.12s ease;
+}
+
+html.dark .app-statusbar .el-button {
+  color: rgba(235, 235, 245, 0.76);
+}
+
+.app-statusbar .el-button.el-button--danger {
+  color: var(--el-color-danger);
+}
+
+html.dark .app-statusbar .el-button.el-button--danger {
+  color: var(--el-color-danger-light-3);
 }
 
 html:not(.dark) .app-statusbar .el-button:not(.is-disabled):hover,
@@ -965,12 +1098,77 @@ html.dark .app-statusbar .el-button.el-button--danger:not(.is-disabled):active {
   font-size: 0.9rem;
   line-height: 1;
   text-align: center;
-  transition: transform var(--app-category-fold-duration) var(--app-category-chevron-ease);
+  color: var(--app-text-muted);
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    transform var(--app-category-fold-duration) var(--app-category-chevron-ease);
   transform: rotate(0deg);
 }
 
 .category-row-chevron.is-expanded {
   transform: rotate(90deg);
+}
+
+.registry-list-title {
+  color: var(--app-text);
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-list-empty {
+  color: var(--app-text-muted);
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-category-host {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.registry-category-host--drop-target {
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 90%, transparent);
+  border-color: color-mix(in srgb, var(--el-color-primary) 60%, transparent);
+  box-shadow: 0 1px 3px rgba(20, 30, 46, 0.08);
+}
+
+.registry-list-count,
+.registry-category-heading {
+  color: var(--app-text-muted);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-list-count {
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 78%, transparent);
+}
+
+.registry-category-heading--drop-target {
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 78%, transparent);
+}
+
+.category-drop-overlay {
+  background-color: rgba(255, 255, 255, 0.55);
+  border-color: rgba(0, 122, 255, 0.25);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.category-drop-hint {
+  color: var(--el-color-primary);
+  background-color: rgba(255, 255, 255, 0.88);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 3px rgba(20, 30, 46, 0.1);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease);
 }
 
 /* Dialog overlay fade (close-confirm overrides with higher specificity) */
@@ -1059,8 +1257,51 @@ html.dark .registry-list-skeleton-shimmer {
     opacity 0.28s var(--app-ease-out);
 }
 
-.registry-item span.text-sm.font-semibold {
-  transition: color 0.36s var(--app-ease-out);
+.registry-item-name {
+  color: var(--app-text);
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-item.is-active .registry-item-name {
+  color: #007aff;
+}
+
+html.dark .registry-item.is-active .registry-item-name {
+  color: #7ec5ff;
+}
+
+.registry-item-url,
+.registry-item .text-xs.font-mono.font-medium,
+.registry-item .registry-speed-btn.el-button.is-link,
+.registry-item .registry-speed-btn.el-button.is-link .el-icon {
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    opacity var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-item-url,
+.registry-item .registry-speed-btn.el-button.is-link {
+  color: var(--app-text-muted);
+}
+
+.registry-item .registry-speed-btn.el-button.is-link {
+  --el-button-text-color: var(--app-text-muted);
+  --el-button-hover-link-text-color: var(--app-text);
+  --el-button-disabled-text-color: var(--app-text-muted);
+  --el-button-loading-icon-color: var(--app-text-muted);
+  color: var(--app-text-muted) !important;
+}
+
+.registry-item:hover .registry-speed-btn.el-button.is-link,
+.registry-item.is-active .registry-speed-btn.el-button.is-link {
+  --el-button-hover-link-text-color: var(--app-text);
+  color: var(--app-text);
+}
+
+.registry-item .registry-speed-btn.el-button.is-link .el-icon,
+.registry-item .registry-speed-btn.el-button.is-link svg {
+  color: currentColor !important;
+  fill: currentColor;
 }
 
 /* hover：外阴影略收扩散 + 内高光，配合列表区 padding，减少裁切感 */
@@ -1105,9 +1346,9 @@ html.dark .registry-list-skeleton-shimmer {
   overflow: hidden;
   transition:
     transform 220ms var(--app-ease-out),
-    box-shadow 260ms var(--app-ease-out),
-    border-color 260ms var(--app-ease-out),
-    background-color 260ms var(--app-ease-out);
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease);
   animation: current-source-card-in var(--app-duration-slow) var(--app-ease-out) both;
 }
 
@@ -1122,11 +1363,13 @@ html.dark .registry-list-skeleton-shimmer {
 .current-source-kicker {
   color: #6e7480;
   opacity: 1;
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
 }
 
 .current-source-name {
   color: #1f232b;
   letter-spacing: -0.012em;
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
 }
 
 .current-source-url {
@@ -1135,6 +1378,9 @@ html.dark .registry-list-skeleton-shimmer {
   text-decoration-color: rgba(98, 106, 120, 0.38);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    text-decoration-color var(--app-theme-content-duration) var(--app-theme-transition-ease);
 }
 
 .current-source-url:hover {
@@ -1150,6 +1396,12 @@ html.dark .registry-list-skeleton-shimmer {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     0 1px 2px rgba(20, 30, 46, 0.06) !important;
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    transform 0.12s var(--app-ease-spring) !important;
 }
 
 .current-source-copy-btn.el-button:hover,
@@ -1420,14 +1672,23 @@ html.dark .speed-test-card .speed-test-header-action.el-button.is-text:focus {
 
 /* 浅色：添加源按钮（苹果风） */
 .registry-add-btn.el-button--primary {
-  --el-button-bg-color: linear-gradient(180deg, #f5f8fb 0%, #edf2f7 100%);
+  --registry-add-light-bg: linear-gradient(180deg, #f5f8fb 0%, #edf2f7 100%);
+  --registry-add-light-hover-bg: linear-gradient(180deg, #f9fbff 0%, #f1f5fb 100%);
+  --registry-add-light-active-bg: linear-gradient(180deg, #e9eff6 0%, #e2e9f2 100%);
+  --registry-add-dark-bg: #424448;
+  --registry-add-dark-hover-bg: #3c4d5c;
+  --registry-add-dark-active-bg: rgba(10, 132, 255, 0.22);
+  --el-button-bg-color: #edf2f7;
   --el-button-border-color: rgba(173, 184, 201, 0.72);
   --el-button-text-color: #475468;
-  --el-button-hover-bg-color: linear-gradient(180deg, #f9fbff 0%, #f1f5fb 100%);
+  --el-button-hover-bg-color: #f1f5fb;
   --el-button-hover-border-color: rgba(157, 171, 192, 0.82);
-  --el-button-active-bg-color: linear-gradient(180deg, #e9eff6 0%, #e2e9f2 100%);
+  --el-button-active-bg-color: #e2e9f2;
   --el-button-active-border-color: rgba(150, 164, 186, 0.82);
-  background: var(--el-button-bg-color) !important;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #edf2f7 !important;
   border-color: var(--el-button-border-color) !important;
   color: var(--el-button-text-color) !important;
   box-shadow:
@@ -1435,15 +1696,43 @@ html.dark .speed-test-card .speed-test-header-action.el-button.is-text:focus {
     0 1px 2px rgba(29, 41, 60, 0.08),
     0 8px 18px rgba(29, 41, 60, 0.08);
   transition:
-    background 0.26s var(--app-ease-out),
-    border-color 0.26s var(--app-ease-out),
-    box-shadow 0.26s var(--app-ease-out),
+    background-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-control-duration) var(--app-theme-transition-ease),
     transform 0.16s var(--app-ease-spring);
+}
+
+.registry-add-btn.el-button--primary::before,
+.registry-add-btn.el-button--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition:
+    opacity var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-control-duration) var(--app-theme-transition-ease);
+}
+
+.registry-add-btn.el-button--primary::before {
+  background: var(--registry-add-light-bg);
+  opacity: 1;
+}
+
+.registry-add-btn.el-button--primary::after {
+  background: var(--registry-add-dark-bg);
+  opacity: 0;
+}
+
+.registry-add-btn.el-button--primary > * {
+  position: relative;
+  z-index: 1;
 }
 
 .registry-add-btn.el-button--primary:hover,
 .registry-add-btn.el-button--primary:focus {
-  background: var(--el-button-hover-bg-color) !important;
+  background-color: #f1f5fb !important;
   border-color: var(--el-button-hover-border-color) !important;
   color: #3e4b5f !important;
   box-shadow:
@@ -1452,18 +1741,27 @@ html.dark .speed-test-card .speed-test-header-action.el-button.is-text:focus {
     0 10px 22px rgba(29, 41, 60, 0.1);
 }
 
+.registry-add-btn.el-button--primary:hover::before,
+.registry-add-btn.el-button--primary:focus::before {
+  background: var(--registry-add-light-hover-bg);
+}
+
 .registry-add-btn.el-button--primary:active {
-  background: var(--el-button-active-bg-color) !important;
+  background-color: #e2e9f2 !important;
   border-color: var(--el-button-active-border-color) !important;
   transform: scale(0.985);
 }
 
+.registry-add-btn.el-button--primary:active::before {
+  background: var(--registry-add-light-active-bg);
+}
+
 /* 深色：添加源 — 半透明主色底 + 描边，与侧栏表面更一体 */
 html.dark .registry-add-btn.el-button--primary {
-  --el-button-bg-color: #424448;
+  --el-button-bg-color: var(--registry-add-dark-bg);
   --el-button-border-color: #595a5e;
   --el-button-text-color: #e8f2ff;
-  --el-button-hover-bg-color: #3c4d5c;
+  --el-button-hover-bg-color: var(--registry-add-dark-hover-bg);
   --el-button-hover-border-color: rgba(10, 132, 255, 0.55);
   --el-button-hover-text-color: #ffffff;
   --el-button-active-bg-color: rgba(10, 132, 255, 0.22);
@@ -1475,11 +1773,28 @@ html.dark .registry-add-btn.el-button--primary {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+html.dark .registry-add-btn.el-button--primary::before {
+  opacity: 0;
+}
+
+html.dark .registry-add-btn.el-button--primary::after {
+  opacity: 1;
+}
+
 html.dark .registry-add-btn.el-button--primary:hover,
 html.dark .registry-add-btn.el-button--primary:focus {
   background-color: var(--el-button-hover-bg-color) !important;
   border-color: var(--el-button-hover-border-color) !important;
   color: var(--el-button-hover-text-color) !important;
+}
+
+html.dark .registry-add-btn.el-button--primary:hover::after,
+html.dark .registry-add-btn.el-button--primary:focus::after {
+  background: var(--registry-add-dark-hover-bg);
+}
+
+html.dark .registry-add-btn.el-button--primary:active::after {
+  background: var(--registry-add-dark-active-bg);
 }
 
 html.dark .el-input__wrapper,

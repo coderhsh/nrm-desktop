@@ -177,7 +177,7 @@ async function openGithubHome() {
       <div class="app-statusbar">
           <span
             v-if="nodeNpmVersionsLabel"
-            class="text-xs text-gray-600 dark:text-zinc-300 shrink-0 truncate max-w-[280px] mr-2"
+            class="app-statusbar-meta text-xs shrink-0 truncate max-w-[280px] mr-2"
             :title="nodeNpmVersionsLabel"
           >
             {{ nodeNpmVersionsLabel }}
