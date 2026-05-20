@@ -42,7 +42,6 @@ const {
   categoryByRegistry,
   categoryLabels,
   categoryExpanded,
-  presetCategoryLabel,
   uncategorizedLabel,
   applyStoredOrderForCategory,
   getOrderedRegistryNamesInCategory,
@@ -151,8 +150,7 @@ const groupedRegistries = computed((): GroupedRegistries[] => {
     groups[label] = []
   }
   for (const registry of filteredRegistries.value) {
-    const assignedCategory = categoryByRegistry.value[registry.name]
-    const category = assignedCategory || (registry.is_custom ? ucat : categoryLabels.value.includes(presetCategoryLabel.value) ? presetCategoryLabel.value : ucat)
+    const category = categoryByRegistry.value[registry.name] || ucat
     if (!groups[category]) groups[category] = []
     groups[category].push(registry)
   }
@@ -187,8 +185,7 @@ watch(
     if (!q) return
     const cats = new Set<string>()
     for (const r of filteredRegistries.value) {
-      const assigned = categoryByRegistry.value[r.name]
-      cats.add(assigned || (r.is_custom ? uncategorizedLabel.value : categoryLabels.value.includes(presetCategoryLabel.value) ? presetCategoryLabel.value : uncategorizedLabel.value))
+      cats.add(categoryByRegistry.value[r.name] || uncategorizedLabel.value)
     }
     if (cats.size === 0) return
     const next = { ...categoryExpanded.value }

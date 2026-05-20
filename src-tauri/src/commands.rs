@@ -295,7 +295,9 @@ pub fn export_config() -> Result<registries::ExportData, String> {
 pub fn import_config(json_data: &str) -> Result<(), String> {
     let data: registries::ExportData =
         serde_json::from_str(json_data).map_err(|e| format!("JSON 解析失败: {}", e))?;
-    registries::import_custom(&data.custom).map_err(|e| e.to_string())
+    let mut merged = data.presets;
+    merged.extend(data.custom);
+    registries::import_custom(&merged).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

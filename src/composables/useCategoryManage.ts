@@ -7,11 +7,8 @@ import { normalizeRegistryOrderRecord, normalizeCategoryLabel } from '@/componen
 import type { InputInstance } from 'element-plus'
 import type { Registry } from '@/types'
 
-/** 预设分类标签的各语言默认值，用于语言切换时的迁移匹配 */
-const PRESET_CATEGORY_DEFAULTS: Record<string, string> = {
-  'zh-CN': '预设源',
-  en: 'Preset',
-}
+/** 已移除的「预设源」分类标签（用于从 localStorage 清理） */
+const LEGACY_PRESET_CATEGORY_LABELS = ['预设源', 'Preset'] as const
 
 export function useCategoryManage() {
   const { t, language } = useI18n()
@@ -40,66 +37,42 @@ export function useCategoryManage() {
   const categoryLabels = useLocalStorage<string[]>('nrm-desktop-category-labels', [])
   const categoryExpanded = useLocalStorage<Record<string, boolean>>('nrm-desktop-category-expanded', {})
 
-  /** 当前语言下的预设分类标签默认值 */
-  const currentPresetDefault = computed(() => {
-    const lang = language.value
-    return PRESET_CATEGORY_DEFAULTS[lang] ?? PRESET_CATEGORY_DEFAULTS['zh-CN']!
-  })
-
-  const presetCategoryLabel = useLocalStorage<string>('nrm-desktop-preset-category-label', currentPresetDefault.value)
-
-  // 初始化：确保预设分类标签存在于列表中
-  if (!categoryLabels.value.includes(presetCategoryLabel.value)) {
-    categoryLabels.value = [presetCategoryLabel.value, ...categoryLabels.value]
-  }
-
-  // ==================== 计算属性 ====================
   const uncategorizedLabel = computed(() => t('registryList.uncategorized'))
 
   // ==================== 分类存储迁移 ====================
-  /**
-   * 迁移预设分类标签：当语言切换时，如果存储的值是另一种语言的默认预设标签，
-   * 则迁移到当前语言的默认值。用户自定义重命名不受影响。
-   */
-  function migratePresetCategoryLabel() {
-    const stored = presetCategoryLabel.value
-    const currentDefault = currentPresetDefault.value
-    // 如果已经是当前语言的默认值，无需处理
-    if (stored === currentDefault) return
-    // 如果存储的值是已知的其他语言默认值，迁移到当前语言
-    const isKnownDefault = Object.values(PRESET_CATEGORY_DEFAULTS).includes(stored)
-    if (isKnownDefault) {
-      // 从 categoryLabels 中移除旧标签
-      const idx = categoryLabels.value.indexOf(stored)
-      if (idx !== -1) {
-        categoryLabels.value = categoryLabels.value.filter(l => l !== stored)
-      }
-      // 从 categoryExpanded 中迁移
-      const expanded = { ...categoryExpanded.value }
-      if (expanded[stored] !== undefined) {
-        if (expanded[currentDefault] === undefined) {
-          expanded[currentDefault] = expanded[stored]
-        }
-        delete expanded[stored]
-        categoryExpanded.value = expanded
-      }
-      // 清理 categoryByRegistry 中引用旧预设标签的条目（预设源应无显式分配）
-      const mapping = { ...categoryByRegistry.value }
-      let mapChanged = false
-      for (const [name, cat] of Object.entries(mapping)) {
-        if (cat === stored) {
-          delete mapping[name]
-          mapChanged = true
-        }
-      }
-      if (mapChanged) categoryByRegistry.value = mapping
-      // 更新预设标签
-      presetCategoryLabel.value = currentDefault
-      // 确保新标签在列表中
-      if (!categoryLabels.value.includes(currentDefault)) {
-        categoryLabels.value = [currentDefault, ...categoryLabels.value]
+  function migrateRemoveLegacyPresetCategory() {
+    let labelsChanged = false
+    let nextLabels = [...categoryLabels.value]
+    for (const legacy of LEGACY_PRESET_CATEGORY_LABELS) {
+      if (nextLabels.includes(legacy)) {
+        nextLabels = nextLabels.filter(l => l !== legacy)
+        labelsChanged = true
       }
     }
+    if (labelsChanged) {
+      categoryLabels.value = nextLabels
+    }
+
+    const expanded = { ...categoryExpanded.value }
+    let expChanged = false
+    for (const legacy of LEGACY_PRESET_CATEGORY_LABELS) {
+      if (expanded[legacy] === undefined) continue
+      const ucat = uncategorizedLabel.value
+      if (expanded[ucat] === undefined) expanded[ucat] = expanded[legacy]
+      delete expanded[legacy]
+      expChanged = true
+    }
+    if (expChanged) categoryExpanded.value = expanded
+
+    const mapping = { ...categoryByRegistry.value }
+    let mapChanged = false
+    for (const [name, cat] of Object.entries(mapping)) {
+      if ((LEGACY_PRESET_CATEGORY_LABELS as readonly string[]).includes(cat)) {
+        delete mapping[name]
+        mapChanged = true
+      }
+    }
+    if (mapChanged) categoryByRegistry.value = mapping
   }
 
   function migrateUncategorizedCategoryStorage() {
@@ -126,19 +99,18 @@ export function useCategoryManage() {
     if (mapChanged) categoryByRegistry.value = mapping
   }
 
-  // 初始化：迁移预设分类标签（语言可能已切换）
-  migratePresetCategoryLabel()
+  migrateRemoveLegacyPresetCategory()
+  migrateUncategorizedCategoryStorage()
 
   watch(language, () => {
-    migratePresetCategoryLabel()
+    migrateRemoveLegacyPresetCategory()
     migrateUncategorizedCategoryStorage()
   })
 
   // ==================== 分类规范化 ====================
-  function normalizeCustomRegistryCategories() {
+  function pruneStaleRegistryCategoryMappings() {
     if (store.loading || store.registries.length === 0) return
 
-    const presetCat = presetCategoryLabel.value
     const validNames = new Set(store.registries.map(r => r.name))
     const next = { ...categoryByRegistry.value }
     let changed = false
@@ -150,21 +122,13 @@ export function useCategoryManage() {
       }
     }
 
-    for (const r of store.registries) {
-      if (!r.is_custom) continue
-      if (next[r.name] === presetCat) {
-        delete next[r.name]
-        changed = true
-      }
-    }
-
     if (changed) categoryByRegistry.value = next
   }
 
   watch(
-    () => store.registries.map(r => `${r.name}:${r.is_custom}`).join('|'),
+    () => store.registries.map(r => r.name).join('|'),
     () => {
-      normalizeCustomRegistryCategories()
+      pruneStaleRegistryCategoryMappings()
     },
     { immediate: true }
   )
@@ -172,11 +136,9 @@ export function useCategoryManage() {
   // ==================== 分类查询函数 ====================
   function registriesInCategory(categoryLabel: string): Registry[] {
     const ucat = uncategorizedLabel.value
-    const preset = presetCategoryLabel.value
     const list: Registry[] = []
     for (const registry of filteredRegistries.value) {
-      const assignedCategory = categoryByRegistry.value[registry.name]
-      const category = assignedCategory || (registry.is_custom ? ucat : categoryLabels.value.includes(preset) ? preset : ucat)
+      const category = categoryByRegistry.value[registry.name] || ucat
       if (category === categoryLabel) list.push(registry)
     }
     return list
@@ -207,11 +169,7 @@ export function useCategoryManage() {
   }
 
   function getRegistryCategory(registry: Registry): string {
-    const ucat = uncategorizedLabel.value
-    const assignedCategory = categoryByRegistry.value[registry.name]
-    if (assignedCategory) return assignedCategory
-    if (registry.is_custom) return ucat
-    return categoryLabels.value.includes(presetCategoryLabel.value) ? presetCategoryLabel.value : ucat
+    return categoryByRegistry.value[registry.name] || uncategorizedLabel.value
   }
 
   // ==================== 分类排序操作 ====================
@@ -314,7 +272,6 @@ export function useCategoryManage() {
   // ==================== 分类管理弹窗 ====================
   const showCategoryManageDialog = ref(false)
   const categoryManageDraftLabels = ref<string[]>([])
-  const draftPresetCategoryLabel = ref('')
   const draftCategoryByRegistry = ref<Record<string, string>>({})
   const draftCategoryExpanded = ref<Record<string, boolean>>({})
   const newCategoryLabel = ref('')
@@ -343,7 +300,6 @@ export function useCategoryManage() {
 
   function openCategoryManageDialog() {
     categoryManageDraftLabels.value = [...categoryLabels.value]
-    draftPresetCategoryLabel.value = presetCategoryLabel.value
     draftCategoryByRegistry.value = { ...categoryByRegistry.value }
     draftCategoryExpanded.value = { ...categoryExpanded.value }
     const inputs: Record<string, string> = {}
@@ -358,7 +314,6 @@ export function useCategoryManage() {
 
   function applyCategoryManageDraftAndClose() {
     categoryLabels.value = [...categoryManageDraftLabels.value]
-    presetCategoryLabel.value = draftPresetCategoryLabel.value
     categoryByRegistry.value = { ...draftCategoryByRegistry.value }
     categoryExpanded.value = { ...draftCategoryExpanded.value }
     ElMessage.success(t('categoryDialog.saved'))
@@ -392,7 +347,7 @@ export function useCategoryManage() {
       ElMessage.error(t('categoryDialog.nameRequired'))
       return false
     }
-    if (normalized === uncategorizedLabel.value || normalized === presetCategoryLabel.value || categoryLabels.value.includes(normalized)) {
+    if (normalized === uncategorizedLabel.value || categoryLabels.value.includes(normalized)) {
       ElMessage.error(t('categoryDialog.nameExists'))
       return false
     }
@@ -412,7 +367,7 @@ export function useCategoryManage() {
       ElMessage.error(t('categoryDialog.nameRequired'))
       return false
     }
-    if (normalized === uncategorizedLabel.value || normalized === draftPresetCategoryLabel.value || categoryManageDraftLabels.value.includes(normalized)) {
+    if (normalized === uncategorizedLabel.value || categoryManageDraftLabels.value.includes(normalized)) {
       ElMessage.error(t('categoryDialog.nameExists'))
       return false
     }
@@ -451,15 +406,11 @@ export function useCategoryManage() {
       ElMessage.success(t('categoryDialog.saved'))
       return
     }
-    if (newLabel === uncategorizedLabel.value || newLabel === presetCategoryLabel.value || categoryLabels.value.includes(newLabel)) {
+    if (newLabel === uncategorizedLabel.value || categoryLabels.value.includes(newLabel)) {
       ElMessage.error(t('categoryDialog.nameExists'))
       return
     }
     categoryLabels.value = categoryLabels.value.map(label => (label === oldLabel ? newLabel : label))
-
-    if (oldLabel === presetCategoryLabel.value) {
-      presetCategoryLabel.value = newLabel
-    }
 
     const mapping: Record<string, string> = {}
     for (const [name, label] of Object.entries(categoryByRegistry.value)) {
@@ -495,16 +446,12 @@ export function useCategoryManage() {
       editingCategoryLabel.value = null
       return
     }
-    if (newLabel === uncategorizedLabel.value || newLabel === draftPresetCategoryLabel.value || categoryManageDraftLabels.value.some(l => l !== oldLabel && l === newLabel)) {
+    if (newLabel === uncategorizedLabel.value || categoryManageDraftLabels.value.some(l => l !== oldLabel && l === newLabel)) {
       ElMessage.error(t('categoryDialog.nameExists'))
       return
     }
 
     categoryManageDraftLabels.value = categoryManageDraftLabels.value.map(l => (l === oldLabel ? newLabel : l))
-
-    if (oldLabel === draftPresetCategoryLabel.value) {
-      draftPresetCategoryLabel.value = newLabel
-    }
 
     const mapping = { ...draftCategoryByRegistry.value }
     for (const name of Object.keys(mapping)) {
@@ -529,20 +476,9 @@ export function useCategoryManage() {
 
   async function deleteCategoryLabel(label: string) {
     const categoryMappingForDelete = showCategoryManageDialog.value ? draftCategoryByRegistry.value : categoryByRegistry.value
-    const categoryLabelsForDelete = showCategoryManageDialog.value ? categoryManageDraftLabels.value : categoryLabels.value
-    const presetCategoryForDelete = showCategoryManageDialog.value ? draftPresetCategoryLabel.value : presetCategoryLabel.value
+    const ucat = uncategorizedLabel.value
     const categoryRegistries = store.registries
-      .filter(registry => {
-        const assignedCategory = categoryMappingForDelete[registry.name]
-        const category =
-          assignedCategory ||
-          (registry.is_custom
-            ? uncategorizedLabel.value
-            : categoryLabelsForDelete.includes(presetCategoryForDelete)
-              ? presetCategoryForDelete
-              : uncategorizedLabel.value)
-        return category === label
-      })
+      .filter(registry => (categoryMappingForDelete[registry.name] || ucat) === label)
       .map(registry => registry.name)
     let shouldDeleteCategoryRegistries = false
 
@@ -672,41 +608,33 @@ export function useCategoryManage() {
   }
 
   return {
-    // 持久化状态
     categoryByRegistry,
     registryOrderByCategory,
     categoryLabels,
     categoryExpanded,
-    presetCategoryLabel,
     uncategorizedLabel,
 
-    // 查询函数
     registriesInCategory,
     applyStoredOrderForCategory,
     getOrderedRegistryNamesInCategory,
     getRegistryCategory,
 
-    // 排序操作
     pruneRegistryOrder,
     reorderStorageAfterCrossCategoryMove,
     commitRegistryOrderWithinCategory,
 
-    // 展开/折叠
     isCategoryExpanded,
     toggleCategoryExpanded,
     expandAllCategories,
     collapseAllCategories,
 
-    // 标签操作
     ensureCategoryLabel,
     isUncategorizedCategory,
     moveRegistryToCategory,
     saveCategoryFromDialog,
 
-    // 分类管理弹窗
     showCategoryManageDialog,
     categoryManageDraftLabels,
-    draftPresetCategoryLabel,
     draftCategoryByRegistry,
     draftCategoryExpanded,
     newCategoryLabel,
