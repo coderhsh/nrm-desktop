@@ -1618,6 +1618,17 @@ html.dark .registry-list-root--pointer-dragging .registry-item.is-active:hover {
   outline-color: transparent !important;
 }
 
+/* 深色跨分类拖拽：暂时去掉分类块/标题的白色底色高亮（保留 overlay 与 dropHint） */
+html.dark .registry-category-host--drop-target {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.dark .registry-category-heading--drop-target {
+  background-color: transparent !important;
+}
+
 html.dark .category-drop-overlay {
   background-color: rgba(28, 28, 30, 0.45);
   border-color: rgba(10, 132, 255, 0.35);
