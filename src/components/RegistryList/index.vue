@@ -17,6 +17,7 @@ import SearchHighlightText from './SearchHighlightText.vue'
 import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 import { CATEGORY_LABEL_MAX_LENGTH } from './constants'
 import type { ManageCategorySlot, RegistrySlot, GroupedRegistries } from './constants'
+import type { CategoryRegistrySortMode } from './utils'
 
 // ==================== Composables ====================
 import { useCategoryManage } from '@/composables/useCategoryManage'
@@ -76,6 +77,7 @@ const {
   confirmRenameInManageDraft,
   deleteCategoryLabel,
   applyCategoryManageOrder,
+  sortCategoryRegistries,
 } = categoryManage
 
 // ==================== 拖拽排序 ====================
@@ -441,6 +443,12 @@ function openCategoryManageFromContext() {
   openCategoryManageDialog()
 }
 
+function sortCategoryFromContext(label: string, mode: CategoryRegistrySortMode) {
+  sortCategoryRegistries(label, mode)
+  categoryContextMenu.value = null
+  ElMessage.success(mode === 'name' ? t('registryList.categoryContext.sortDoneName') : t('registryList.categoryContext.sortDoneSpeed'))
+}
+
 // ==================== 延迟显示 ====================
 function getLatencyText(name: string): string {
   const latency = latencyResults.value[name]
@@ -718,36 +726,48 @@ onMounted(async () => {
 
     <!-- Context Menu -->
     <Teleport to="body">
-      <div v-if="contextMenu" ref="contextMenuRef" class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-36" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
+      <div v-if="contextMenu" ref="contextMenuRef" class="registry-context-menu fixed z-50 py-1 min-w-36" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openDetail(contextMenu.registry)">
           {{ t('registryList.context.viewDetail') }}
         </div>
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openEdit(contextMenu.registry)">
           {{ t('registryList.context.edit') }}
         </div>
-        <div class="context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer text-red-500" @click="handleDelete(contextMenu.registry)">
+        <div class="context-menu-item context-menu-item--danger px-3 py-2 text-sm cursor-pointer" @click="handleDelete(contextMenu.registry)">
           {{ t('registryList.context.delete') }}
         </div>
       </div>
     </Teleport>
 
     <Teleport to="body">
-      <div v-if="categoryContextMenu" ref="categoryContextMenuRef" class="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-44" :style="{ left: categoryContextMenu.x + 'px', top: categoryContextMenu.y + 'px' }">
+      <div v-if="categoryContextMenu" ref="categoryContextMenuRef" class="registry-context-menu fixed z-50 py-1 min-w-44" :style="{ left: categoryContextMenu.x + 'px', top: categoryContextMenu.y + 'px' }">
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="toggleCategoryFromContext(categoryContextMenu.label)">
           {{ isCategoryExpandedLocal(categoryContextMenu.label) ? t('registryList.categoryContext.collapse') : t('registryList.categoryContext.expand') }}
         </div>
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="createCategoryFromContext">
           {{ t('registryList.categoryContext.create') }}
         </div>
+        <div class="context-menu-item context-menu-item--submenu px-3 py-2 text-sm cursor-pointer">
+          <span>{{ t('registryList.categoryContext.sort') }}</span>
+          <span class="context-menu-submenu-chevron" aria-hidden="true">›</span>
+          <div class="context-menu-submenu registry-context-menu">
+            <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="sortCategoryFromContext(categoryContextMenu.label, 'name')">
+              {{ t('registryList.categoryContext.sortByName') }}
+            </div>
+            <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="sortCategoryFromContext(categoryContextMenu.label, 'speed')">
+              {{ t('registryList.categoryContext.sortBySpeed') }}
+            </div>
+          </div>
+        </div>
         <div :class="['context-menu-item px-3 py-2 text-sm cursor-pointer', { 'opacity-40 pointer-events-none': isUncategorizedCategory(categoryContextMenu.label) }]" @click="renameCategoryFromContext(categoryContextMenu.label)">
           {{ t('registryList.categoryContext.rename') }}
         </div>
-        <div class="h-px mx-2 my-1 bg-gray-100"></div>
+        <div class="registry-context-menu-divider"></div>
         <div class="context-menu-item px-3 py-2 text-sm cursor-pointer" @click="openCategoryManageFromContext">
           {{ t('registryList.categoryContext.manage') }}
         </div>
         <div
-          :class="['context-menu-item context-menu-item--danger px-3 py-2 text-sm text-red-500', isUncategorizedCategory(categoryContextMenu.label) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer']"
+          :class="['context-menu-item context-menu-item--danger px-3 py-2 text-sm', isUncategorizedCategory(categoryContextMenu.label) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer']"
           :title="isUncategorizedCategory(categoryContextMenu.label) ? t('registryList.categoryContext.deleteDisabledHint') : ''"
           @click="onDeleteCategoryFromContextClick(categoryContextMenu.label)"
         >

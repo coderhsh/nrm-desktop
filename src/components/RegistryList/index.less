@@ -400,16 +400,40 @@ html.dark .category-list-scroll-host {
 }
 
 // ==================== 右键菜单 ====================
-.context-menu-item {
-  transition:
-    background-color var(--app-duration) var(--app-ease),
-    color var(--app-duration) var(--app-ease);
+.context-menu-item--submenu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  position: relative;
 
-  &:hover {
-    background-color: #f2f2f7;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 0.45rem;
+    height: 100%;
   }
 
-  &--danger:hover {
-    background-color: #fee2e2;
+  &:hover > .context-menu-submenu,
+  &:focus-within > .context-menu-submenu {
+    display: block;
   }
+}
+
+.context-menu-submenu-chevron {
+  font-size: 0.875rem;
+  line-height: 1;
+  color: var(--app-text-muted);
+}
+
+.context-menu-submenu {
+  display: none;
+  position: absolute;
+  top: -0.25rem;
+  left: calc(100% + 0.35rem);
+  min-width: 9rem;
+  padding: 0.25rem 0;
+  z-index: 1;
 }

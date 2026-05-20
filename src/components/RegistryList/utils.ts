@@ -1,4 +1,31 @@
 import { CATEGORY_LABEL_MAX_LENGTH } from './constants'
+import type { Registry } from '@/types'
+import type { LatencyResult } from '@/api/speedtest'
+
+export type CategoryRegistrySortMode = 'name' | 'speed'
+
+/**
+ * Sort registries within one category. Unknown/failed speed results go last.
+ */
+export function sortRegistriesInCategory(
+  registries: Registry[],
+  mode: CategoryRegistrySortMode,
+  latencyByName: Record<string, LatencyResult>,
+): Registry[] {
+  if (mode === 'name') {
+    return [...registries].sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  return [...registries].sort((a, b) => {
+    const leftLatency = latencyByName[a.name]?.latency_ms ?? null
+    const rightLatency = latencyByName[b.name]?.latency_ms ?? null
+    if (leftLatency === null && rightLatency === null) return a.name.localeCompare(b.name)
+    if (leftLatency === null) return 1
+    if (rightLatency === null) return -1
+    if (leftLatency !== rightLatency) return leftLatency - rightLatency
+    return a.name.localeCompare(b.name)
+  })
+}
 
 /**
  * 防止 localStorage 损坏或非对象导致渲染期抛错

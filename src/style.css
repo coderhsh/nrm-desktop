@@ -3668,7 +3668,23 @@ html.dark .settings-drawer .el-drawer__footer {
 
 /* 设置抽屉页脚「保存」见上方 html.dark .settings-drawer .el-drawer__footer .el-button--primary */
 
-/* 右键菜单（源列表）深色模式 hover：使用更低亮度并强制覆盖 */
+/* 右键菜单（源列表） */
+.registry-context-menu {
+  border-radius: 0.625rem;
+  background: var(--app-surface);
+  border: 1px solid color-mix(in srgb, var(--app-separator) 90%, transparent);
+  color: var(--app-text);
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.12),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.registry-context-menu-divider {
+  height: 1px;
+  margin: 0.25rem 0.5rem;
+  background: color-mix(in srgb, var(--app-separator) 88%, transparent);
+}
+
 .context-menu-item {
   transition:
     background-color var(--app-duration) var(--app-ease),
@@ -3679,17 +3695,42 @@ html.dark .settings-drawer .el-drawer__footer {
   background-color: #f2f2f7;
 }
 
+.context-menu-item--danger {
+  color: #ef4444;
+}
+
 .context-menu-item--danger:hover {
   background-color: #fee2e2;
 }
 
+html.dark .registry-context-menu {
+  background: linear-gradient(160deg, #2a2f3a 0%, #323845 100%);
+  border: 1px solid rgba(108, 124, 150, 0.34);
+  color: #e3e9f4;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.42),
+    0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+html.dark .registry-context-menu-divider {
+  background: rgba(108, 124, 150, 0.28);
+}
+
 html.dark .context-menu-item:hover {
-  background-color: #3a3a3c !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .context-menu-item--danger {
+  color: #ff6961;
 }
 
 html.dark .context-menu-item--danger:hover {
   background-color: rgba(255, 59, 48, 0.14) !important;
   color: #ff6961 !important;
+}
+
+html.dark .context-menu-submenu-chevron {
+  color: rgba(227, 233, 244, 0.62);
 }
 
 /* close confirm dialog: targeted dark-only control colors */
@@ -3797,13 +3838,4 @@ html.dark .registry-fold-split {
 
 html.dark .registry-fold-btn.el-button.is-text:not(.is-disabled):hover {
   background: color-mix(in srgb, var(--el-color-primary) 14%, var(--el-fill-color-blank));
-}
-
-html.dark .context-menu-item:hover {
-  background-color: #3a3a3c;
-}
-
-html.dark .context-menu-item--danger:hover {
-  background-color: rgba(255, 59, 48, 0.14);
-  color: #ff6961;
 }

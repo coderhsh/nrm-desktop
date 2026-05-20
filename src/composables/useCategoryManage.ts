@@ -3,7 +3,12 @@ import { useLocalStorage } from '@vueuse/core'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY } from '@/composables/useI18n'
 import { useRegistryStore } from '@/stores/registry'
 import { storeToRefs } from 'pinia'
-import { normalizeRegistryOrderRecord, normalizeCategoryLabel } from '@/components/RegistryList/utils'
+import {
+  normalizeRegistryOrderRecord,
+  normalizeCategoryLabel,
+  sortRegistriesInCategory,
+  type CategoryRegistrySortMode,
+} from '@/components/RegistryList/utils'
 import type { InputInstance } from 'element-plus'
 import type { Registry } from '@/types'
 
@@ -13,7 +18,7 @@ const LEGACY_PRESET_CATEGORY_LABELS = ['预设源', 'Preset'] as const
 export function useCategoryManage() {
   const { t, language } = useI18n()
   const store = useRegistryStore()
-  const { filteredRegistries } = storeToRefs(store)
+  const { filteredRegistries, registries, latencyResults } = storeToRefs(store)
 
   // ==================== localStorage 持久化 ====================
   const categoryByRegistry = useLocalStorage<Record<string, string>>(CATEGORY_BY_REGISTRY_STORAGE_KEY, {})
@@ -144,6 +149,16 @@ export function useCategoryManage() {
     return list
   }
 
+  function allRegistriesInCategory(categoryLabel: string): Registry[] {
+    const ucat = uncategorizedLabel.value
+    const list: Registry[] = []
+    for (const registry of registries.value) {
+      const category = categoryByRegistry.value[registry.name] || ucat
+      if (category === categoryLabel) list.push(registry)
+    }
+    return list
+  }
+
   function applyStoredOrderForCategory(categoryLabel: string, items: Registry[]): Registry[] {
     const order = normalizeRegistryOrderRecord(registryOrderByCategory.value)[categoryLabel]
     if (!order?.length) {
@@ -200,6 +215,16 @@ export function useCategoryManage() {
     registryOrderByCategory.value = {
       ...normalizeRegistryOrderRecord(registryOrderByCategory.value),
       [categoryLabel]: newOrder,
+    }
+  }
+
+  function sortCategoryRegistries(categoryLabel: string, mode: CategoryRegistrySortMode) {
+    const items = allRegistriesInCategory(categoryLabel)
+    if (items.length <= 1) return
+    const sorted = sortRegistriesInCategory(items, mode, latencyResults.value)
+    registryOrderByCategory.value = {
+      ...normalizeRegistryOrderRecord(registryOrderByCategory.value),
+      [categoryLabel]: sorted.map(registry => registry.name),
     }
   }
 
@@ -622,6 +647,7 @@ export function useCategoryManage() {
     pruneRegistryOrder,
     reorderStorageAfterCrossCategoryMove,
     commitRegistryOrderWithinCategory,
+    sortCategoryRegistries,
 
     isCategoryExpanded,
     toggleCategoryExpanded,
