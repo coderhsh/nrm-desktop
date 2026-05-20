@@ -22,7 +22,7 @@
 | UI 组件库 | Element Plus、`@element-plus/icons-vue` |
 | 样式方案 | UnoCSS、Less、全局 CSS、Element Plus 主题变量覆盖 |
 | 动画/工具 | GSAP、VueUse |
-| 代码规范 | TypeScript strict；未发现 ESLint/Prettier 配置 |
+| 代码规范 | TypeScript strict；ESLint 9 flat config（`eslint.config.js`）；未发现 Prettier 配置 |
 
 ### 后端技术栈
 
@@ -47,6 +47,10 @@
 | `pnpm dev` | Tauri 本地开发；自动从 1420 起寻找可用端口并生成临时 dev config |
 | `pnpm ui:dev` | 仅启动 Vite 前端开发服务 |
 | `pnpm ui:build` | 前端类型检查并构建：`vue-tsc --noEmit && vite build` |
+| `pnpm lint` | ESLint 检查 `src` 与根目录 `*.ts`/`*.js` 配置 |
+| `pnpm lint:fix` | ESLint 自动修复 |
+| `pnpm test` | Vitest 单元测试（`src/**/*.test.ts`） |
+| `pnpm test:watch` | Vitest 监听模式 |
 | `pnpm build` | 构建 Tauri 桌面应用并输出产物路径 |
 | `pnpm build:pretty` | 同 `pnpm build` |
 | `pnpm build:win` | Windows 构建脚本 |
@@ -55,7 +59,7 @@
 | `pnpm sync:version` | 将 `package.json` 版本同步到 Tauri/Cargo 配置 |
 | `pnpm version` | 同步版本号脚本 |
 
-当前 `package.json` 未提供 `lint`、`test`、`preview`、独立 `typecheck`、格式化或数据库迁移命令。
+当前 `package.json` 未提供 `preview`、独立 `typecheck`、格式化或数据库迁移命令。
 
 ## 目录结构
 

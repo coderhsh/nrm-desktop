@@ -98,6 +98,8 @@ pnpm build
 | `pnpm build:win` | 仅构建 Windows 安装包 |
 | `pnpm ui:dev` | 仅启动 Vite 前端开发服务 |
 | `pnpm ui:build` | 前端类型检查与构建 |
+| `pnpm lint` | ESLint 检查 |
+| `pnpm test` | Vitest 单元测试 |
 | `pnpm tauri` | 透传 Tauri CLI 命令 |
 | `pnpm update:logo` | 基于 `src-tauri/icons/logo.png` 生成图标集 |
 | `pnpm version` | 同步应用版本元数据 |

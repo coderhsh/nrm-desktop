@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
 async function openGithubHome() {
   try {
     await openExternal('https://github.com/coderhsh/nrm-desktop')
-  } catch (e) {
+  } catch {
     // error handled silently
   }
 }

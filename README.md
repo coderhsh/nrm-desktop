@@ -98,6 +98,8 @@ pnpm build
 | `pnpm build:win` | Build Windows installer only |
 | `pnpm ui:dev` | Start Vite frontend dev server only |
 | `pnpm ui:build` | Type-check and build frontend only |
+| `pnpm lint` | ESLint check |
+| `pnpm test` | Vitest unit tests |
 | `pnpm tauri` | Pass-through Tauri CLI |
 | `pnpm update:logo` | Generate icon set from `src-tauri/icons/logo.png` |
 | `pnpm version` | Sync app version metadata |
