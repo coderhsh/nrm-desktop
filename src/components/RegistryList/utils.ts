@@ -72,3 +72,49 @@ export function pickDropIndexFromPointerY(
 
   return null
 }
+
+export type CategoryHostRect = {
+  label: string
+  rect: DOMRect
+}
+
+/**
+ * 根据指针 Y 与分类 host 几何区域解析跨分类落点（含块间间隙吸附）
+ */
+export function resolveDropCategoryFromPointerY(
+  clientY: number,
+  hosts: CategoryHostRect[],
+  stripPx: number,
+): string | null {
+  const n = hosts.length
+  if (n === 0) return null
+
+  const rects = hosts.map(h => h.rect)
+  const labels = hosts.map(h => h.label)
+
+  for (let i = 0; i < n; i++) {
+    const r = rects[i]
+    if (clientY >= r.top && clientY <= r.bottom) {
+      return labels[i]
+    }
+  }
+
+  if (clientY <= rects[0].top + stripPx) {
+    return labels[0]
+  }
+
+  for (let i = 0; i < n - 1; i++) {
+    const lo = rects[i].bottom - stripPx
+    const hi = rects[i + 1].top + stripPx
+    if (clientY >= lo && clientY <= hi) {
+      const midpoint = (rects[i].bottom + rects[i + 1].top) / 2
+      return clientY < midpoint ? labels[i] : labels[i + 1]
+    }
+  }
+
+  if (clientY >= rects[n - 1].bottom - stripPx) {
+    return labels[n - 1]
+  }
+
+  return null
+}

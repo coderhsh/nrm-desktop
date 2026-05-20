@@ -1,8 +1,12 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRegistryStore } from '@/stores/registry'
 import { storeToRefs } from 'pinia'
-import { MANAGE_DROP_STRIP_PX } from '@/components/RegistryList/constants'
-import { pickDropIndexFromPointerY } from '@/components/RegistryList/utils'
+import { CATEGORY_DROP_STRIP_PX, MANAGE_DROP_STRIP_PX } from '@/components/RegistryList/constants'
+import {
+  pickDropIndexFromPointerY,
+  resolveDropCategoryFromPointerY,
+  type CategoryHostRect,
+} from '@/components/RegistryList/utils'
 import type { Registry } from '@/types'
 
 interface CategoryManageContext {
@@ -116,6 +120,23 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
       }
     }
     return null
+  }
+
+  function getCategoryHostRects(): CategoryHostRect[] {
+    const out: CategoryHostRect[] = []
+    document.querySelectorAll('[data-registry-category-host]').forEach(host => {
+      const el = host as HTMLElement
+      const label = el.getAttribute('data-registry-category-host')
+      if (!label) return
+      out.push({ label, rect: el.getBoundingClientRect() })
+    })
+    return out
+  }
+
+  function resolveCategoryUnderPointer(clientX: number, clientY: number): string | null {
+    const hit = categoryUnderPointer(clientX, clientY)
+    if (hit) return hit
+    return resolveDropCategoryFromPointerY(clientY, getCategoryHostRects(), CATEGORY_DROP_STRIP_PX)
   }
 
   function updateRegistrySortDropFromPointer(clientY: number, srcCat: string) {
@@ -285,7 +306,9 @@ export function useRegistryDragSort(ctx: CategoryManageContext) {
           const searchOff = !searchQuery.value.trim()
 
       if (dragName && srcCat) {
-        const underCat = categoryUnderPointer(event.clientX, event.clientY)
+        const underCat = searchOff
+          ? resolveCategoryUnderPointer(event.clientX, event.clientY)
+          : categoryUnderPointer(event.clientX, event.clientY)
 
         if (underCat && underCat !== srcCat) {
           registrySortActive.value = false
