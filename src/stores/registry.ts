@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
 import type { Registry } from '@/types'
 import * as api from '@/api/tauri'
 import { testAllSpeed, testSingleSpeed } from '@/api/speedtest'

@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { ElMessage } from 'element-plus'
 import { useI18n } from '@/composables/useI18n'
 
 export function useAutostart() {

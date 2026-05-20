@@ -1,6 +1,5 @@
 import { ref, computed, watch, nextTick, h } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY, REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY } from '@/composables/useI18n'
 import { useRegistryStore } from '@/stores/registry'
 import { storeToRefs } from 'pinia'

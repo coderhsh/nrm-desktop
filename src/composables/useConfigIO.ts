@@ -1,4 +1,3 @@
-import { ElMessage, ElMessageBox } from 'element-plus'
 import * as api from '@/api/tauri'
 import { useRegistryStore } from '@/stores/registry'
 import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'

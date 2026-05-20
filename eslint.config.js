@@ -2,10 +2,19 @@ import js from "@eslint/js";
 import pluginVue from "eslint-plugin-vue";
 import tseslint from "typescript-eslint";
 import globals from "globals";
+import autoImportGlobals from "./.eslintrc-auto-import.json" with { type: "json" };
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "src-tauri/**", "node_modules/**", "pnpm-lock.yaml"],
+    ignores: [
+      "dist/**",
+      "src-tauri/**",
+      "node_modules/**",
+      "pnpm-lock.yaml",
+      "src/auto-imports.d.ts",
+      "src/components.d.ts",
+      ".eslintrc-auto-import.json",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -16,6 +25,7 @@ export default tseslint.config(
       globals: {
         ...globals.browser,
         ...globals.node,
+        ...autoImportGlobals.globals,
       },
     },
   },

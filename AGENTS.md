@@ -21,6 +21,7 @@
 | 请求/通信 | `@tauri-apps/api/core` 的 `invoke` |
 | UI 组件库 | Element Plus、`@element-plus/icons-vue` |
 | 样式方案 | UnoCSS、Less、全局 CSS、Element Plus 主题变量覆盖 |
+| 自动导入 | `unplugin-auto-import`（Vue/Pinia/Element Plus API）、`unplugin-vue-components`（Element Plus 组件按需） |
 | 动画/工具 | GSAP、VueUse |
 | 代码规范 | TypeScript strict；ESLint 9 flat config（`eslint.config.js`）；未发现 Prettier 配置 |
 
@@ -244,6 +245,7 @@ src-tauri/
 
 ### 前端 API 请求规则
 
+- Element Plus 组件与 `ElMessage`/`ElMessageBox` 等 API 由 Vite 插件自动导入，无需在 SFC 中手写 `import`；类型仍可从 `element-plus` 按需 `import type`。
 - 新 Tauri 调用优先封装到 `src/api/tauri.ts` 或 `src/api/speedtest.ts`。
 - 组件、store、composable 复用 API 封装，不要散落重复 `invoke`。
 - 保持现有错误处理方式：Rust `String` 错误 -> 前端 i18n formatter -> Element Plus 提示。

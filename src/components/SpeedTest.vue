@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, inject } from 'vue'
-import { ElMessage } from 'element-plus'
 import { RefreshRight } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
 import AppSurfaceCard from '@/components/AppSurfaceCard.vue'

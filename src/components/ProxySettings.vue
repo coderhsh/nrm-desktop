@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { ElMessage } from "element-plus";
 import * as api from "@/api/tauri";
 import { useI18n } from "@/composables/useI18n";
 import { formatInvokeErrorMessage } from "@/utils/invoke-error-i18n";

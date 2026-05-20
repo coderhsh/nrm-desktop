@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
 import { CopyDocument } from "@element-plus/icons-vue";
 import { open } from "@tauri-apps/plugin-shell";
 import { useRegistryStore } from "@/stores/registry";

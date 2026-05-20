@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CheckboxValueType } from 'element-plus'
 import { useI18n } from '@/composables/useI18n'
 
 defineProps<{
@@ -16,6 +17,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function onRememberChange(value: CheckboxValueType) {
+  emit('update:rememberCloseChoice', value === true)
+}
 </script>
 
 <template>
@@ -37,7 +42,7 @@ const { t } = useI18n()
       <div class="close-remember-wrap">
         <el-checkbox
           :model-value="rememberCloseChoice"
-          @update:model-value="(v: boolean) => emit('update:rememberCloseChoice', v)"
+          @update:model-value="onRememberChange"
         >
           {{ t('app.closeDialog.remember') }}
         </el-checkbox>

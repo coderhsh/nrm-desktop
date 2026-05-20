@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
-import { ElMessage } from 'element-plus'
 import type { FormInstance, InputInstance } from 'element-plus'
 import { RefreshRight } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'

@@ -1,8 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import ElementPlus from "element-plus";
-/* Theme load order: Element base → dark vars → Uno → app overrides in style.css */
-import "element-plus/dist/index.css";
+/* Element Plus: per-component styles via unplugin; keep dark CSS variables global */
 import "element-plus/theme-chalk/dark/css-vars.css";
 import "uno.css";
 import App from "./App.vue";
@@ -27,7 +25,6 @@ async function bootstrap() {
 
   const app = createApp(App);
   app.use(createPinia());
-  app.use(ElementPlus, { locale: undefined });
   app.config.errorHandler = (err, instance, info) => {
     console.error("[vue]", err, info, instance);
   };

@@ -2,7 +2,6 @@
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { onClickOutside } from '@vueuse/core'
-import { ElMessage } from 'element-plus'
 import type { InputInstance } from 'element-plus'
 import { Delete, DocumentCopy, Expand, Fold, Rank, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
 import { useRegistryStore } from '@/stores/registry'
@@ -288,7 +287,6 @@ function openDetail(registry: Registry) {
 async function handleDelete(registry: Registry) {
   contextMenu.value = null
   try {
-    const { ElMessageBox } = await import('element-plus')
     await ElMessageBox.confirm(t('registryList.confirmDeleteContent', { name: registry.name }), t('registryList.confirmDeleteTitle'), {
       confirmButtonText: t('common.delete'),
       cancelButtonText: t('common.cancel'),
