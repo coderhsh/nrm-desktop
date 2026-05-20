@@ -13,7 +13,7 @@
 | 类型 | 技术 |
 | --- | --- |
 | 框架 | Vue 3 |
-| 构建工具 | Vite 5 |
+| 构建工具 | Vite 7 |
 | 语言 | TypeScript |
 | 包管理器 | pnpm |
 | 路由 | 未使用 vue-router，主界面由 `src/App.vue` 组合 |
@@ -68,7 +68,7 @@
 ├── index.html           # Vite HTML 入口
 ├── package.json         # pnpm scripts 与前端依赖
 ├── vite.config.ts       # Vite + Vue + UnoCSS 配置
-├── uno.config.ts        # UnoCSS preset、主题色和 shortcuts
+├── uno.config.ts        # UnoCSS presetWind3、主题色和 shortcuts
 ├── tsconfig.json        # 前端 TypeScript 配置
 └── tsconfig.node.json   # Node 侧配置文件类型检查配置
 ```

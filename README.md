@@ -54,7 +54,7 @@ Switch, manage, and test npm registries — without touching the terminal.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 20.19+
 - [pnpm](https://pnpm.io/)
 - [Rust toolchain](https://www.rust-lang.org/tools/install) (`rustup`, `cargo`)
 - OS-specific Tauri dependencies — see [Tauri v2 Prerequisites](https://v2.tauri.app/start/prerequisites/)

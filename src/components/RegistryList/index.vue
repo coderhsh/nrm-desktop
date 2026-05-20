@@ -61,7 +61,6 @@ const {
   showCategoryManageDialog,
   categoryManageDraftLabels,
   newCategoryLabel,
-  newCategoryLabelInputRef,
   editingCategoryLabel,
   categoryRenameInputs,
   getCategoryRenameRefCallback,
@@ -778,7 +777,7 @@ onMounted(async () => {
     <el-dialog v-model="showCategoryManageDialog" :title="t('categoryDialog.title')" width="520px" class="category-manage-dialog app-dialog" modal-class="category-manage-modal" append-to-body align-center :close-on-click-modal="false" @opened="focusNewCategoryLabelInput" @closed="onCategoryManageDialogClosed">
       <div class="category-manage-content">
         <div class="category-create-row">
-          <el-input ref="newCategoryLabelInputRef" v-model="newCategoryLabel" :placeholder="t('categoryDialog.newPlaceholder')" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="handleAddCategoryToDraft" />
+          <el-input :ref="categoryManage.newCategoryLabelInputRef" v-model="newCategoryLabel" :placeholder="t('categoryDialog.newPlaceholder')" :maxlength="CATEGORY_LABEL_MAX_LENGTH" show-word-limit clearable @keyup.enter="handleAddCategoryToDraft" />
           <el-button class="category-create-btn category-create-btn--add" @click="handleAddCategoryToDraft">
             {{ t('categoryDialog.add') }}
           </el-button>

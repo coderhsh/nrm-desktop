@@ -54,7 +54,7 @@
 
 ### 环境要求
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 20.19+
 - [pnpm](https://pnpm.io/)
 - [Rust 工具链](https://www.rust-lang.org/tools/install)（`rustup`、`cargo`）
 - 系统对应的 Tauri 依赖 —— 参见 [Tauri v2 Prerequisites](https://v2.tauri.app/start/prerequisites/)

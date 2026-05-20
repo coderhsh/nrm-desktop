@@ -1,9 +1,9 @@
-import { defineConfig, presetUno, presetAttributify } from 'unocss'
+import { defineConfig, presetWind3, presetAttributify } from 'unocss'
 import transformerDirectives from '@unocss/transformer-directives'
 
 export default defineConfig({
   /* `dark:` utilities follow `html.dark` from useTheme (not only system prefers-color-scheme) */
-  presets: [presetUno({ dark: 'class' }), presetAttributify()],
+  presets: [presetWind3({ dark: 'class' }), presetAttributify()],
   transformers: [transformerDirectives()],
   theme: {
     colors: {
