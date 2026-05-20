@@ -6,6 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+import { spawnPnpm } from './spawn-pnpm.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -118,10 +119,8 @@ async function pathExists(filePath) {
  * @returns {Promise<void>}
  */
 function runTauriBuild() {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-
   return new Promise((resolve, reject) => {
-    const child = spawn(command, ['tauri', 'build'], {
+    const child = spawnPnpm(['tauri', 'build'], {
       cwd: rootDir,
       stdio: 'inherit',
       env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
@@ -148,11 +147,10 @@ function runTauriBuild() {
  * @returns {Promise<void>}
  */
 function runTauriBuildWithBundles(bundles) {
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
   const args = ['tauri', 'build', '--bundles', bundles.join(',')]
 
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const child = spawnPnpm(args, {
       cwd: rootDir,
       stdio: 'inherit',
       env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },

@@ -1,7 +1,8 @@
-import { defineConfig, presetWind3, presetAttributify } from 'unocss'
+import presetAttributify from '@unocss/preset-attributify'
+import presetWind3 from '@unocss/preset-wind3'
 import transformerDirectives from '@unocss/transformer-directives'
 
-export default defineConfig({
+export default {
   /* `dark:` utilities follow `html.dark` from useTheme (not only system prefers-color-scheme) */
   presets: [presetWind3({ dark: 'class' }), presetAttributify()],
   transformers: [transformerDirectives()],
@@ -33,4 +34,4 @@ export default defineConfig({
     'app-panel': 'rounded-xl border border-app-separator bg-app-surface p-4',
   },
   rules: [],
-})
+}

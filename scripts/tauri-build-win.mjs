@@ -5,6 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+import { spawnPnpm } from './spawn-pnpm.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -264,7 +265,6 @@ async function printArtifacts() {
  */
 function runTauriBuildWin() {
   const isWin = process.platform === 'win32'
-  const command = isWin ? 'pnpm.cmd' : 'pnpm'
   const basePath = process.env.PATH ?? ''
   const pathParts = basePath.split(path.delimiter).filter(Boolean)
   const mergedPath = [...new Set([...EXTRA_PATH_DIRS, ...pathParts])].join(path.delimiter)
@@ -291,7 +291,7 @@ function runTauriBuildWin() {
 
   return new Promise((resolve, reject) => {
     let combinedOutput = ''
-    const child = spawn(command, args, {
+    const child = spawnPnpm(args, {
       cwd: rootDir,
       stdio: ['inherit', 'pipe', 'pipe'],
       env: { ...process.env, PATH: mergedPath },

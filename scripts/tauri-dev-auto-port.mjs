@@ -1,11 +1,11 @@
 /*  @desc 解决「端口冲突」+「保证 dev 时前后端端口一致」+「避免双托盘」，并在退出时清理临时配置。 */
-import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+import { spawnPnpm } from './spawn-pnpm.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -94,8 +94,7 @@ async function main() {
 
   process.stdout.write(`\n[tauri-dev] 使用端口: ${port}\n`)
 
-  const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  const child = spawn(command, ['tauri', 'dev', '--config', tempConfigPath], {
+  const child = spawnPnpm(['tauri', 'dev', '--config', tempConfigPath], {
     cwd: rootDir,
     stdio: 'inherit',
     env: process.env,
