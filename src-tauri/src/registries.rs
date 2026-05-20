@@ -15,14 +15,6 @@ struct CustomData {
     deleted_presets: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ExportData {
-    pub version: String,
-    pub exported_at: String,
-    pub presets: Vec<Registry>,
-    pub custom: Vec<Registry>,
-}
-
 /// Get the config directory for storing custom registries.
 fn config_dir() -> PathBuf {
     let home = if let Ok(home) = std::env::var("USERPROFILE") {
@@ -316,18 +308,6 @@ pub fn update(name: &str, new_name: &str, new_url: &str) -> io::Result<()> {
     save_custom_data(&data)
 }
 
-/// Export all registries as ExportData（`presets` 留空以兼容旧版导入格式）。
-pub fn export_all() -> io::Result<ExportData> {
-    let custom = load_custom()?;
-    let now = chrono_now();
-    Ok(ExportData {
-        version: "1.0".to_string(),
-        exported_at: now,
-        presets: Vec::new(),
-        custom,
-    })
-}
-
 /// Import and replace registries.
 pub fn import_custom(imported: &[Registry]) -> io::Result<()> {
     let mut cleaned: Vec<Registry> = imported
@@ -357,34 +337,3 @@ pub fn reset_to_defaults() -> io::Result<()> {
     save_custom_data(&data)
 }
 
-fn chrono_now() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let dur = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default();
-    let secs = dur.as_secs();
-    let days = secs / 86400;
-    let t = secs % 86400;
-    let h = t / 3600;
-    let m = (t % 3600) / 60;
-    let s = t % 60;
-
-    let mut y = 1970i64;
-    let mut rem = days as i64;
-    loop {
-        let diy = if (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0) { 366 } else { 365 };
-        if rem < diy { break; }
-        rem -= diy;
-        y += 1;
-    }
-    let mdays: [i64; 12] = if (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0) {
-        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    } else {
-        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    };
-    let mut mo = 1;
-    for &md in &mdays {
-        if rem < md { break; }
-        rem -= md;
-        mo += 1;
-    }
-    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", y, mo, rem + 1, h, m, s)
-}

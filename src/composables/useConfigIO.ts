@@ -1,21 +1,44 @@
+import { getVersion } from '@tauri-apps/api/app'
 import * as api from '@/api/tauri'
 import { useRegistryStore } from '@/stores/registry'
-import { useI18n, CATEGORY_BY_REGISTRY_STORAGE_KEY } from '@/composables/useI18n'
+import {
+  useI18n,
+  CATEGORY_BY_REGISTRY_STORAGE_KEY,
+  REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY,
+} from '@/composables/useI18n'
 import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
+import { buildConfigExport, parseConfigImport } from '@/utils/config-export'
 import { useLocalStorage } from '@vueuse/core'
+
+const CATEGORY_LABELS_STORAGE_KEY = 'nrm-desktop-category-labels'
 
 export function useConfigIO() {
   const { t, language } = useI18n()
   const store = useRegistryStore()
   const categoryByRegistry = useLocalStorage<Record<string, string>>(CATEGORY_BY_REGISTRY_STORAGE_KEY, {})
+  const categoryLabels = useLocalStorage<string[]>(CATEGORY_LABELS_STORAGE_KEY, [])
+  const registryOrderByCategory = useLocalStorage<Record<string, string[]>>(
+    REGISTRY_ORDER_BY_CATEGORY_STORAGE_KEY,
+    {},
+  )
 
   async function handleExport() {
     try {
-      const data = await api.exportConfig()
-      const json = JSON.stringify(data, null, 2)
+      await store.fetchRegistries()
+      const appVersion = await getVersion()
+      const payload = buildConfigExport({
+        appVersion,
+        language: language.value,
+        registries: store.registries,
+        categoryLabels: categoryLabels.value,
+        categoryByRegistry: categoryByRegistry.value,
+        registryOrderByCategory: registryOrderByCategory.value,
+        uncategorizedLabel: t('registryList.uncategorized'),
+      })
+      const json = JSON.stringify(payload, null, 2)
       const { save } = await import('@tauri-apps/plugin-dialog')
       const path = await save({
-        defaultPath: 'nrm-registries.json',
+        defaultPath: 'nrm-config.json',
         filters: [{ name: 'JSON', extensions: ['json'] }],
       })
       if (!path) return
@@ -35,7 +58,11 @@ export function useConfigIO() {
       })
       if (!path) return
       const json = await api.readTextFile(path as string)
-      await api.importConfig(json)
+      const parsed = parseConfigImport(json, t('registryList.uncategorized'))
+      await api.importRegistries(parsed.registries)
+      categoryLabels.value = [...parsed.categories.categoryLabels]
+      categoryByRegistry.value = { ...parsed.categories.categoryByRegistry }
+      registryOrderByCategory.value = { ...parsed.categories.registryOrderByCategory }
       await store.fetchRegistries()
       ElMessage.success(t('app.import.success'))
     } catch (e) {
@@ -63,7 +90,9 @@ export function useConfigIO() {
       if (lang === 'en' || lang === 'zh-CN') {
         language.value = lang
       }
+      categoryLabels.value = []
       categoryByRegistry.value = {}
+      registryOrderByCategory.value = {}
       await store.fetchRegistries()
       ElMessage.success(t('app.resetConfirm.success'))
       return true

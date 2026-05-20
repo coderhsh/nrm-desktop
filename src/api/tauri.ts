@@ -46,19 +46,13 @@ export async function updateRegistry(
   return invoke<void>("update_registry", { name, newName, newUrl });
 }
 
-export interface ExportData {
-  version: string;
-  exported_at: string;
-  presets: Registry[];
-  custom: Registry[];
+export interface RegistryImportItem {
+  name: string;
+  url: string;
 }
 
-export async function exportConfig(): Promise<ExportData> {
-  return invoke<ExportData>("export_config");
-}
-
-export async function importConfig(jsonData: string): Promise<void> {
-  return invoke<void>("import_config", { jsonData });
+export async function importRegistries(registries: RegistryImportItem[]): Promise<void> {
+  return invoke<void>("import_registries", { items: registries });
 }
 
 export async function resetDefaults(): Promise<string> {

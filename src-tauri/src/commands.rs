@@ -286,18 +286,24 @@ pub async fn test_url_speed(url: &str) -> Result<speedtest::LatencyResult, Strin
     speedtest::test_url(url).await
 }
 
-#[tauri::command]
-pub fn export_config() -> Result<registries::ExportData, String> {
-    registries::export_all().map_err(|e| e.to_string())
+#[derive(Debug, Deserialize)]
+pub struct RegistryImportItem {
+    pub name: String,
+    pub url: String,
 }
 
 #[tauri::command]
-pub fn import_config(json_data: &str) -> Result<(), String> {
-    let data: registries::ExportData =
-        serde_json::from_str(json_data).map_err(|e| format!("JSON 解析失败: {}", e))?;
-    let mut merged = data.presets;
-    merged.extend(data.custom);
-    registries::import_custom(&merged).map_err(|e| e.to_string())
+pub fn import_registries(items: Vec<RegistryImportItem>) -> Result<(), String> {
+    let imported: Vec<Registry> = items
+        .into_iter()
+        .map(|item| Registry {
+            name: item.name.trim().to_string(),
+            url: item.url.trim().to_string(),
+            is_custom: true,
+        })
+        .filter(|r| !r.name.is_empty() && !r.url.is_empty())
+        .collect();
+    registries::import_custom(&imported).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
