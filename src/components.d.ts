@@ -28,6 +28,7 @@ declare module 'vue' {
     ProxySettings: typeof import('./components/ProxySettings.vue')['default']
     RegistryDialog: typeof import('./components/RegistryList/RegistryDialog.vue')['default']
     RegistryList: typeof import('./components/RegistryList/index.vue')['default']
+    SearchHighlightText: typeof import('./components/RegistryList/SearchHighlightText.vue')['default']
     SettingsDrawer: typeof import('./components/SettingsDrawer.vue')['default']
     SpeedTest: typeof import('./components/SpeedTest.vue')['default']
   }

@@ -79,6 +79,23 @@
   }
 }
 
+// ==================== 搜索高亮 ====================
+.search-highlight-text {
+  display: inline;
+}
+
+.registry-search-highlight {
+  background: color-mix(in srgb, var(--el-color-primary) 26%, transparent);
+  color: inherit;
+  font-weight: inherit;
+  padding: 0 0.06em;
+  border-radius: 0.15rem;
+}
+
+html.dark .registry-search-highlight {
+  background: color-mix(in srgb, var(--el-color-primary) 34%, transparent);
+}
+
 // ==================== 空状态 ====================
 .category-empty-state {
   width: 100%;

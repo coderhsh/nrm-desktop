@@ -13,6 +13,7 @@ import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/la
 import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
 import RegistryDialog from './RegistryDialog.vue'
+import SearchHighlightText from './SearchHighlightText.vue'
 import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 import { CATEGORY_LABEL_MAX_LENGTH } from './constants'
 import type { ManageCategorySlot, RegistrySlot, GroupedRegistries } from './constants'
@@ -625,11 +626,11 @@ onMounted(async () => {
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-1.5">
                         <span class="registry-item-name text-sm font-semibold truncate">
-                          {{ slot.registry.name }}
+                          <SearchHighlightText :text="slot.registry.name" :query="searchQuery" />
                         </span>
                       </div>
                       <div class="registry-item-url text-xs truncate mt-0.5">
-                        {{ slot.registry.url }}
+                        <SearchHighlightText :text="slot.registry.url" :query="searchQuery" />
                       </div>
                     </div>
                     <div class="flex items-center gap-2 ml-2 flex-shrink-0">
@@ -673,11 +674,11 @@ onMounted(async () => {
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-1.5">
                         <span class="registry-item-name text-sm font-semibold truncate">
-                          {{ slot.registry.name }}
+                          <SearchHighlightText :text="slot.registry.name" :query="searchQuery" />
                         </span>
                       </div>
                       <div class="registry-item-url text-xs truncate mt-0.5">
-                        {{ slot.registry.url }}
+                        <SearchHighlightText :text="slot.registry.url" :query="searchQuery" />
                       </div>
                     </div>
                     <div class="flex items-center gap-2 ml-2 flex-shrink-0">
@@ -872,9 +873,13 @@ onMounted(async () => {
       >
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
-            <span class="registry-item-name text-sm font-semibold truncate">{{ draggingRegistry.name }}</span>
+            <span class="registry-item-name text-sm font-semibold truncate">
+              <SearchHighlightText :text="draggingRegistry.name" :query="searchQuery" />
+            </span>
           </div>
-          <div class="registry-item-url text-xs truncate mt-0.5">{{ draggingRegistry.url }}</div>
+          <div class="registry-item-url text-xs truncate mt-0.5">
+            <SearchHighlightText :text="draggingRegistry.url" :query="searchQuery" />
+          </div>
         </div>
         <div class="flex items-center gap-2 ml-2 flex-shrink-0">
           <template v-if="latencyResults[draggingRegistry.name]">
