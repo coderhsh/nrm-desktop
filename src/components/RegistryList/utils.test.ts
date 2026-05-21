@@ -4,9 +4,9 @@ import type { Registry } from '@/types'
 import type { LatencyResult } from '@/api/speedtest'
 
 const registries: Registry[] = [
-  { name: 'beta', url: 'https://beta.test' },
-  { name: 'alpha', url: 'https://alpha.test' },
-  { name: 'gamma', url: 'https://gamma.test' },
+  { name: 'beta', url: 'https://beta.test', is_custom: false },
+  { name: 'alpha', url: 'https://alpha.test', is_custom: false },
+  { name: 'gamma', url: 'https://gamma.test', is_custom: false },
 ]
 
 const latencyByName: Record<string, LatencyResult> = {
