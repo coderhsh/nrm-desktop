@@ -9,9 +9,9 @@ on:
         type: boolean
         default: true
       build_macos_x64:
-        description: 构建 macOS Intel x64
+        description: 构建 macOS Intel x64（可选，CI 耗时/费用高于 Apple Silicon）
         type: boolean
-        default: true
+        default: false
       build_macos_arm64:
         description: 构建 macOS Apple Silicon arm64
         type: boolean
@@ -143,6 +143,10 @@ jobs:
             echo ""
             echo "- 平台：$selected_platforms_text"
             echo "- Windows 产物：$windows_products_text"
+            if [[ "$BUILD_MACOS_X64" == "true" ]]; then
+              echo ""
+              echo "> macOS Intel 使用 \`macos-15-intel\` runner，CI 分钟消耗高于 Apple Silicon；若无 Intel Mac 用户需求可取消勾选。"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
   build:
@@ -195,6 +199,12 @@ jobs:
       # 使用 lockfile 安装前端依赖，保证 CI 与仓库锁定版本一致。
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # GitHub windows-latest 不预装 NSIS / WiX；Tauri 打 setup.exe 与 MSI 依赖二者。
+      - name: Install Windows packaging tools
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install nsis wixtoolset -y --no-progress
 
       # 从 package.json 读取应用版本号，后续用于 Artifacts 命名，例如 nrm-desktop-v1.0.0-windows-x64.msi。
       - name: Read app version
