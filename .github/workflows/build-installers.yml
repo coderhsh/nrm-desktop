@@ -34,24 +34,19 @@ jobs:
           - label: Windows x64
             os: windows-latest
             build-command: pnpm build:win
-            artifact-name: nrm-desktop-windows-x64
-            artifact-path: |
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            artifact-suffix: windows-x64
 
           # Intel Mac runner，用于产出 x64 DMG。
           - label: macOS Intel
             os: macos-15-intel
             build-command: pnpm build
-            artifact-name: nrm-desktop-macos-x64
-            artifact-path: src-tauri/target/release/bundle/dmg/*.dmg
+            artifact-suffix: macos-x64
 
           # Apple Silicon runner，用于产出 arm64 DMG。
           - label: macOS Apple Silicon
             os: macos-15
             build-command: pnpm build
-            artifact-name: nrm-desktop-macos-arm64
-            artifact-path: src-tauri/target/release/bundle/dmg/*.dmg
+            artifact-suffix: macos-arm64
 
     steps:
       # 拉取仓库源码。
@@ -93,15 +88,70 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 从 package.json 读取应用版本号，后续用于 Artifacts 命名，例如 nrm-desktop-v1.0.0-windows-x64.msi。
+      - name: Read app version
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
       # 执行矩阵中指定的平台构建命令：Windows 用 build:win，macOS 用 build。
       - name: Build installer
         run: ${{ matrix.build-command }}
 
-      # 上传安装包到本次 workflow run 的 Artifacts；找不到产物时直接失败，避免空包误判。
-      - name: Upload installer artifacts
+      # 生成 Windows 免安装版 zip：包含 release 主程序，用户解压后可直接双击 nrm-desktop.exe。
+      - name: Create Windows portable zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $portableRoot = "portable\nrm-desktop"
+          $exePath = "src-tauri\target\x86_64-pc-windows-msvc\release\nrm-desktop.exe"
+          $zipPath = "portable\nrm-desktop-v$env:APP_VERSION-${{ matrix.artifact-suffix }}-portable.zip"
+
+          if (!(Test-Path $exePath)) {
+            throw "未找到 Windows 主程序：$exePath"
+          }
+
+          New-Item -ItemType Directory -Force -Path $portableRoot | Out-Null
+          Copy-Item $exePath "$portableRoot\nrm-desktop.exe" -Force
+          Compress-Archive -Path "$portableRoot\*" -DestinationPath $zipPath -Force
+
+      # 单独上传 Windows NSIS 安装包（通常是 setup.exe），方便在 Artifacts 列表中直接区分。
+      - name: Upload Windows setup.exe artifact
+        if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact-name }}
-          path: ${{ matrix.artifact-path }}
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-setup.exe
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      # 单独上传 Windows MSI 安装包；如果未产出 MSI，该步骤会失败，避免误以为两类安装包都打好了。
+      - name: Upload Windows MSI artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.msi
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 14
+
+      # 上传 Windows 免安装版 zip，适合不想运行安装器的场景。
+      - name: Upload Windows portable zip artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
+          path: portable/nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      # 上传 macOS DMG；Intel 和 Apple Silicon 通过矩阵后缀区分。
+      - name: Upload macOS DMG artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.dmg
+          path: src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
           retention-days: 14
