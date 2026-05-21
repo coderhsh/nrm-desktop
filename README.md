@@ -110,10 +110,11 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 
 ### One-click release
 
-1. Write release notes under `[Unreleased]` in [CHANGELOG.md](./CHANGELOG.md) and [CHANGELOG.zh-CN.md](./CHANGELOG.zh-CN.md), then merge to `main`.
-2. Open **Actions → Build Installers → Run workflow**.
+1. Develop on `dev`, then merge into `main` (PR or direct merge).
+2. Open **Actions → Build Installers → Run workflow** on **`main`**.
 3. Set **mode** to `release`, enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, then run.
-4. CI will bump versions, archive changelogs, commit to `main`, build Windows + macOS (Apple Silicon) installers, and create a GitHub Release.
+4. CI will bump versions, archive changelogs, commit to `main`, build installers, create a GitHub Release, and **merge the release commit back into `dev`**.
+5. Locally: `git checkout dev && git pull origin dev` to continue development.
 
 Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`.
 
@@ -126,7 +127,7 @@ Run workflow with **mode** `build-only` to upload Artifacts only (14-day retenti
 ### Repository settings
 
 - **Settings → Actions → General → Workflow permissions**: enable **Read and write permissions**.
-- If `main` has branch protection, allow `github-actions[bot]` to push (or configure a PAT secret for release commits).
+- If branch protection is enabled on **`main`** or **`dev`**, allow `github-actions[bot]` to push (or configure a PAT secret for release commits).
 
 ## Tech Stack
 

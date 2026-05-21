@@ -121,6 +121,65 @@ jobs:
             echo "- 后续步骤：并行构建安装包并创建 GitHub Release"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  sync-dev:
+    name: Sync release commit to dev
+    needs: prepare-release
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'release' && needs.prepare-release.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: dev
+
+      - name: Merge release commit into dev
+        env:
+          RELEASE_SHA: ${{ needs.prepare-release.outputs.commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$RELEASE_SHA" ]]; then
+            echo "::error::缺少 release commit SHA，无法同步 dev。"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin dev main
+
+          if ! git show-ref --verify --quiet "refs/remotes/origin/dev"; then
+            echo "::error::远程不存在 dev 分支，无法自动同步。请先创建 dev 分支。"
+            exit 1
+          fi
+
+          git checkout dev
+          if git merge-base --is-ancestor "$RELEASE_SHA" HEAD; then
+            echo "dev 已包含 release commit（$RELEASE_SHA），跳过 push。"
+            exit 0
+          fi
+
+          if ! git merge --no-edit "$RELEASE_SHA"; then
+            echo "::error::无法自动合并 release commit 到 dev。请在本地执行: git checkout dev && git merge origin/main"
+            exit 1
+          fi
+
+          git push origin dev
+
+      - name: Write sync summary
+        shell: bash
+        run: |
+          {
+            echo "### dev 分支已同步"
+            echo ""
+            echo "- 已合并 release commit：\`${{ needs.prepare-release.outputs.commit_sha }}\`"
+            echo "- 本地继续开发：\`git checkout dev && git pull origin dev\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   prepare:
     name: Prepare build matrix
     needs: prepare-release

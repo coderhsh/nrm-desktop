@@ -110,10 +110,11 @@ pnpm build
 
 ### 一键发布
 
-1. 在 [CHANGELOG.zh-CN.md](./CHANGELOG.zh-CN.md) / [CHANGELOG.md](./CHANGELOG.md) 的 `[未发布]` / `[Unreleased]` 中写好更新说明，合并到 `main`。
-2. 打开 **Actions → Build Installers → Run workflow**。
+1. 在 `dev` 分支开发，写好 [CHANGELOG.zh-CN.md](./CHANGELOG.zh-CN.md) / [CHANGELOG.md](./CHANGELOG.md) 的 `[未发布]` / `[Unreleased]` 后，合并到 `main`。
+2. 在 **`main`** 分支打开 **Actions → Build Installers → Run workflow**。
 3. **mode** 选 `release`，填写 **version**（如 `1.0.1`），可按需勾选 **draft_release**，然后运行。
-4. CI 会自动 bump 版本、归档 CHANGELOG、提交到 `main`、构建 Windows + macOS（Apple Silicon）安装包，并创建 GitHub Release。
+4. CI 会自动 bump 版本、归档 CHANGELOG、提交到 `main`、构建安装包、创建 GitHub Release，并 **将 release commit 合并回 `dev`**。
+5. 本地执行 `git checkout dev && git pull origin dev` 即可继续开发。
 
 默认 Release 产物：Windows `setup.exe`、`.msi`、`portable.zip`，以及 macOS Apple Silicon `.dmg`。
 
@@ -126,7 +127,7 @@ pnpm build
 ### 仓库设置
 
 - **Settings → Actions → General → Workflow permissions**：开启 **Read and write permissions**。
-- 若 `main` 开启了分支保护，需允许 `github-actions[bot]` 推送（或为发布 commit 配置 PAT secret）。
+- 若 **`main`** 或 **`dev`** 开启了分支保护，需允许 `github-actions[bot]` 推送（或为发布 commit 配置 PAT secret）。
 
 ## 技术栈
 
