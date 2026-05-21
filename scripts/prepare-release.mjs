@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { buildReleaseInstallSection } from './render-release-install-guide.mjs'
+import { buildChangelogLinksLine, buildReleaseInstallSection } from './render-release-install-guide.mjs'
 import { normalizeReleaseArtifactOptions } from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 
@@ -277,23 +277,41 @@ function readReleaseArtifactOptionsFromEnv() {
 }
 
 /**
+ * @param {string} englishSection
+ * @returns {string}
+ */
+function stripChangelogVersionHeader(englishSection) {
+  return englishSection.trim().replace(/^## \[[^\]]+\] - \d{4}-\d{2}-\d{2}\n+/m, '')
+}
+
+/**
+ * @param {string} version
+ * @param {string} englishSection
+ * @returns {string}
+ */
+function buildReleaseNotesSection(version, englishSection) {
+  const content = stripChangelogVersionHeader(englishSection)
+  return `## Release Notes
+
+${content}
+
+${buildChangelogLinksLine(version)}`
+}
+
+/**
  * @param {string} version
  * @param {string} englishSection
  * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} artifactOptions
  * @returns {string}
  */
 function buildReleaseBody(version, englishSection, artifactOptions) {
-  const tag = `v${version}`
-  const installGuide = buildReleaseInstallSection(version, artifactOptions)
-  return `${englishSection}
+  const releaseNotes = buildReleaseNotesSection(version, englishSection)
+  const installSection = buildReleaseInstallSection(version, artifactOptions)
+  return `${releaseNotes}
 
 ---
 
-${installGuide}
-
----
-
-Full changelog: [CHANGELOG.md](${REPO_COMPARE_BASE}/${tag}...HEAD) · [CHANGELOG.zh-CN.md](https://github.com/coderhsh/nrm-desktop/blob/${tag}/CHANGELOG.zh-CN.md)`
+${installSection}`
 }
 
 /**

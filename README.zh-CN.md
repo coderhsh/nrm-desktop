@@ -129,7 +129,7 @@ pnpm build
 
 默认 Release 产物：Windows `setup.exe`、`.msi`、`portable.zip`，以及 macOS Apple Silicon `.dmg`；可在 workflow 中取消勾选不需要的格式。
 
-发布前可编辑 [`docs/release-install-guide.md`](./docs/release-install-guide.md) 与 [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md) 中的安装说明文案；Release 页面默认展示英文下载说明，并提供可展开的中文段落，文件名与下载链接会由构建配置自动生成。
+发布前可编辑 [`docs/release-install-guide.release.md`](./docs/release-install-guide.release.md)（Release 页英文安装短节）、[`docs/release-install-guide.md`](./docs/release-install-guide.md) / [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md)（完整安装文档，通过 Release 内链接打开）。Release 正文分为 **Release Notes** 与 **Downloads** 两节，默认全英文；每节末尾提供完整英文文档链接与中文链接（如「完整更新日志」「安装说明」）。
 
 ### 仅打包（不发 Release）
 

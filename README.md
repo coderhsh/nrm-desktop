@@ -129,7 +129,7 @@ Retry and overwrite runs **do not** sync a release commit to `dev` (no new bump 
 
 Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`; uncheck any formats you do not want to publish.
 
-Before releasing, you can edit the install guide templates under [`docs/release-install-guide.md`](./docs/release-install-guide.md) and [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md). The release notes will include English download instructions by default, with a collapsible Chinese section; filenames and download links are generated automatically from the build config.
+Before releasing, edit [`docs/release-install-guide.release.md`](./docs/release-install-guide.release.md) (short English Downloads section on the Release page), and [`docs/release-install-guide.md`](./docs/release-install-guide.md) / [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md) (full install docs linked from the Release). The Release body has two sections — **Release Notes** and **Downloads** — all in English by default; each section ends with links to the full English doc and a Chinese doc (e.g. 完整更新日志, 安装说明).
 
 ### Build only (no Release)
 
