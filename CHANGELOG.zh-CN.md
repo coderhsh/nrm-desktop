@@ -9,6 +9,8 @@
 
 ## [未发布]
 
+## [1.0.1] - 2026-05-21
+
 ### 新增
 
 - 源列表搜索关键词高亮（`SearchHighlightText`）
@@ -50,5 +52,6 @@
 - 开机自启动、关闭行为（最小化到托盘或退出）、单实例锁
 - 代理配置后端能力（界面入口可在后续版本开放）
 
-[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.0.0...HEAD
+[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.1
 [1.0.0]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.0

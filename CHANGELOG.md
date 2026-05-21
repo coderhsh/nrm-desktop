@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-21
+
 ### Added
 
 - Search highlight in the registry list (`SearchHighlightText`)
@@ -50,5 +52,6 @@ First stable release.
 - Autostart, close behavior (minimize to tray or quit), and single-instance lock
 - Proxy settings backend (UI entry optional in later releases)
 
-[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.1
 [1.0.0]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.0
