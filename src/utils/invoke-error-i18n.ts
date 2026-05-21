@@ -20,12 +20,6 @@ export function formatInvokeErrorMessage(t: TranslateFn, error: unknown): string
   const mNotFound = /^未找到源:\s*(.+)$/.exec(raw);
   if (mNotFound) return t("backend.registryNotFoundWithName", { name: mNotFound[1]!.trim() });
 
-  const mNameConflict = /^源名称 '(.+)' 与预设源冲突$/.exec(raw);
-  if (mNameConflict) return t("backend.importNamePresetConflict", { name: mNameConflict[1]! });
-
-  const mUrlConflict = /^URL '(.+)' 与预设源冲突$/.exec(raw);
-  if (mUrlConflict) return t("backend.importUrlPresetConflict", { url: mUrlConflict[1]! });
-
   const prefixed =
     tryPrefix("备份失败:", "backend.npmrcBackupFailed") ??
     tryPrefix("设置失败:", "backend.npmrcSetFailed") ??
@@ -40,7 +34,6 @@ export function formatInvokeErrorMessage(t: TranslateFn, error: unknown): string
   const exact: Record<string, string> = {
     该名称已存在: "backend.nameAlreadyExists",
     "该 URL 已存在": "backend.urlAlreadyExists",
-    "与预设源名称或 URL 冲突": "backend.presetNameOrUrlConflict",
     未找到该源: "backend.registryNotFound",
     "URL 必须以 http:// 或 https:// 开头": "backend.urlMustHttpHttps",
     不支持的语言: "backend.unsupportedLanguage",

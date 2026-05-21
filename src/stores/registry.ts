@@ -123,7 +123,7 @@ export const useRegistryStore = defineStore('registry', () => {
     try {
       await api.addRegistry(name, url)
       await measureRegistryLatency(name)
-      registries.value.push({ name, url, is_custom: true })
+      registries.value.push({ name, url })
     } catch (e) {
       ElMessage.error(t('registryStore.addFailed', { error: formatInvokeErrorMessage(t, e) }))
       throw e
@@ -212,7 +212,6 @@ export const useRegistryStore = defineStore('registry', () => {
             ...hit,
             name: newName,
             url: newUrl,
-            is_custom: true,
           }
         }
         latencyResults.value = next
@@ -224,17 +223,16 @@ export const useRegistryStore = defineStore('registry', () => {
             [name]: {
               ...hit,
               url: newUrl,
-              is_custom: true,
             },
           }
         }
       }
 
       if (idx !== -1) {
-        registries.value[idx] = { name: newName, url: newUrl, is_custom: true }
+        registries.value[idx] = { name: newName, url: newUrl }
       }
       if (currentRegistry.value?.name === name) {
-        currentRegistry.value = { name: newName, url: newUrl, is_custom: true }
+        currentRegistry.value = { name: newName, url: newUrl }
       }
     } catch (e) {
       ElMessage.error(t('registryStore.updateFailed', { error: formatInvokeErrorMessage(t, e) }))

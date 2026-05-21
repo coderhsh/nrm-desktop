@@ -3,9 +3,9 @@ import { buildConfigExport, formatExportTimestamp, parseConfigImport } from './c
 import type { Registry } from '@/types'
 
 const registries: Registry[] = [
-  { name: 'npm', url: 'https://registry.npmjs.org/', is_custom: true },
-  { name: 'yarn', url: 'https://registry.yarnpkg.com/', is_custom: true },
-  { name: 'corp', url: 'https://npm.corp/', is_custom: true },
+  { name: 'npm', url: 'https://registry.npmjs.org/' },
+  { name: 'yarn', url: 'https://registry.yarnpkg.com/' },
+  { name: 'corp', url: 'https://npm.corp/' },
 ]
 
 describe('formatExportTimestamp', () => {

@@ -1,0 +1,287 @@
+/* @desc 发布前准备：bump 版本、同步 Tauri/Cargo、归档 CHANGELOG，并输出 Release body。 */
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const rootDir = path.resolve(__dirname, '..')
+
+const REPO_COMPARE_BASE = 'https://github.com/coderhsh/nrm-desktop/compare'
+const REPO_RELEASE_BASE = 'https://github.com/coderhsh/nrm-desktop/releases/tag'
+
+/** @type {readonly [string, string, string][]} */
+const CHANGELOG_FILES = [
+  ['CHANGELOG.md', 'Unreleased'],
+  ['CHANGELOG.zh-CN.md', '未发布'],
+]
+
+/**
+ * @param {string} version
+ * @returns {boolean}
+ */
+function isValidSemver(version) {
+  return /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)
+}
+
+/**
+ * @param {string} version
+ * @returns {[number, number, number]}
+ */
+function parseCoreVersion(version) {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)/)
+  if (!match) {
+    throw new Error(`[prepare-release] 无法解析版本号: ${version}`)
+  }
+  return [Number(match[1]), Number(match[2]), Number(match[3])]
+}
+
+/**
+ * @param {string} left
+ * @param {string} right
+ * @returns {number} 1 if left > right, -1 if left < right, 0 if equal
+ */
+function compareSemver(left, right) {
+  const a = parseCoreVersion(left)
+  const b = parseCoreVersion(right)
+  for (let i = 0; i < 3; i += 1) {
+    if (a[i] > b[i]) {
+      return 1
+    }
+    if (a[i] < b[i]) {
+      return -1
+    }
+  }
+  return 0
+}
+
+/**
+ * @param {string} name
+ * @returns {string}
+ */
+function parseArgValue(name) {
+  const index = process.argv.indexOf(name)
+  if (index === -1 || index + 1 >= process.argv.length) {
+    return ''
+  }
+  return process.argv[index + 1].trim()
+}
+
+/**
+ * @param {string} key
+ * @param {string} value
+ */
+function writeGithubOutput(key, value) {
+  const outputPath = process.env.GITHUB_OUTPUT
+  if (!outputPath) {
+    return
+  }
+  if (value.includes('\n')) {
+    const delimiter = `${key}_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    appendFileSync(outputPath, `${key}<<${delimiter}\n${value}\n${delimiter}\n`)
+    return
+  }
+  appendFileSync(outputPath, `${key}=${value}\n`)
+}
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {string}
+ */
+function runCommand(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: rootDir,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  if (result.error) {
+    throw new Error(`[prepare-release] 无法执行 ${command}: ${result.error.message}`)
+  }
+  if (result.status !== 0) {
+    throw new Error(`[prepare-release] ${command} ${args.join(' ')} 失败:\n${result.stderr || result.stdout}`)
+  }
+  return result.stdout.trim()
+}
+
+/**
+ * @param {string} version
+ */
+function assertTagDoesNotExist(version) {
+  const tag = `v${version}`
+  const localTags = runCommand('git', ['tag', '--list', tag])
+  if (localTags.split(/\r?\n/).map(item => item.trim()).filter(Boolean).includes(tag)) {
+    throw new Error(`[prepare-release] 本地已存在 tag ${tag}`)
+  }
+
+  try {
+    const remoteTags = runCommand('git', ['ls-remote', '--tags', 'origin', tag])
+    if (remoteTags.trim() !== '') {
+      throw new Error(`[prepare-release] 远程已存在 tag ${tag}`)
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('远程已存在')) {
+      throw error
+    }
+    process.stderr.write('[prepare-release] 无法检查远程 tag，已跳过远程校验。\n')
+  }
+}
+
+/**
+ * @param {string} body
+ * @returns {boolean}
+ */
+function hasReleaseContent(body) {
+  const lines = body
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+  return lines.some(line => line.startsWith('- ') || line.startsWith('###'))
+}
+
+/**
+ * @param {string} content
+ * @param {string} unreleasedLabel
+ * @param {string} version
+ * @param {string} date
+ * @returns {{ content: string, releaseSection: string }}
+ */
+function archiveChangelogSection(content, unreleasedLabel, version, date) {
+  const unreleasedHeader = `## [${unreleasedLabel}]`
+  const start = content.indexOf(unreleasedHeader)
+  if (start === -1) {
+    throw new Error(`[prepare-release] 未找到 ${unreleasedHeader}`)
+  }
+
+  const afterHeader = content.indexOf('\n', start)
+  const bodyStart = afterHeader === -1 ? content.length : afterHeader + 1
+  const nextSectionMatch = content.slice(bodyStart).match(/^## \[[^\n]+\]/m)
+  const bodyEnd = nextSectionMatch
+    ? bodyStart + nextSectionMatch.index
+    : content.length
+
+  const unreleasedBody = content.slice(bodyStart, bodyEnd).trim()
+  if (!hasReleaseContent(unreleasedBody)) {
+    throw new Error(`[prepare-release] ${unreleasedHeader} 下没有可发布的内容，请先补充 CHANGELOG。`)
+  }
+
+  const versionHeader = `## [${version}] - ${date}`
+  const archivedBlock = `${versionHeader}\n\n${unreleasedBody}\n\n`
+  const emptyUnreleasedBlock = `${unreleasedHeader}\n\n`
+  const before = content.slice(0, start)
+  const after = content.slice(bodyEnd)
+  const nextContent = `${before}${emptyUnreleasedBlock}${archivedBlock}${after}`
+
+  return {
+    content: updateChangelogLinks(nextContent, unreleasedLabel, version),
+    releaseSection: `${versionHeader}\n\n${unreleasedBody}`.trim(),
+  }
+}
+
+/**
+ * @param {string} content
+ * @param {string} unreleasedLabel
+ * @param {string} version
+ * @returns {string}
+ */
+function updateChangelogLinks(content, unreleasedLabel, version) {
+  const tag = `v${version}`
+  const unreleasedLink = `[${unreleasedLabel}]: ${REPO_COMPARE_BASE}/${tag}...HEAD`
+  const versionLink = `[${version}]: ${REPO_RELEASE_BASE}/${tag}`
+
+  let next = content.replace(
+    new RegExp(`^\\[${escapeRegExp(unreleasedLabel)}\\]:.*$`, 'm'),
+    unreleasedLink
+  )
+
+  if (!next.includes(`[${version}]:`)) {
+    const unreleasedLineIndex = next.indexOf(unreleasedLink)
+    if (unreleasedLineIndex === -1) {
+      throw new Error(`[prepare-release] 无法更新 ${unreleasedLabel} compare 链接`)
+    }
+    const insertAt = next.indexOf('\n', unreleasedLineIndex)
+    next = `${next.slice(0, insertAt + 1)}${versionLink}\n${next.slice(insertAt + 1)}`
+  } else {
+    next = next.replace(new RegExp(`^\\[${version}\\]:.*$`, 'm'), versionLink)
+  }
+
+  return next
+}
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * @param {string} version
+ * @returns {string}
+ */
+function buildReleaseBody(version, englishSection) {
+  const tag = `v${version}`
+  return `${englishSection}
+
+---
+
+Full changelog: [CHANGELOG.md](${REPO_COMPARE_BASE}/${tag}...HEAD) · [CHANGELOG.zh-CN.md](https://github.com/coderhsh/nrm-desktop/blob/${tag}/CHANGELOG.zh-CN.md)`
+}
+
+function main() {
+  const version = parseArgValue('--version')
+  if (!version) {
+    throw new Error('[prepare-release] 缺少参数 --version，例如 --version 1.0.1')
+  }
+  if (!isValidSemver(version)) {
+    throw new Error(`[prepare-release] 版本号格式无效: ${version}`)
+  }
+
+  const pkgPath = path.join(rootDir, 'package.json')
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+  const currentVersion = pkg.version
+  if (typeof currentVersion !== 'string' || currentVersion.trim() === '') {
+    throw new Error('[prepare-release] package.json 缺少有效 version')
+  }
+  if (compareSemver(version, currentVersion) <= 0) {
+    throw new Error(
+      `[prepare-release] 新版本 ${version} 必须大于当前版本 ${currentVersion}`
+    )
+  }
+
+  assertTagDoesNotExist(version)
+
+  const date = new Date().toISOString().slice(0, 10)
+  let englishReleaseSection = ''
+
+  for (const [fileName, unreleasedLabel] of CHANGELOG_FILES) {
+    const filePath = path.join(rootDir, fileName)
+    const raw = readFileSync(filePath, 'utf8')
+    const { content, releaseSection } = archiveChangelogSection(raw, unreleasedLabel, version, date)
+    writeFileSync(filePath, content, 'utf8')
+    if (fileName === 'CHANGELOG.md') {
+      englishReleaseSection = releaseSection
+    }
+  }
+
+  pkg.version = version
+  writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8')
+  syncAppVersionFromPackageJson()
+
+  const releaseBody = buildReleaseBody(version, englishReleaseSection)
+  writeGithubOutput('version', version)
+  writeGithubOutput('release_body', releaseBody)
+
+  process.stdout.write(`[prepare-release] 已准备发布 v${version}\n`)
+}
+
+try {
+  main()
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+  process.exit(1)
+}

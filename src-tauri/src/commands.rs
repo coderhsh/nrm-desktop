@@ -161,7 +161,6 @@ pub fn get_current_registry() -> Result<Option<Registry>, String> {
                 Some(Registry {
                     name: app_settings::i18n_merged_current_registry_name(),
                     url: current_url,
-                    is_custom: true,
                 })
             }))
         }
@@ -299,7 +298,6 @@ pub fn import_registries(items: Vec<RegistryImportItem>) -> Result<(), String> {
         .map(|item| Registry {
             name: item.name.trim().to_string(),
             url: item.url.trim().to_string(),
-            is_custom: true,
         })
         .filter(|r| !r.name.is_empty() && !r.url.is_empty())
         .collect();

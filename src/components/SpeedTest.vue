@@ -165,7 +165,7 @@ onMounted(async () => {
  */
 watch(
   () => ({
-    registries: store.registries.map(r => ({ name: r.name, url: r.url, is_custom: !!r.is_custom })),
+    registries: store.registries.map(r => ({ name: r.name, url: r.url })),
     latency: store.latencyResults,
   }),
   ({ registries, latency }, prev) => {
@@ -192,7 +192,6 @@ watch(
           url: reg.url,
           latency_ms: null,
           error: null,
-          is_custom: reg.is_custom,
         })
       }
     }

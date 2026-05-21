@@ -11,7 +11,6 @@ pub struct LatencyResult {
     pub url: String,
     pub latency_ms: Option<u64>,
     pub error: Option<String>,
-    pub is_custom: bool,
 }
 
 const TIMEOUT: Duration = Duration::from_secs(5);
@@ -51,7 +50,6 @@ pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
                     url: "".to_string(),
                     latency_ms: None,
                     error: Some(format!("任务失败: {}", e)),
-                    is_custom: false,
                 });
             }
         }
@@ -124,7 +122,6 @@ pub async fn test_url(url: &str) -> Result<LatencyResult, String> {
                 url: trimmed.to_string(),
                 latency_ms: Some(elapsed),
                 error: None,
-                is_custom: false,
             })
         }
         Err(e) => Ok(LatencyResult {
@@ -132,7 +129,6 @@ pub async fn test_url(url: &str) -> Result<LatencyResult, String> {
             url: trimmed.to_string(),
             latency_ms: None,
             error: Some(e),
-            is_custom: false,
         }),
     }
 }
@@ -153,7 +149,6 @@ async fn test_registry(client: &reqwest::Client, registry: &Registry) -> Latency
                 url: registry.url.clone(),
                 latency_ms: Some(elapsed),
                 error: None,
-                is_custom: registry.is_custom,
             }
         }
         Err(e) => LatencyResult {
@@ -161,7 +156,6 @@ async fn test_registry(client: &reqwest::Client, registry: &Registry) -> Latency
             url: registry.url.clone(),
             latency_ms: None,
             error: Some(e),
-            is_custom: registry.is_custom,
         },
     }
 }

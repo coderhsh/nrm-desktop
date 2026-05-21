@@ -1,16 +1,57 @@
 name: Build Installers
 
-# 手动触发：在 GitHub Actions 页面点击 Run workflow 后才会开始打包。
+# build-only：Actions 页面手动打包，产物上传到 Artifacts（14 天）。
+# release：填版本号一键发布（bump 版本、归档 CHANGELOG、构建、创建 GitHub Release）。
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: build-only（仅打包）| release（一键发布）
+        type: choice
+        options:
+          - build-only
+          - release
+        default: build-only
+      version:
+        description: 发布版本号（release 模式必填，如 1.0.1）
+        type: string
+        required: false
+      draft_release:
+        description: 创建 Draft Release（可先验产物再公开）
+        type: boolean
+        default: false
+      build_windows_x64:
+        description: 构建 Windows x64（build-only 模式生效）
+        type: boolean
+        default: true
+      build_macos_x64:
+        description: 构建 macOS Intel x64（build-only；CI 耗时/费用高于 Apple Silicon）
+        type: boolean
+        default: false
+      build_macos_arm64:
+        description: 构建 macOS Apple Silicon arm64（build-only 模式生效）
+        type: boolean
+        default: true
+      windows_setup_exe:
+        description: Windows 产出 setup.exe（NSIS）（build-only 模式生效）
+        type: boolean
+        default: true
+      windows_msi:
+        description: Windows 产出 .msi（build-only 模式生效）
+        type: boolean
+        default: true
+      windows_portable_zip:
+        description: Windows 产出 portable.zip 免安装版（build-only 模式生效）
+        type: boolean
+        default: true
 
-# 这里只需要读取仓库源码，不创建 Release、不写入 tag，也不上传到仓库内容区。
+# 默认只读；prepare-release / release job 单独申请 contents: write。
 permissions:
   contents: read
 
 # 同一个分支重复触发时取消旧任务，避免多个耗时的 Tauri 打包任务排队。
 concurrency:
-  group: build-installers-${{ github.ref }}
+  group: build-installers-${{ github.ref }}-${{ inputs.mode || 'dispatch' }}-${{ inputs.version || 'no-version' }}
   cancel-in-progress: true
 
 env:
@@ -20,52 +61,229 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
+  prepare-release:
+    name: Prepare release
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      commit_sha: ${{ steps.push.outputs.commit_sha }}
+      release_body: ${{ steps.release.outputs.release_body }}
+
+    steps:
+      - name: Validate release version input
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ inputs.version }}" ]]; then
+            echo "::error::release 模式必须填写 version（例如 1.0.1）。"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version and archive changelog
+        id: release
+        run: node ./scripts/prepare-release.mjs --version "${{ inputs.version }}"
+
+      - name: Commit and push release preparation
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "::error::prepare-release 未产生任何文件变更。"
+            exit 1
+          fi
+          git add package.json CHANGELOG.md CHANGELOG.zh-CN.md src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
+          git commit -m "chore: release v${{ steps.release.outputs.version }}"
+          git push origin "HEAD:${{ github.ref_name }}"
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Write release summary
+        shell: bash
+        run: |
+          {
+            echo "### 一键发布准备完成"
+            echo ""
+            echo "- 版本：v${{ steps.release.outputs.version }}"
+            echo "- 提交：\`${{ steps.push.outputs.commit_sha }}\`"
+            echo "- 后续步骤：并行构建安装包并创建 GitHub Release"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  prepare:
+    name: Prepare build matrix
+    needs: prepare-release
+    if: always() && (needs.prepare-release.result == 'success' || needs.prepare-release.result == 'skipped')
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      selected_platforms: ${{ steps.plan.outputs.selected_platforms }}
+      windows_products: ${{ steps.plan.outputs.windows_products }}
+      windows_setup_exe: ${{ steps.plan.outputs.windows_setup_exe }}
+      windows_msi: ${{ steps.plan.outputs.windows_msi }}
+      windows_portable_zip: ${{ steps.plan.outputs.windows_portable_zip }}
+      is_tag_release: ${{ steps.plan.outputs.is_tag_release }}
+      release_version: ${{ steps.plan.outputs.release_version }}
+
+    steps:
+      - name: Build matrix from inputs
+        id: plan
+        shell: bash
+        env:
+          DISPATCH_MODE: ${{ inputs.mode }}
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+          BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
+          BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
+          BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
+          WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
+          WINDOWS_MSI: ${{ inputs.windows_msi }}
+          WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
+        run: |
+          set -euo pipefail
+
+          is_tag_release="false"
+          release_version=""
+
+          if [[ "$DISPATCH_MODE" == "release" ]]; then
+            BUILD_WINDOWS_X64="true"
+            BUILD_MACOS_X64="false"
+            BUILD_MACOS_ARM64="true"
+            WINDOWS_SETUP_EXE="true"
+            WINDOWS_MSI="true"
+            WINDOWS_PORTABLE_ZIP="true"
+            is_tag_release="true"
+            release_version="$RELEASE_VERSION"
+          fi
+
+          include_json=""
+          selected_platforms=()
+          windows_products=()
+
+          append_matrix_item() {
+            local item="$1"
+            if [[ -n "$include_json" ]]; then
+              include_json="$include_json,$item"
+            else
+              include_json="$item"
+            fi
+          }
+
+          join_by_comma() {
+            local joined=""
+            for item in "$@"; do
+              if [[ -n "$joined" ]]; then
+                joined="$joined, $item"
+              else
+                joined="$item"
+              fi
+            done
+            echo "$joined"
+          }
+
+          if [[ "$BUILD_WINDOWS_X64" == "true" ]]; then
+            if [[ "$WINDOWS_SETUP_EXE" != "true" && "$WINDOWS_MSI" != "true" && "$WINDOWS_PORTABLE_ZIP" != "true" ]]; then
+              echo "::error::已选择 Windows x64，但未选择任何 Windows 产物。请至少勾选 setup.exe、MSI 或 portable zip。"
+              exit 1
+            fi
+            append_matrix_item '{"label":"Windows x64","os":"windows-latest","build-command":"pnpm build:win","artifact-suffix":"windows-x64"}'
+            selected_platforms+=("Windows x64")
+
+            if [[ "$WINDOWS_SETUP_EXE" == "true" ]]; then
+              windows_products+=("setup.exe")
+            fi
+            if [[ "$WINDOWS_MSI" == "true" ]]; then
+              windows_products+=("MSI")
+            fi
+            if [[ "$WINDOWS_PORTABLE_ZIP" == "true" ]]; then
+              windows_products+=("portable zip")
+            fi
+          fi
+
+          if [[ "$BUILD_MACOS_X64" == "true" ]]; then
+            append_matrix_item '{"label":"macOS Intel","os":"macos-15-intel","build-command":"pnpm build","artifact-suffix":"macos-x64"}'
+            selected_platforms+=("macOS Intel x64")
+          fi
+
+          if [[ "$BUILD_MACOS_ARM64" == "true" ]]; then
+            append_matrix_item '{"label":"macOS Apple Silicon","os":"macos-15","build-command":"pnpm build","artifact-suffix":"macos-arm64"}'
+            selected_platforms+=("macOS Apple Silicon arm64")
+          fi
+
+          if [[ ${#selected_platforms[@]} -eq 0 ]]; then
+            echo "::error::未选择任何构建平台。请至少勾选一个平台。"
+            exit 1
+          fi
+
+          matrix="{\"include\":[$include_json]}"
+          selected_platforms_text="$(join_by_comma "${selected_platforms[@]}")"
+          windows_products_text="未选择 Windows"
+          if [[ ${#windows_products[@]} -gt 0 ]]; then
+            windows_products_text="$(join_by_comma "${windows_products[@]}")"
+          fi
+
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "selected_platforms=$selected_platforms_text" >> "$GITHUB_OUTPUT"
+          echo "windows_products=$windows_products_text" >> "$GITHUB_OUTPUT"
+          echo "windows_setup_exe=$WINDOWS_SETUP_EXE" >> "$GITHUB_OUTPUT"
+          echo "windows_msi=$WINDOWS_MSI" >> "$GITHUB_OUTPUT"
+          echo "windows_portable_zip=$WINDOWS_PORTABLE_ZIP" >> "$GITHUB_OUTPUT"
+          echo "is_tag_release=$is_tag_release" >> "$GITHUB_OUTPUT"
+          echo "release_version=$release_version" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### 本次打包选择"
+            echo ""
+            if [[ "$is_tag_release" == "true" ]]; then
+              echo "- 触发方式：一键发布（\`v${release_version}\`，构建完成后自动创建 GitHub Release）"
+              echo ""
+            else
+              echo "- 触发方式：手动打包（仅上传 Artifacts）"
+              echo ""
+            fi
+            echo "- 平台：$selected_platforms_text"
+            echo "- Windows 产物：$windows_products_text"
+            if [[ "$BUILD_MACOS_X64" == "true" ]]; then
+              echo ""
+              echo "> macOS Intel 使用 \`macos-15-intel\` runner，CI 分钟消耗高于 Apple Silicon；若无 Intel Mac 用户需求可取消勾选。"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   build:
     name: Build ${{ matrix.label }}
+    needs:
+      - prepare-release
+      - prepare
+    if: always() && needs.prepare.result == 'success' && (needs.prepare-release.result == 'success' || needs.prepare-release.result == 'skipped')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
 
     strategy:
-      # 一个平台失败时不取消其他平台，方便一次触发后看到所有平台的真实状态。
       fail-fast: false
-      matrix:
-        include:
-          # Windows 必须在 Windows runner 上打 MSI；现有 build:win 脚本会同时产出 MSI 和 NSIS。
-          - label: Windows x64
-            os: windows-latest
-            build-command: pnpm build:win
-            artifact-name: nrm-desktop-windows-x64
-            artifact-path: |
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-
-          # Intel Mac runner，用于产出 x64 DMG。
-          - label: macOS Intel
-            os: macos-15-intel
-            build-command: pnpm build
-            artifact-name: nrm-desktop-macos-x64
-            artifact-path: src-tauri/target/release/bundle/dmg/*.dmg
-
-          # Apple Silicon runner，用于产出 arm64 DMG。
-          - label: macOS Apple Silicon
-            os: macos-15
-            build-command: pnpm build
-            artifact-name: nrm-desktop-macos-arm64
-            artifact-path: src-tauri/target/release/bundle/dmg/*.dmg
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
     steps:
-      # 拉取仓库源码。
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.commit_sha || github.sha }}
 
-      # 固定 pnpm 版本，避免不同 runner 默认版本不一致。
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.18.3
           run_install: false
 
-      # Node 22 符合 package.json 的 engines 约束；同时启用 pnpm 依赖缓存。
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -73,35 +291,153 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      # 安装 stable Rust toolchain，供 Tauri 后端编译使用。
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Windows 打包脚本显式指定 x86_64-pc-windows-msvc target，提前安装目标平台。
       - name: Add Windows Rust target
         if: runner.os == 'Windows'
         run: rustup target add x86_64-pc-windows-msvc
 
-      # 缓存 Cargo registry、git 依赖和 src-tauri/target，减少重复构建耗时。
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
           cache-on-failure: true
+          shared-key: ${{ matrix.artifact-suffix }}
 
-      # 使用 lockfile 安装前端依赖，保证 CI 与仓库锁定版本一致。
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 执行矩阵中指定的平台构建命令：Windows 用 build:win，macOS 用 build。
+      - name: Install Windows packaging tools
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install nsis wixtoolset -y --no-progress
+
+      - name: Read app version
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Write build summary
+        shell: bash
+        env:
+          MATRIX_LABEL: ${{ matrix.label }}
+          MATRIX_ARTIFACT_SUFFIX: ${{ matrix.artifact-suffix }}
+          SELECTED_PLATFORMS: ${{ needs.prepare.outputs.selected_platforms }}
+          WINDOWS_PRODUCTS: ${{ needs.prepare.outputs.windows_products }}
+        run: |
+          {
+            echo "### Build $MATRIX_LABEL"
+            echo ""
+            echo "- 版本：v$APP_VERSION"
+            echo "- 已选平台：$SELECTED_PLATFORMS"
+            if [[ "$MATRIX_ARTIFACT_SUFFIX" == "windows-x64" ]]; then
+              echo "- Windows 产物：$WINDOWS_PRODUCTS"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build installer
+        env:
+          NRM_WINDOWS_SETUP_EXE: ${{ needs.prepare.outputs.windows_setup_exe }}
+          NRM_WINDOWS_MSI: ${{ needs.prepare.outputs.windows_msi }}
+          NRM_WINDOWS_PORTABLE_ZIP: ${{ needs.prepare.outputs.windows_portable_zip }}
         run: ${{ matrix.build-command }}
 
-      # 上传安装包到本次 workflow run 的 Artifacts；找不到产物时直接失败，避免空包误判。
-      - name: Upload installer artifacts
+      - name: Create Windows portable zip
+        if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
+        shell: pwsh
+        run: |
+          $portableRoot = "portable\nrm-desktop"
+          $exePath = "src-tauri\target\x86_64-pc-windows-msvc\release\nrm-desktop.exe"
+          $zipPath = "portable\nrm-desktop-v$env:APP_VERSION-${{ matrix.artifact-suffix }}-portable.zip"
+
+          if (!(Test-Path $exePath)) {
+            throw "未找到 Windows 主程序：$exePath"
+          }
+
+          New-Item -ItemType Directory -Force -Path $portableRoot | Out-Null
+          Copy-Item $exePath "$portableRoot\nrm-desktop.exe" -Force
+          Compress-Archive -Path "$portableRoot\*" -DestinationPath $zipPath -Force
+
+      - name: Upload Windows setup.exe artifact
+        if: runner.os == 'Windows' && needs.prepare.outputs.windows_setup_exe == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact-name }}
-          path: ${{ matrix.artifact-path }}
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-setup.exe
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload Windows MSI artifact
+        if: runner.os == 'Windows' && needs.prepare.outputs.windows_msi == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.msi
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Windows portable zip artifact
+        if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
+          path: portable/nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload macOS DMG artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.dmg
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    if: needs.prepare.outputs.is_tag_release == 'true'
+    needs:
+      - prepare-release
+      - prepare
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Verify release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find release-assets -type f | sort)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "::error::未找到任何 Release 安装包文件。"
+            exit 1
+          fi
+          {
+            echo "### Release Assets"
+            echo ""
+            for file in "${files[@]}"; do
+              echo "- \`${file#release-assets/}\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare.outputs.release_version }}
+          name: nrm-desktop v${{ needs.prepare.outputs.release_version }}
+          target_commitish: ${{ needs.prepare-release.outputs.commit_sha }}
+          body: ${{ needs.prepare-release.outputs.release_body }}
+          files: release-assets/**/*
+          draft: ${{ inputs.draft_release }}
+          prerelease: false

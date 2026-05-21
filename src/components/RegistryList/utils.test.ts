@@ -4,15 +4,15 @@ import type { Registry } from '@/types'
 import type { LatencyResult } from '@/api/speedtest'
 
 const registries: Registry[] = [
-  { name: 'beta', url: 'https://beta.test', is_custom: false },
-  { name: 'alpha', url: 'https://alpha.test', is_custom: false },
-  { name: 'gamma', url: 'https://gamma.test', is_custom: false },
+  { name: 'beta', url: 'https://beta.test' },
+  { name: 'alpha', url: 'https://alpha.test' },
+  { name: 'gamma', url: 'https://gamma.test' },
 ]
 
 const latencyByName: Record<string, LatencyResult> = {
-  alpha: { name: 'alpha', url: 'https://alpha.test', latency_ms: 120, error: null, is_custom: false },
-  beta: { name: 'beta', url: 'https://beta.test', latency_ms: 40, error: null, is_custom: false },
-  gamma: { name: 'gamma', url: 'https://gamma.test', latency_ms: null, error: 'timeout', is_custom: false },
+  alpha: { name: 'alpha', url: 'https://alpha.test', latency_ms: 120, error: null },
+  beta: { name: 'beta', url: 'https://beta.test', latency_ms: 40, error: null },
+  gamma: { name: 'gamma', url: 'https://gamma.test', latency_ms: null, error: 'timeout' },
 }
 
 describe('sortRegistriesInCategory', () => {

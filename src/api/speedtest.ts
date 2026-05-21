@@ -5,7 +5,6 @@ export interface LatencyResult {
   url: string;
   latency_ms: number | null;
   error: string | null;
-  is_custom: boolean;
 }
 
 export async function testAllSpeed(): Promise<LatencyResult[]> {

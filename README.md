@@ -104,6 +104,28 @@ pnpm build
 | `pnpm update:logo` | Generate icon set from `src-tauri/icons/logo.png` |
 | `pnpm version` | Sync app version metadata |
 
+## Release (GitHub Actions)
+
+Cross-platform installers are built in CI — no need to switch between Windows and macOS machines.
+
+### One-click release
+
+1. Write release notes under `[Unreleased]` in [CHANGELOG.md](./CHANGELOG.md) and [CHANGELOG.zh-CN.md](./CHANGELOG.zh-CN.md), then merge to `main`.
+2. Open **Actions → Build Installers → Run workflow**.
+3. Set **mode** to `release`, enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, then run.
+4. CI will bump versions, archive changelogs, commit to `main`, build Windows + macOS (Apple Silicon) installers, and create a GitHub Release.
+
+Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`.
+
+### Build only (no Release)
+
+Run workflow with **mode** `build-only` to upload Artifacts only (14-day retention). Use this to test packaging options.
+
+### Repository settings
+
+- **Settings → Actions → General → Workflow permissions**: enable **Read and write permissions**.
+- If `main` has branch protection, allow `github-actions[bot]` to push (or configure a PAT secret for release commits).
+
 ## Tech Stack
 
 | Layer | Technology |

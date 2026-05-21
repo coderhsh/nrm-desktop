@@ -22,6 +22,56 @@ const EXTRA_PATH_DIRS = [
 ]
 
 const MSI_LOCALE_SUFFIX = /_(?:[a-z]{2})(?:-(?:[a-zA-Z0-9]+))+\.msi$/i
+const ENV_BUILD_SETUP_EXE = 'NRM_WINDOWS_SETUP_EXE'
+const ENV_BUILD_MSI = 'NRM_WINDOWS_MSI'
+const ENV_BUILD_PORTABLE_ZIP = 'NRM_WINDOWS_PORTABLE_ZIP'
+
+/**
+ * @param {string} name
+ * @param {boolean} defaultValue
+ * @returns {boolean}
+ */
+function readBooleanEnv(name, defaultValue) {
+  const value = process.env[name]
+  if (value === undefined || value.trim() === '') {
+    return defaultValue
+  }
+  return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase())
+}
+
+/**
+ * @returns {{ setupExe: boolean, msi: boolean, portableZip: boolean, needsBundle: boolean }}
+ */
+function getWindowsBuildSelection() {
+  const setupExe = readBooleanEnv(ENV_BUILD_SETUP_EXE, true)
+  const msi = readBooleanEnv(ENV_BUILD_MSI, true)
+  const portableZip = readBooleanEnv(ENV_BUILD_PORTABLE_ZIP, false)
+  const needsBundle = setupExe || msi
+
+  if (!needsBundle && !portableZip) {
+    throw new Error('未选择任何 Windows 产物：请至少启用 setup.exe、MSI 或 portable zip 之一。')
+  }
+
+  return { setupExe, msi, portableZip, needsBundle }
+}
+
+/**
+ * @param {{ setupExe: boolean, msi: boolean, portableZip: boolean, needsBundle: boolean }} selection
+ * @returns {string}
+ */
+function formatWindowsBuildSelection(selection) {
+  const items = []
+  if (selection.setupExe) {
+    items.push('setup.exe(NSIS)')
+  }
+  if (selection.msi) {
+    items.push('MSI')
+  }
+  if (selection.portableZip) {
+    items.push('portable zip')
+  }
+  return items.join(', ')
+}
 
 /**
  * 执行命令并采集输出（非 0 退出码时不抛错，返回结果供调用方判断）。
@@ -74,10 +124,10 @@ async function commandExists(command, probeArgs = ['--version']) {
 }
 
 /**
- * 构建前依赖预检：非 Windows 场景下检查 rustup target、cargo-xwin、makensis。
+ * @param {{ setupExe: boolean, msi: boolean, portableZip: boolean, needsBundle: boolean }} selection
  * @returns {Promise<void>}
  */
-async function preflightChecks() {
+async function preflightChecks(selection) {
   if (process.platform === 'win32') {
     return
   }
@@ -89,7 +139,7 @@ async function preflightChecks() {
     problems.push('缺少 `cargo-xwin`：请先执行 `cargo install cargo-xwin`。')
   }
 
-  if (!(await commandExists('makensis', ['-VERSION']))) {
+  if (selection.setupExe && !(await commandExists('makensis', ['-VERSION']))) {
     problems.push('缺少 `makensis`（NSIS）：请先安装 NSIS，并确保 `makensis` 已加入 PATH。')
   }
   if (!(await commandExists('llvm-lib'))) {
@@ -107,6 +157,12 @@ async function preflightChecks() {
     if (!installedTargets.includes(WIN_TARGET)) {
       problems.push(`缺少 Rust 目标 ` + `\`${WIN_TARGET}\`` + `：请执行 \`rustup target add ${WIN_TARGET}\`。`)
     }
+  }
+
+  if (selection.msi && !selection.setupExe) {
+    problems.push('MSI 依赖 WiX，仅支持在 Windows 上生成；请在 Windows 上执行 `pnpm build:win`，或关闭 MSI 产物。')
+  } else if (selection.msi) {
+    process.stderr.write('[tauri-build-win] 非 Windows 环境会跳过 MSI，仅构建 NSIS；MSI 请在 Windows 上执行 pnpm build:win。\n')
   }
 
   if (problems.length > 0) {
@@ -261,9 +317,10 @@ async function printArtifacts() {
 
 /**
  * Spawn `pnpm tauri build` with Windows target and bundle set.
+ * @param {{ setupExe: boolean, msi: boolean, portableZip: boolean, needsBundle: boolean }} selection
  * @returns {Promise<void>}
  */
-function runTauriBuildWin() {
+function runTauriBuildWin(selection) {
   const isWin = process.platform === 'win32'
   const basePath = process.env.PATH ?? ''
   const pathParts = basePath.split(path.delimiter).filter(Boolean)
@@ -272,7 +329,13 @@ function runTauriBuildWin() {
   /** @type {string[]} */
   const args = ['tauri', 'build', '--target', WIN_TARGET]
 
-  if (!isWin) {
+  if (!selection.needsBundle) {
+    args.push('--no-bundle')
+    if (!isWin) {
+      args.push('--runner', 'cargo-xwin')
+    }
+    process.stdout.write('[tauri-build-win] 仅构建 Windows 主程序（--no-bundle），用于生成 portable zip。\n\n')
+  } else if (!isWin) {
     /**
      * macOS/Linux 上 tauri CLI 的 `--bundles` 参数值会受宿主平台限制，
      * 即使指定了 Windows target，也会拒绝 `nsis/msi`（仅识别 dmg/app 等）。
@@ -286,7 +349,14 @@ function runTauriBuildWin() {
     process.stdout.write('[tauri-build-win] 非 Windows：仅构建 NSIS（需已安装 NSIS、LLVM/LLD 与 cargo-xwin）；MSI 请在 Windows 上执行 pnpm build:win。\n\n')
   } else {
     /** MSI 依赖 WiX，官方仅支持在 Windows 上生成。 */
-    args.push('--bundles', 'msi,nsis')
+    const bundles = []
+    if (selection.msi) {
+      bundles.push('msi')
+    }
+    if (selection.setupExe) {
+      bundles.push('nsis')
+    }
+    args.push('--bundles', bundles.join(','))
   }
 
   return new Promise((resolve, reject) => {
@@ -346,14 +416,15 @@ function sleep(ms) {
 }
 
 /**
- * 执行构建，并对可重试网络错误进行有限重试。
+/**
+ * @param {{ setupExe: boolean, msi: boolean, portableZip: boolean, needsBundle: boolean }} selection
  * @returns {Promise<void>}
  */
-async function runTauriBuildWinWithRetry() {
+async function runTauriBuildWinWithRetry(selection) {
   const maxAttempts = 2
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      await runTauriBuildWin()
+      await runTauriBuildWin(selection)
       return
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
@@ -369,9 +440,11 @@ async function runTauriBuildWinWithRetry() {
 
 async function main() {
   syncAppVersionFromPackageJson()
+  const selection = getWindowsBuildSelection()
   const startedAt = Date.now()
-  await preflightChecks()
-  await runTauriBuildWinWithRetry()
+  process.stdout.write(`[tauri-build-win] Windows 产物选择：${formatWindowsBuildSelection(selection)}\n\n`)
+  await preflightChecks(selection)
+  await runTauriBuildWinWithRetry(selection)
   await renameMsiFilesStripLocaleSuffix()
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
