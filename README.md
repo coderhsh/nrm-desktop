@@ -1,6 +1,6 @@
 # nrm-desktop
 
-[简体中文](./README.zh-CN.md)
+[简体中文](./README.zh-CN.md) · [Changelog](./CHANGELOG.md)
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 [![Tauri 2](https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri)](https://v2.tauri.app/)
