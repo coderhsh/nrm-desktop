@@ -110,12 +110,25 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 
 ### One-click release
 
-1. Write release notes under `[Unreleased]` in [CHANGELOG.md](./CHANGELOG.md) and [CHANGELOG.zh-CN.md](./CHANGELOG.zh-CN.md), then merge to `main`.
-2. Open **Actions → Build Installers → Run workflow**.
+1. Develop on `dev`, then merge into `main` (PR or direct merge).
+2. Open **Actions → Build Installers → Run workflow** on **`main`**.
 3. Set **mode** to `release`, enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, then run.
-4. CI will bump versions, archive changelogs, commit to `main`, build Windows + macOS (Apple Silicon) installers, and create a GitHub Release.
+4. CI will bump versions, archive changelogs, commit to `main`, build installers, create a GitHub Release, and **merge the release commit back into `dev`**.
+5. Locally: `git checkout dev && git pull origin dev` to continue development.
+
+**Retry / overwrite the same version:**
+
+| Scenario | What to do |
+|----------|------------|
+| First publish failed and no GitHub Release exists for that version | Re-run the workflow with the **same version**; CI uses **retry** mode and skips bumping version or archiving changelogs |
+| Release already exists and you need to re-upload installers | Enable **overwrite_release**; **version** must match the current `package.json` version; CI overwrites release assets and retargets the tag to the latest build commit |
+| Release exists but overwrite is not enabled | The workflow fails at the pre-check step with a clear message |
+
+Retry and overwrite runs **do not** sync a release commit to `dev` (no new bump commit is created).
 
 Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`.
+
+Before releasing, you can edit the install guide templates under [`docs/release-install-guide.md`](./docs/release-install-guide.md) and [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md). The release notes will include English download instructions by default, with a collapsible Chinese section; filenames and download links are generated automatically from the build config.
 
 ### Build only (no Release)
 
@@ -124,7 +137,7 @@ Run workflow with **mode** `build-only` to upload Artifacts only (14-day retenti
 ### Repository settings
 
 - **Settings → Actions → General → Workflow permissions**: enable **Read and write permissions**.
-- If `main` has branch protection, allow `github-actions[bot]` to push (or configure a PAT secret for release commits).
+- If branch protection is enabled on **`main`** or **`dev`**, allow `github-actions[bot]` to push (or configure a PAT secret for release commits).
 
 ## Tech Stack
 

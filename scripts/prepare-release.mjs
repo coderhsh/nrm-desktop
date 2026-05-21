@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { buildReleaseInstallSection } from './render-release-install-guide.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -18,6 +19,9 @@ const CHANGELOG_FILES = [
   ['CHANGELOG.md', 'Unreleased'],
   ['CHANGELOG.zh-CN.md', '未发布'],
 ]
+
+/** @type {readonly string[]} */
+const PREPARE_MODES = ['fresh', 'retry', 'overwrite']
 
 /**
  * @param {string} version
@@ -183,6 +187,32 @@ function archiveChangelogSection(content, unreleasedLabel, version, date) {
 
 /**
  * @param {string} content
+ * @param {string} version
+ * @returns {string}
+ */
+function extractChangelogVersionSection(content, version) {
+  const headerRegex = new RegExp(`^## \\[${escapeRegExp(version)}\\] - \\d{4}-\\d{2}-\\d{2}`, 'm')
+  const start = content.search(headerRegex)
+  if (start === -1) {
+    throw new Error(`[prepare-release] 未在 CHANGELOG 中找到版本节 [${version}]`)
+  }
+
+  const headerLineEnd = content.indexOf('\n', start)
+  const bodyStart = headerLineEnd === -1 ? content.length : headerLineEnd + 1
+  const nextSectionMatch = content.slice(bodyStart).match(/^## \[[^\n]+\]/m)
+  const bodyEnd = nextSectionMatch
+    ? bodyStart + nextSectionMatch.index
+    : content.length
+
+  const section = content.slice(start, bodyEnd).trim()
+  if (!hasReleaseContent(section)) {
+    throw new Error(`[prepare-release] CHANGELOG 版本节 [${version}] 下没有可发布的内容`)
+  }
+  return section
+}
+
+/**
+ * @param {string} content
  * @param {string} unreleasedLabel
  * @param {string} version
  * @returns {string}
@@ -221,21 +251,67 @@ function escapeRegExp(value) {
 
 /**
  * @param {string} version
+ * @param {string} englishSection
  * @returns {string}
  */
 function buildReleaseBody(version, englishSection) {
   const tag = `v${version}`
+  const installGuide = buildReleaseInstallSection(version)
   return `${englishSection}
+
+---
+
+${installGuide}
 
 ---
 
 Full changelog: [CHANGELOG.md](${REPO_COMPARE_BASE}/${tag}...HEAD) · [CHANGELOG.zh-CN.md](https://github.com/coderhsh/nrm-desktop/blob/${tag}/CHANGELOG.zh-CN.md)`
 }
 
+/**
+ * @param {string} version
+ * @returns {string}
+ */
+function readExistingEnglishReleaseSection(version) {
+  const changelogPath = path.join(rootDir, 'CHANGELOG.md')
+  const raw = readFileSync(changelogPath, 'utf8')
+  return extractChangelogVersionSection(raw, version)
+}
+
+/**
+ * @param {'fresh' | 'retry' | 'overwrite'} mode
+ * @param {string} version
+ * @param {string} currentVersion
+ */
+function validateModeAndVersion(mode, version, currentVersion) {
+  const versionCompare = compareSemver(version, currentVersion)
+
+  if (mode === 'fresh') {
+    if (versionCompare <= 0) {
+      throw new Error(
+        `[prepare-release] 新版本 ${version} 必须大于当前版本 ${currentVersion}`
+      )
+    }
+    assertTagDoesNotExist(version)
+    return
+  }
+
+  if (versionCompare !== 0) {
+    throw new Error(
+      `[prepare-release] ${mode} 模式下输入版本 ${version} 必须与 package.json 当前版本 ${currentVersion} 一致`
+    )
+  }
+}
+
 function main() {
   const version = parseArgValue('--version')
+  const mode = parseArgValue('--mode') || 'fresh'
+
   if (!version) {
     throw new Error('[prepare-release] 缺少参数 --version，例如 --version 1.0.1')
+  }
+  if (!PREPARE_MODES.includes(mode)) {
+    throw new Error(`[prepare-release] 无效 mode: ${mode}，可选 fresh/retry/overwrite`)
   }
   if (!isValidSemver(version)) {
     throw new Error(`[prepare-release] 版本号格式无效: ${version}`)
@@ -247,36 +323,40 @@ function main() {
   if (typeof currentVersion !== 'string' || currentVersion.trim() === '') {
     throw new Error('[prepare-release] package.json 缺少有效 version')
   }
-  if (compareSemver(version, currentVersion) <= 0) {
-    throw new Error(
-      `[prepare-release] 新版本 ${version} 必须大于当前版本 ${currentVersion}`
-    )
-  }
 
-  assertTagDoesNotExist(version)
+  validateModeAndVersion(mode, version, currentVersion)
 
-  const date = new Date().toISOString().slice(0, 10)
   let englishReleaseSection = ''
 
-  for (const [fileName, unreleasedLabel] of CHANGELOG_FILES) {
-    const filePath = path.join(rootDir, fileName)
-    const raw = readFileSync(filePath, 'utf8')
-    const { content, releaseSection } = archiveChangelogSection(raw, unreleasedLabel, version, date)
-    writeFileSync(filePath, content, 'utf8')
-    if (fileName === 'CHANGELOG.md') {
-      englishReleaseSection = releaseSection
-    }
-  }
+  if (mode === 'fresh') {
+    const date = new Date().toISOString().slice(0, 10)
 
-  pkg.version = version
-  writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8')
-  syncAppVersionFromPackageJson()
+    for (const [fileName, unreleasedLabel] of CHANGELOG_FILES) {
+      const filePath = path.join(rootDir, fileName)
+      const raw = readFileSync(filePath, 'utf8')
+      const { content, releaseSection } = archiveChangelogSection(raw, unreleasedLabel, version, date)
+      writeFileSync(filePath, content, 'utf8')
+      if (fileName === 'CHANGELOG.md') {
+        englishReleaseSection = releaseSection
+      }
+    }
+
+    pkg.version = version
+    writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8')
+    syncAppVersionFromPackageJson()
+    writeGithubOutput('skip_commit', 'false')
+  } else {
+    englishReleaseSection = readExistingEnglishReleaseSection(version)
+    writeGithubOutput('skip_commit', 'true')
+    process.stdout.write(`[prepare-release] ${mode} 模式：跳过版本 bump 与 CHANGELOG 归档\n`)
+  }
 
   const releaseBody = buildReleaseBody(version, englishReleaseSection)
   writeGithubOutput('version', version)
   writeGithubOutput('release_body', releaseBody)
+  writeGithubOutput('prepare_mode', mode)
 
-  process.stdout.write(`[prepare-release] 已准备发布 v${version}\n`)
+  process.stdout.write(`[prepare-release] 已准备发布 v${version}（mode=${mode}）\n`)
 }
 
 try {

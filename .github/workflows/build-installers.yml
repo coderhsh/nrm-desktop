@@ -2,6 +2,7 @@ name: Build Installers
 
 # build-only：Actions 页面手动打包，产物上传到 Artifacts（14 天）。
 # release：填版本号一键发布（bump 版本、归档 CHANGELOG、构建、创建 GitHub Release）。
+# 同一版本可 retry（Release 不存在）或 overwrite（勾选 overwrite_release 覆盖附件）。
 on:
   workflow_dispatch:
     inputs:
@@ -18,6 +19,10 @@ on:
         required: false
       draft_release:
         description: 创建 Draft Release（可先验产物再公开）
+        type: boolean
+        default: false
+      overwrite_release:
+        description: 若该版本 GitHub Release 已存在，覆盖并重新上传安装包（release 模式）
         type: boolean
         default: false
       build_windows_x64:
@@ -61,8 +66,57 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
+  check-release:
+    name: Check release context
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'release'
+    runs-on: ubuntu-latest
+    outputs:
+      prepare_mode: ${{ steps.context.outputs.prepare_mode }}
+      release_exists: ${{ steps.context.outputs.release_exists }}
+
+    steps:
+      - name: Validate release version input
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ inputs.version }}" ]]; then
+            echo "::error::release 模式必须填写 version（例如 1.0.1）。"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine prepare mode
+        id: context
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node ./scripts/check-release-context.mjs \
+            --version "${{ inputs.version }}" \
+            --overwrite "${{ inputs.overwrite_release }}"
+
+      - name: Write check summary
+        shell: bash
+        run: |
+          {
+            echo "### Release 预检查"
+            echo ""
+            echo "- 版本：v${{ inputs.version }}"
+            echo "- 模式：${{ steps.context.outputs.prepare_mode }}"
+            echo "- 远程 Release 已存在：${{ steps.context.outputs.release_exists }}"
+            if [[ "${{ steps.context.outputs.prepare_mode }}" == "overwrite" ]]; then
+              echo "- 将覆盖已有 Release 并重新上传安装包"
+            elif [[ "${{ steps.context.outputs.prepare_mode }}" == "retry" ]]; then
+              echo "- 将重试发布当前版本（不重复 bump 版本/CHANGELOG）"
+            else
+              echo "- 将发布新版本并 bump 版本、归档 CHANGELOG"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   prepare-release:
     name: Prepare release
+    needs: check-release
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'release'
     runs-on: ubuntu-latest
     permissions:
@@ -71,6 +125,8 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       commit_sha: ${{ steps.push.outputs.commit_sha }}
       release_body: ${{ steps.release.outputs.release_body }}
+      skip_commit: ${{ steps.release.outputs.skip_commit }}
+      prepare_mode: ${{ steps.release.outputs.prepare_mode }}
 
     steps:
       - name: Validate release version input
@@ -94,13 +150,25 @@ jobs:
 
       - name: Bump version and archive changelog
         id: release
-        run: node ./scripts/prepare-release.mjs --version "${{ inputs.version }}"
+        env:
+          PREPARE_MODE: ${{ needs.check-release.outputs.prepare_mode }}
+        run: |
+          node ./scripts/prepare-release.mjs \
+            --version "${{ inputs.version }}" \
+            --mode "${{ needs.check-release.outputs.prepare_mode }}"
 
       - name: Commit and push release preparation
         id: push
         shell: bash
         run: |
           set -euo pipefail
+
+          if [[ "${{ steps.release.outputs.skip_commit }}" == "true" ]]; then
+            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "retry/overwrite 模式：跳过 commit，复用当前 HEAD。"
+            exit 0
+          fi
+
           if git diff --quiet && git diff --cached --quiet; then
             echo "::error::prepare-release 未产生任何文件变更。"
             exit 1
@@ -117,14 +185,79 @@ jobs:
             echo "### 一键发布准备完成"
             echo ""
             echo "- 版本：v${{ steps.release.outputs.version }}"
+            echo "- 模式：${{ steps.release.outputs.prepare_mode }}"
             echo "- 提交：\`${{ steps.push.outputs.commit_sha }}\`"
+            if [[ "${{ steps.release.outputs.skip_commit }}" == "true" ]]; then
+              echo "- 已跳过版本 bump commit（重试/覆盖）"
+            fi
             echo "- 后续步骤：并行构建安装包并创建 GitHub Release"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  sync-dev:
+    name: Sync release commit to dev
+    needs: prepare-release
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'release' && needs.prepare-release.result == 'success' && needs.prepare-release.outputs.skip_commit != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: dev
+
+      - name: Merge release commit into dev
+        env:
+          RELEASE_SHA: ${{ needs.prepare-release.outputs.commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$RELEASE_SHA" ]]; then
+            echo "::error::缺少 release commit SHA，无法同步 dev。"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin dev main
+
+          if ! git show-ref --verify --quiet "refs/remotes/origin/dev"; then
+            echo "::error::远程不存在 dev 分支，无法自动同步。请先创建 dev 分支。"
+            exit 1
+          fi
+
+          git checkout dev
+          if git merge-base --is-ancestor "$RELEASE_SHA" HEAD; then
+            echo "dev 已包含 release commit（$RELEASE_SHA），跳过 push。"
+            exit 0
+          fi
+
+          if ! git merge --no-edit "$RELEASE_SHA"; then
+            echo "::error::无法自动合并 release commit 到 dev。请在本地执行: git checkout dev && git merge origin/main"
+            exit 1
+          fi
+
+          git push origin dev
+
+      - name: Write sync summary
+        shell: bash
+        run: |
+          {
+            echo "### dev 分支已同步"
+            echo ""
+            echo "- 已合并 release commit：\`${{ needs.prepare-release.outputs.commit_sha }}\`"
+            echo "- 本地继续开发：\`git checkout dev && git pull origin dev\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
   prepare:
     name: Prepare build matrix
-    needs: prepare-release
-    if: always() && (needs.prepare-release.result == 'success' || needs.prepare-release.result == 'skipped')
+    needs:
+      - check-release
+      - prepare-release
+    if: always() && (needs.prepare-release.result == 'success' || (needs.prepare-release.result == 'skipped' && needs.check-release.result == 'skipped'))
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -196,7 +329,7 @@ jobs:
               echo "::error::已选择 Windows x64，但未选择任何 Windows 产物。请至少勾选 setup.exe、MSI 或 portable zip。"
               exit 1
             fi
-            append_matrix_item '{"label":"Windows x64","os":"windows-latest","build-command":"pnpm build:win","artifact-suffix":"windows-x64"}'
+            append_matrix_item '{"label":"Windows x64","os":"windows-latest","build-command":"pnpm build:win","artifact-suffix":"windows_x64"}'
             selected_platforms+=("Windows x64")
 
             if [[ "$WINDOWS_SETUP_EXE" == "true" ]]; then
@@ -211,12 +344,12 @@ jobs:
           fi
 
           if [[ "$BUILD_MACOS_X64" == "true" ]]; then
-            append_matrix_item '{"label":"macOS Intel","os":"macos-15-intel","build-command":"pnpm build","artifact-suffix":"macos-x64"}'
+            append_matrix_item '{"label":"macOS Intel","os":"macos-15-intel","build-command":"pnpm build","artifact-suffix":"macos_x64"}'
             selected_platforms+=("macOS Intel x64")
           fi
 
           if [[ "$BUILD_MACOS_ARM64" == "true" ]]; then
-            append_matrix_item '{"label":"macOS Apple Silicon","os":"macos-15","build-command":"pnpm build","artifact-suffix":"macos-arm64"}'
+            append_matrix_item '{"label":"macOS Apple Silicon","os":"macos-15","build-command":"pnpm build","artifact-suffix":"macos_aarch64"}'
             selected_platforms+=("macOS Apple Silicon arm64")
           fi
 
@@ -262,6 +395,7 @@ jobs:
   build:
     name: Build ${{ matrix.label }}
     needs:
+      - check-release
       - prepare-release
       - prepare
     if: always() && needs.prepare.result == 'success' && (needs.prepare-release.result == 'success' || needs.prepare-release.result == 'skipped')
@@ -332,7 +466,7 @@ jobs:
             echo ""
             echo "- 版本：v$APP_VERSION"
             echo "- 已选平台：$SELECTED_PLATFORMS"
-            if [[ "$MATRIX_ARTIFACT_SUFFIX" == "windows-x64" ]]; then
+            if [[ "$MATRIX_ARTIFACT_SUFFIX" == "windows_x64" ]]; then
               echo "- Windows 产物：$WINDOWS_PRODUCTS"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
@@ -347,10 +481,13 @@ jobs:
       - name: Create Windows portable zip
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
         shell: pwsh
+        env:
+          MATRIX_ARTIFACT_SUFFIX: ${{ matrix.artifact-suffix }}
         run: |
           $portableRoot = "portable\nrm-desktop"
           $exePath = "src-tauri\target\x86_64-pc-windows-msvc\release\nrm-desktop.exe"
-          $zipPath = "portable\nrm-desktop-v$env:APP_VERSION-${{ matrix.artifact-suffix }}-portable.zip"
+          $zipName = "nrm-desktop_${env:APP_VERSION}_${env:MATRIX_ARTIFACT_SUFFIX}-portable.zip"
+          $zipPath = "portable\$zipName"
 
           if (!(Test-Path $exePath)) {
             throw "未找到 Windows 主程序：$exePath"
@@ -364,8 +501,8 @@ jobs:
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_setup_exe == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-setup.exe
-          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-setup.exe
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-setup.exe
           if-no-files-found: error
           retention-days: 14
 
@@ -373,8 +510,8 @@ jobs:
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_msi == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.msi
-          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.msi
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.msi
           if-no-files-found: error
           retention-days: 14
 
@@ -382,8 +519,8 @@ jobs:
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
-          path: portable/nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-portable.zip
+          path: portable/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-portable.zip
           if-no-files-found: error
           retention-days: 14
 
@@ -391,8 +528,8 @@ jobs:
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.dmg
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.dmg
+          path: src-tauri/target/release/bundle/dmg/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.dmg
           if-no-files-found: error
           retention-days: 14
 
@@ -400,6 +537,7 @@ jobs:
     name: Publish GitHub Release
     if: needs.prepare.outputs.is_tag_release == 'true'
     needs:
+      - check-release
       - prepare-release
       - prepare
       - build
@@ -408,6 +546,39 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove orphan tag before retry publish
+        if: needs.check-release.outputs.prepare_mode == 'retry'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.prepare.outputs.release_version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release ${TAG} 已存在，跳过 orphan tag 清理。"
+            exit 0
+          fi
+          if git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
+            git push origin ":refs/tags/${TAG}"
+            echo "已删除 orphan tag ${TAG}"
+          fi
+
+      - name: Retarget release tag to latest build commit
+        if: needs.check-release.outputs.prepare_mode == 'overwrite'
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.prepare.outputs.release_version }}"
+          COMMIT="${{ needs.prepare-release.outputs.commit_sha }}"
+          git fetch origin "$COMMIT"
+          git tag -f "$TAG" "$COMMIT"
+          git push -f origin "refs/tags/${TAG}"
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -441,3 +612,4 @@ jobs:
           files: release-assets/**/*
           draft: ${{ inputs.draft_release }}
           prerelease: false
+          overwrite_files: ${{ needs.check-release.outputs.prepare_mode == 'overwrite' || needs.check-release.outputs.prepare_mode == 'retry' }}
