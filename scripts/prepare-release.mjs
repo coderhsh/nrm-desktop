@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { buildReleaseInstallSection } from './render-release-install-guide.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -225,7 +226,12 @@ function escapeRegExp(value) {
  */
 function buildReleaseBody(version, englishSection) {
   const tag = `v${version}`
+  const installGuide = buildReleaseInstallSection(version)
   return `${englishSection}
+
+---
+
+${installGuide}
 
 ---
 

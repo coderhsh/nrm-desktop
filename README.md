@@ -117,6 +117,8 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 
 Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`.
 
+Before releasing, you can edit the install guide templates under [`docs/release-install-guide.md`](./docs/release-install-guide.md) and [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md). The release notes will include English download instructions by default, with a collapsible Chinese section; filenames and download links are generated automatically from the build config.
+
 ### Build only (no Release)
 
 Run workflow with **mode** `build-only` to upload Artifacts only (14-day retention). Use this to test packaging options.

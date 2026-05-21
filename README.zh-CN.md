@@ -117,6 +117,8 @@ pnpm build
 
 默认 Release 产物：Windows `setup.exe`、`.msi`、`portable.zip`，以及 macOS Apple Silicon `.dmg`。
 
+发布前可编辑 [`docs/release-install-guide.md`](./docs/release-install-guide.md) 与 [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md) 中的安装说明文案；Release 页面默认展示英文下载说明，并提供可展开的中文段落，文件名与下载链接会由构建配置自动生成。
+
 ### 仅打包（不发 Release）
 
 **mode** 选 `build-only` 时只上传 Artifacts（保留 14 天），用于测试打包选项。
