@@ -196,7 +196,7 @@ jobs:
               echo "::error::已选择 Windows x64，但未选择任何 Windows 产物。请至少勾选 setup.exe、MSI 或 portable zip。"
               exit 1
             fi
-            append_matrix_item '{"label":"Windows x64","os":"windows-latest","build-command":"pnpm build:win","artifact-suffix":"windows-x64"}'
+            append_matrix_item '{"label":"Windows x64","os":"windows-latest","build-command":"pnpm build:win","artifact-suffix":"windows_x64"}'
             selected_platforms+=("Windows x64")
 
             if [[ "$WINDOWS_SETUP_EXE" == "true" ]]; then
@@ -211,12 +211,12 @@ jobs:
           fi
 
           if [[ "$BUILD_MACOS_X64" == "true" ]]; then
-            append_matrix_item '{"label":"macOS Intel","os":"macos-15-intel","build-command":"pnpm build","artifact-suffix":"macos-x64"}'
+            append_matrix_item '{"label":"macOS Intel","os":"macos-15-intel","build-command":"pnpm build","artifact-suffix":"macos_x64"}'
             selected_platforms+=("macOS Intel x64")
           fi
 
           if [[ "$BUILD_MACOS_ARM64" == "true" ]]; then
-            append_matrix_item '{"label":"macOS Apple Silicon","os":"macos-15","build-command":"pnpm build","artifact-suffix":"macos-arm64"}'
+            append_matrix_item '{"label":"macOS Apple Silicon","os":"macos-15","build-command":"pnpm build","artifact-suffix":"macos_aarch64"}'
             selected_platforms+=("macOS Apple Silicon arm64")
           fi
 
@@ -332,7 +332,7 @@ jobs:
             echo ""
             echo "- 版本：v$APP_VERSION"
             echo "- 已选平台：$SELECTED_PLATFORMS"
-            if [[ "$MATRIX_ARTIFACT_SUFFIX" == "windows-x64" ]]; then
+            if [[ "$MATRIX_ARTIFACT_SUFFIX" == "windows_x64" ]]; then
               echo "- Windows 产物：$WINDOWS_PRODUCTS"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
@@ -347,10 +347,13 @@ jobs:
       - name: Create Windows portable zip
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
         shell: pwsh
+        env:
+          MATRIX_ARTIFACT_SUFFIX: ${{ matrix.artifact-suffix }}
         run: |
           $portableRoot = "portable\nrm-desktop"
           $exePath = "src-tauri\target\x86_64-pc-windows-msvc\release\nrm-desktop.exe"
-          $zipPath = "portable\nrm-desktop-v$env:APP_VERSION-${{ matrix.artifact-suffix }}-portable.zip"
+          $zipName = "nrm-desktop_${env:APP_VERSION}_${env:MATRIX_ARTIFACT_SUFFIX}-portable.zip"
+          $zipPath = "portable\$zipName"
 
           if (!(Test-Path $exePath)) {
             throw "未找到 Windows 主程序：$exePath"
@@ -364,8 +367,8 @@ jobs:
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_setup_exe == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-setup.exe
-          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-setup.exe
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-setup.exe
           if-no-files-found: error
           retention-days: 14
 
@@ -373,8 +376,8 @@ jobs:
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_msi == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.msi
-          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.msi
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.msi
           if-no-files-found: error
           retention-days: 14
 
@@ -382,8 +385,8 @@ jobs:
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
-          path: portable/nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}-portable.zip
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-portable.zip
+          path: portable/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-portable.zip
           if-no-files-found: error
           retention-days: 14
 
@@ -391,8 +394,8 @@ jobs:
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: nrm-desktop-v${{ env.APP_VERSION }}-${{ matrix.artifact-suffix }}.dmg
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.dmg
+          path: src-tauri/target/release/bundle/dmg/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.dmg
           if-no-files-found: error
           retention-days: 14
 

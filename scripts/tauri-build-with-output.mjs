@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { getMacDmgArtifactName } from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
 
@@ -185,8 +186,7 @@ async function createNonInteractiveMacDmg(appVersion) {
   const dmgDir = path.join(bundleDir, 'dmg')
   await fs.mkdir(dmgDir, { recursive: true })
 
-  const arch = process.arch === 'arm64' ? 'aarch64' : process.arch
-  const dmgName = `nrm-desktop_${appVersion}_${arch}.dmg`
+  const dmgName = getMacDmgArtifactName(appVersion)
   const dmgPath = path.join(dmgDir, dmgName)
 
   const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nrm-desktop-dmg-'))
@@ -318,6 +318,50 @@ async function pruneBundleArtifactsToInstallers() {
 }
 
 /**
+ * Rename generated DMG files to nrm-desktop_{version}_macos_{arch}.dmg.
+ * @param {string} appVersion
+ * @returns {Promise<void>}
+ */
+async function renameMacDmgArtifacts(appVersion) {
+  const dmgDir = path.join(bundleDir, 'dmg')
+  const targetName = getMacDmgArtifactName(appVersion)
+  const targetPath = path.join(dmgDir, targetName)
+
+  let entries
+  try {
+    entries = await fs.readdir(dmgDir, { withFileTypes: true })
+  } catch {
+    return
+  }
+
+  const dmgFiles = entries
+    .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.dmg'))
+    .map(entry => path.join(dmgDir, entry.name))
+    .filter(filePath => !path.basename(filePath).toLowerCase().startsWith('rw.'))
+
+  if (dmgFiles.length === 0) {
+    return
+  }
+
+  const sourcePath = dmgFiles.includes(targetPath)
+    ? targetPath
+    : dmgFiles.sort((left, right) => right.localeCompare(left))[0]
+
+  if (sourcePath !== targetPath) {
+    if (await pathExists(targetPath)) {
+      await fs.rm(targetPath, { force: true })
+    }
+    await fs.rename(sourcePath, targetPath)
+  }
+
+  for (const filePath of dmgFiles) {
+    if (filePath !== targetPath) {
+      await fs.rm(filePath, { force: true })
+    }
+  }
+}
+
+/**
  * Print main binary path plus bundle files.
  * @returns {Promise<void>}
  */
@@ -362,6 +406,9 @@ async function main() {
     await createNonInteractiveMacDmg(appVersion)
   } else {
     await runTauriBuild()
+    if (process.platform === 'darwin') {
+      await renameMacDmgArtifacts(appVersion)
+    }
   }
   await renameMsiFilesStripLocaleSuffix()
   await pruneBundleArtifactsToInstallers()

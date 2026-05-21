@@ -4,6 +4,10 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  getWindowsMsiArtifactName,
+  getWindowsSetupArtifactName,
+} from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
 
@@ -257,6 +261,74 @@ async function renameMsiFilesStripLocaleSuffix() {
 }
 
 /**
+ * Rename Windows installer outputs to nrm-desktop_{version}_windows_x64[-setup].{ext}.
+ * @param {string} version
+ * @returns {Promise<void>}
+ */
+async function renameWindowsInstallers(version) {
+  const setupTarget = path.join(bundleDir, 'nsis', getWindowsSetupArtifactName(version))
+  const msiTarget = path.join(bundleDir, 'msi', getWindowsMsiArtifactName(version))
+
+  const nsisDir = path.join(bundleDir, 'nsis')
+  try {
+    const entries = await fs.readdir(nsisDir, { withFileTypes: true })
+    const exeFiles = entries
+      .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.exe'))
+      .map(entry => path.join(nsisDir, entry.name))
+
+    if (exeFiles.length > 0) {
+      const sourcePath = exeFiles.includes(setupTarget)
+        ? setupTarget
+        : exeFiles.sort((left, right) => right.localeCompare(left))[0]
+
+      if (sourcePath !== setupTarget) {
+        if (await pathExists(setupTarget)) {
+          await fs.rm(setupTarget, { force: true })
+        }
+        await fs.rename(sourcePath, setupTarget)
+      }
+
+      for (const filePath of exeFiles) {
+        if (filePath !== setupTarget) {
+          await fs.rm(filePath, { force: true })
+        }
+      }
+    }
+  } catch {
+    // NSIS 目录不存在时跳过。
+  }
+
+  const msiDir = path.join(bundleDir, 'msi')
+  try {
+    const entries = await fs.readdir(msiDir, { withFileTypes: true })
+    const msiFiles = entries
+      .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.msi'))
+      .map(entry => path.join(msiDir, entry.name))
+
+    if (msiFiles.length > 0) {
+      const sourcePath = msiFiles.includes(msiTarget)
+        ? msiTarget
+        : msiFiles.sort((left, right) => right.localeCompare(left))[0]
+
+      if (sourcePath !== msiTarget) {
+        if (await pathExists(msiTarget)) {
+          await fs.rm(msiTarget, { force: true })
+        }
+        await fs.rename(sourcePath, msiTarget)
+      }
+
+      for (const filePath of msiFiles) {
+        if (filePath !== msiTarget) {
+          await fs.rm(filePath, { force: true })
+        }
+      }
+    }
+  } catch {
+    // MSI 目录不存在时跳过。
+  }
+}
+
+/**
  * @param {string} directory
  * @returns {Promise<string[]>}
  */
@@ -439,13 +511,16 @@ async function runTauriBuildWinWithRetry(selection) {
 }
 
 async function main() {
-  syncAppVersionFromPackageJson()
+  const appVersion = syncAppVersionFromPackageJson()
   const selection = getWindowsBuildSelection()
   const startedAt = Date.now()
   process.stdout.write(`[tauri-build-win] Windows 产物选择：${formatWindowsBuildSelection(selection)}\n\n`)
   await preflightChecks(selection)
   await runTauriBuildWinWithRetry(selection)
   await renameMsiFilesStripLocaleSuffix()
+  if (selection.setupExe || selection.msi) {
+    await renameWindowsInstallers(appVersion)
+  }
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
   process.stdout.write(`\n打包总时长: ${formatBuildDuration(elapsedMs)}（${elapsedMs} ms）\n`)
