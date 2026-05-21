@@ -116,6 +116,16 @@ pnpm build
 4. CI 会自动 bump 版本、归档 CHANGELOG、提交到 `main`、构建安装包、创建 GitHub Release，并 **将 release commit 合并回 `dev`**。
 5. 本地执行 `git checkout dev && git pull origin dev` 即可继续开发。
 
+**重试 / 覆盖同一版本：**
+
+| 场景 | 操作 |
+|------|------|
+| 首次发布失败，GitHub 上还没有该版本的 Release | 再次运行 workflow，`version` 填**同一版本**即可；CI 会识别为 **retry**，不会重复 bump 版本或归档 CHANGELOG |
+| 该版本 Release 已存在，需要重新上传安装包 | 勾选 **overwrite_release**，`version` 必须与 `package.json` 当前版本一致；CI 会覆盖 Release 附件并更新 tag 指向最新构建 commit |
+| Release 已存在但未勾选 overwrite | workflow 会在预检查阶段失败并提示 |
+
+重试或覆盖时 **不会** 向 `dev` 同步 release commit（因为没有新的 bump commit）。
+
 默认 Release 产物：Windows `setup.exe`、`.msi`、`portable.zip`，以及 macOS Apple Silicon `.dmg`。
 
 发布前可编辑 [`docs/release-install-guide.md`](./docs/release-install-guide.md) 与 [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md) 中的安装说明文案；Release 页面默认展示英文下载说明，并提供可展开的中文段落，文件名与下载链接会由构建配置自动生成。
