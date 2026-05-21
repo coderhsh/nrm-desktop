@@ -1,0 +1,298 @@
+name: Release Installers
+
+# 一键发布：bump 版本、归档 CHANGELOG、构建安装包、创建 GitHub Release，并同步 dev。
+# 同一版本可 retry（Release 不存在）或 overwrite（勾选 overwrite_release 覆盖附件）。
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 发布版本号（必填，如 1.0.1）
+        type: string
+        required: true
+      draft_release:
+        description: 创建 Draft Release（可先验产物再公开）
+        type: boolean
+        default: false
+      overwrite_release:
+        description: 若该版本 GitHub Release 已存在，覆盖并重新上传安装包
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-installers-${{ github.ref }}-${{ inputs.version }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check-release:
+    name: Check release context
+    runs-on: ubuntu-latest
+    outputs:
+      prepare_mode: ${{ steps.context.outputs.prepare_mode }}
+      release_exists: ${{ steps.context.outputs.release_exists }}
+
+    steps:
+      - name: Validate release version input
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ inputs.version }}" ]]; then
+            echo "::error::必须填写 version（例如 1.0.1）。"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine prepare mode
+        id: context
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node ./scripts/check-release-context.mjs \
+            --version "${{ inputs.version }}" \
+            --overwrite "${{ inputs.overwrite_release }}"
+
+      - name: Write check summary
+        shell: bash
+        run: |
+          {
+            echo "### Release 预检查"
+            echo ""
+            echo "- 版本：v${{ inputs.version }}"
+            echo "- 模式：${{ steps.context.outputs.prepare_mode }}"
+            echo "- 远程 Release 已存在：${{ steps.context.outputs.release_exists }}"
+            if [[ "${{ steps.context.outputs.prepare_mode }}" == "overwrite" ]]; then
+              echo "- 将覆盖已有 Release 并重新上传安装包"
+            elif [[ "${{ steps.context.outputs.prepare_mode }}" == "retry" ]]; then
+              echo "- 将重试发布当前版本（不重复 bump 版本/CHANGELOG）"
+            else
+              echo "- 将发布新版本并 bump 版本、归档 CHANGELOG"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  prepare-release:
+    name: Prepare release
+    needs: check-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      commit_sha: ${{ steps.push.outputs.commit_sha }}
+      release_body: ${{ steps.release.outputs.release_body }}
+      skip_commit: ${{ steps.release.outputs.skip_commit }}
+      prepare_mode: ${{ steps.release.outputs.prepare_mode }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version and archive changelog
+        id: release
+        run: |
+          node ./scripts/prepare-release.mjs \
+            --version "${{ inputs.version }}" \
+            --mode "${{ needs.check-release.outputs.prepare_mode }}"
+
+      - name: Commit and push release preparation
+        id: push
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ steps.release.outputs.skip_commit }}" == "true" ]]; then
+            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "retry/overwrite 模式：跳过 commit，复用当前 HEAD。"
+            exit 0
+          fi
+
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "::error::prepare-release 未产生任何文件变更。"
+            exit 1
+          fi
+          git add package.json CHANGELOG.md CHANGELOG.zh-CN.md src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock
+          git commit -m "chore: release v${{ steps.release.outputs.version }}"
+          git push origin "HEAD:${{ github.ref_name }}"
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Write release summary
+        shell: bash
+        run: |
+          {
+            echo "### 一键发布准备完成"
+            echo ""
+            echo "- 版本：v${{ steps.release.outputs.version }}"
+            echo "- 模式：${{ steps.release.outputs.prepare_mode }}"
+            echo "- 提交：\`${{ steps.push.outputs.commit_sha }}\`"
+            if [[ "${{ steps.release.outputs.skip_commit }}" == "true" ]]; then
+              echo "- 已跳过版本 bump commit（重试/覆盖）"
+            fi
+            echo "- 后续步骤：并行构建安装包并创建 GitHub Release"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  sync-dev:
+    name: Sync release commit to dev
+    needs: prepare-release
+    if: needs.prepare-release.result == 'success' && needs.prepare-release.outputs.skip_commit != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: dev
+
+      - name: Merge release commit into dev
+        env:
+          RELEASE_SHA: ${{ needs.prepare-release.outputs.commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$RELEASE_SHA" ]]; then
+            echo "::error::缺少 release commit SHA，无法同步 dev。"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin dev main
+
+          if ! git show-ref --verify --quiet "refs/remotes/origin/dev"; then
+            echo "::error::远程不存在 dev 分支，无法自动同步。请先创建 dev 分支。"
+            exit 1
+          fi
+
+          git checkout dev
+          if git merge-base --is-ancestor "$RELEASE_SHA" HEAD; then
+            echo "dev 已包含 release commit（$RELEASE_SHA），跳过 push。"
+            exit 0
+          fi
+
+          if ! git merge --no-edit "$RELEASE_SHA"; then
+            echo "::error::无法自动合并 release commit 到 dev。请在本地执行: git checkout dev && git merge origin/main"
+            exit 1
+          fi
+
+          git push origin dev
+
+      - name: Write sync summary
+        shell: bash
+        run: |
+          {
+            echo "### dev 分支已同步"
+            echo ""
+            echo "- 已合并 release commit：\`${{ needs.prepare-release.outputs.commit_sha }}\`"
+            echo "- 本地继续开发：\`git checkout dev && git pull origin dev\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build installers
+    needs: prepare-release
+    uses: ./.github/workflows/installer-build-reusable.yml
+    with:
+      checkout_ref: ${{ needs.prepare-release.outputs.commit_sha }}
+      is_tag_release: true
+      release_version: ${{ needs.prepare-release.outputs.version }}
+      build_windows_x64: true
+      build_macos_x64: false
+      build_macos_arm64: true
+      windows_setup_exe: true
+      windows_msi: true
+      windows_portable_zip: true
+
+  release:
+    name: Publish GitHub Release
+    needs:
+      - check-release
+      - prepare-release
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove orphan tag before retry publish
+        if: needs.check-release.outputs.prepare_mode == 'retry'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.build.outputs.release_version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release ${TAG} 已存在，跳过 orphan tag 清理。"
+            exit 0
+          fi
+          if git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
+            git push origin ":refs/tags/${TAG}"
+            echo "已删除 orphan tag ${TAG}"
+          fi
+
+      - name: Retarget release tag to latest build commit
+        if: needs.check-release.outputs.prepare_mode == 'overwrite'
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.build.outputs.release_version }}"
+          COMMIT="${{ needs.prepare-release.outputs.commit_sha }}"
+          git fetch origin "$COMMIT"
+          git tag -f "$TAG" "$COMMIT"
+          git push -f origin "refs/tags/${TAG}"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Verify release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find release-assets -type f | sort)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "::error::未找到任何 Release 安装包文件。"
+            exit 1
+          fi
+          {
+            echo "### Release Assets"
+            echo ""
+            for file in "${files[@]}"; do
+              echo "- \`${file#release-assets/}\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.release_version }}
+          name: nrm-desktop v${{ needs.build.outputs.release_version }}
+          target_commitish: ${{ needs.prepare-release.outputs.commit_sha }}
+          body: ${{ needs.prepare-release.outputs.release_body }}
+          files: release-assets/**/*
+          draft: ${{ inputs.draft_release }}
+          prerelease: false
+          overwrite_files: ${{ needs.check-release.outputs.prepare_mode == 'overwrite' || needs.check-release.outputs.prepare_mode == 'retry' }}

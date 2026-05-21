@@ -111,8 +111,8 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 ### One-click release
 
 1. Develop on `dev`, then merge into `main` (PR or direct merge).
-2. Open **Actions → Build Installers → Run workflow** on **`main`**.
-3. Set **mode** to `release`, enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, then run.
+2. Open **Actions → Release Installers → Run workflow** on **`main`**.
+3. Enter **version** (e.g. `1.0.1`), optionally enable **draft_release** or **overwrite_release**, then run.
 4. CI will bump versions, archive changelogs, commit to `main`, build installers, create a GitHub Release, and **merge the release commit back into `dev`**.
 5. Locally: `git checkout dev && git pull origin dev` to continue development.
 
@@ -132,7 +132,7 @@ Before releasing, you can edit the install guide templates under [`docs/release-
 
 ### Build only (no Release)
 
-Run workflow with **mode** `build-only` to upload Artifacts only (14-day retention). Use this to test packaging options.
+Open **Actions → Build Installers → Run workflow** and choose platforms and Windows artifacts. Uploads Artifacts only (14-day retention) for testing packaging options.
 
 ### Repository settings
 
