@@ -112,7 +112,7 @@ pnpm build
 
 1. 在 `dev` 分支开发，写好 [CHANGELOG.zh-CN.md](./CHANGELOG.zh-CN.md) / [CHANGELOG.md](./CHANGELOG.md) 的 `[未发布]` / `[Unreleased]` 后，合并到 `main`。
 2. 在 **`main`** 分支打开 **Actions → Release Installers → Run workflow**。
-3. 填写 **version**（如 `1.0.1`），可按需勾选 **draft_release** 或 **overwrite_release**，然后运行。
+3. 填写 **version**（如 `1.0.1`），按需勾选 **draft_release**、**overwrite_release** 以及要发布的平台/安装包格式，然后运行。
 4. CI 会自动 bump 版本、归档 CHANGELOG、提交到 `main`、构建安装包、创建 GitHub Release，并 **将 release commit 合并回 `dev`**。
 5. 本地执行 `git checkout dev && git pull origin dev` 即可继续开发。
 
@@ -126,7 +126,7 @@ pnpm build
 
 重试或覆盖时 **不会** 向 `dev` 同步 release commit（因为没有新的 bump commit）。
 
-默认 Release 产物：Windows `setup.exe`、`.msi`、`portable.zip`，以及 macOS Apple Silicon `.dmg`。
+默认 Release 产物：Windows `setup.exe`、`.msi`、`portable.zip`，以及 macOS Apple Silicon `.dmg`；可在 workflow 中取消勾选不需要的格式。
 
 发布前可编辑 [`docs/release-install-guide.md`](./docs/release-install-guide.md) 与 [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md) 中的安装说明文案；Release 页面默认展示英文下载说明，并提供可展开的中文段落，文件名与下载链接会由构建配置自动生成。
 

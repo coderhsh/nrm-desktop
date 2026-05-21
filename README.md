@@ -112,7 +112,7 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 
 1. Develop on `dev`, then merge into `main` (PR or direct merge).
 2. Open **Actions → Release Installers → Run workflow** on **`main`**.
-3. Enter **version** (e.g. `1.0.1`), optionally enable **draft_release** or **overwrite_release**, then run.
+3. Enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, **overwrite_release**, and choose platforms/installer formats, then run.
 4. CI will bump versions, archive changelogs, commit to `main`, build installers, create a GitHub Release, and **merge the release commit back into `dev`**.
 5. Locally: `git checkout dev && git pull origin dev` to continue development.
 
@@ -126,7 +126,7 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 
 Retry and overwrite runs **do not** sync a release commit to `dev` (no new bump commit is created).
 
-Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`.
+Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`; uncheck any formats you do not want to publish.
 
 Before releasing, you can edit the install guide templates under [`docs/release-install-guide.md`](./docs/release-install-guide.md) and [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md). The release notes will include English download instructions by default, with a collapsible Chinese section; filenames and download links are generated automatically from the build config.
 

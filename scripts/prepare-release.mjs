@@ -5,6 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { buildReleaseInstallSection } from './render-release-install-guide.mjs'
+import { normalizeReleaseArtifactOptions } from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -250,13 +251,40 @@ function escapeRegExp(value) {
 }
 
 /**
+ * @param {string} value
+ * @param {boolean} fallback
+ * @returns {boolean}
+ */
+function parseEnvBoolean(value, fallback) {
+  if (value === undefined || value === null || value === '') {
+    return fallback
+  }
+  return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase())
+}
+
+/**
+ * @returns {import('./artifact-names.mjs').ReleaseArtifactOptions}
+ */
+function readReleaseArtifactOptionsFromEnv() {
+  return normalizeReleaseArtifactOptions({
+    buildWindowsX64: parseEnvBoolean(process.env.RELEASE_BUILD_WINDOWS_X64, true),
+    buildMacosX64: parseEnvBoolean(process.env.RELEASE_BUILD_MACOS_X64, false),
+    buildMacosArm64: parseEnvBoolean(process.env.RELEASE_BUILD_MACOS_ARM64, true),
+    windowsSetupExe: parseEnvBoolean(process.env.RELEASE_WINDOWS_SETUP_EXE, true),
+    windowsMsi: parseEnvBoolean(process.env.RELEASE_WINDOWS_MSI, true),
+    windowsPortableZip: parseEnvBoolean(process.env.RELEASE_WINDOWS_PORTABLE_ZIP, true),
+  })
+}
+
+/**
  * @param {string} version
  * @param {string} englishSection
+ * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} artifactOptions
  * @returns {string}
  */
-function buildReleaseBody(version, englishSection) {
+function buildReleaseBody(version, englishSection, artifactOptions) {
   const tag = `v${version}`
-  const installGuide = buildReleaseInstallSection(version)
+  const installGuide = buildReleaseInstallSection(version, artifactOptions)
   return `${englishSection}
 
 ---
@@ -351,7 +379,7 @@ function main() {
     process.stdout.write(`[prepare-release] ${mode} 模式：跳过版本 bump 与 CHANGELOG 归档\n`)
   }
 
-  const releaseBody = buildReleaseBody(version, englishReleaseSection)
+  const releaseBody = buildReleaseBody(version, englishReleaseSection, readReleaseArtifactOptionsFromEnv())
   writeGithubOutput('version', version)
   writeGithubOutput('release_body', releaseBody)
   writeGithubOutput('prepare_mode', mode)

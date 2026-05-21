@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { listDefaultReleaseArtifactNames } from './artifact-names.mjs'
+import {
+  listDefaultReleaseArtifactNames,
+  listReleaseArtifactNames,
+  normalizeReleaseArtifactOptions,
+} from './artifact-names.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -64,8 +68,13 @@ function buildReleaseAssetUrl(repository, version, filename) {
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildDownloadTable(repository, version, locale) {
-  const artifacts = listDefaultReleaseArtifactNames(version)
+/**
+ * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
+ */
+function buildDownloadTable(repository, version, locale, artifactOptions) {
+  const artifacts = artifactOptions
+    ? listReleaseArtifactNames(version, normalizeReleaseArtifactOptions(artifactOptions))
+    : listDefaultReleaseArtifactNames(version)
   const isZh = locale === 'zh'
   const headers = isZh
     ? ['平台', '文件', '说明', '下载']
@@ -100,19 +109,20 @@ function renderTemplate(templatePath, replacements) {
 
 /**
  * @param {string} version
+ * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
  * @returns {{ english: string, chinese: string, chineseGuideLink: string }}
  */
-export function renderReleaseInstallGuide(version) {
+export function renderReleaseInstallGuide(version, artifactOptions) {
   const repository = resolveGitHubRepository()
   const tag = `v${version}`
   const chineseGuideLink = `https://github.com/${repository}/blob/${tag}/docs/release-install-guide.zh-CN.md`
 
   const english = renderTemplate(TEMPLATE_FILES.en, {
-    downloadTable: buildDownloadTable(repository, version, 'en'),
+    downloadTable: buildDownloadTable(repository, version, 'en', artifactOptions),
     chineseGuideLink,
   })
   const chinese = renderTemplate(TEMPLATE_FILES.zh, {
-    downloadTable: buildDownloadTable(repository, version, 'zh'),
+    downloadTable: buildDownloadTable(repository, version, 'zh', artifactOptions),
   })
 
   return { english, chinese, chineseGuideLink }
@@ -120,10 +130,11 @@ export function renderReleaseInstallGuide(version) {
 
 /**
  * @param {string} version
+ * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
  * @returns {string}
  */
-export function buildReleaseInstallSection(version) {
-  const { english, chinese } = renderReleaseInstallGuide(version)
+export function buildReleaseInstallSection(version, artifactOptions) {
+  const { english, chinese } = renderReleaseInstallGuide(version, artifactOptions)
   return `${english}
 
 <details>

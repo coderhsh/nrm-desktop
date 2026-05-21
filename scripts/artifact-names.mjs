@@ -96,6 +96,25 @@ export function getWindowsPortableArtifactName(version) {
  * @property {string} noteZh
  */
 
+/** @typedef {Object} ReleaseArtifactOptions
+ * @property {boolean} [buildWindowsX64]
+ * @property {boolean} [buildMacosX64]
+ * @property {boolean} [buildMacosArm64]
+ * @property {boolean} [windowsSetupExe]
+ * @property {boolean} [windowsMsi]
+ * @property {boolean} [windowsPortableZip]
+ */
+
+/** 与 Release Installers workflow 默认勾选一致。 */
+export const DEFAULT_RELEASE_ARTIFACT_OPTIONS = /** @type {const} */ ({
+  buildWindowsX64: true,
+  buildMacosX64: false,
+  buildMacosArm64: true,
+  windowsSetupExe: true,
+  windowsMsi: true,
+  windowsPortableZip: true,
+})
+
 /** 与 workflow release 模式默认产物一致。 */
 export const DEFAULT_RELEASE_ARTIFACTS = /** @type {const} */ ([
   {
@@ -106,6 +125,15 @@ export const DEFAULT_RELEASE_ARTIFACTS = /** @type {const} */ ([
     labelZh: 'macOS（Apple Silicon）',
     noteEn: 'For M1 / M2 / M3 / M4 Macs',
     noteZh: '适用于 M 系列芯片 Mac',
+  },
+  {
+    platform: 'macos',
+    arch: 'x64',
+    kind: 'dmg',
+    labelEn: 'macOS (Intel)',
+    labelZh: 'macOS（Intel）',
+    noteEn: 'For Intel-based Macs',
+    noteZh: '适用于 Intel 芯片 Mac',
   },
   {
     platform: 'windows',
@@ -137,17 +165,73 @@ export const DEFAULT_RELEASE_ARTIFACTS = /** @type {const} */ ([
 ])
 
 /**
+ * @param {DefaultReleaseArtifact} item
+ * @param {Required<ReleaseArtifactOptions>} options
+ * @returns {boolean}
+ */
+function shouldIncludeReleaseArtifact(item, options) {
+  if (item.platform === 'macos' && item.arch === 'aarch64') {
+    return options.buildMacosArm64
+  }
+  if (item.platform === 'macos' && item.arch === 'x64') {
+    return options.buildMacosX64
+  }
+  if (item.platform === 'windows') {
+    if (!options.buildWindowsX64) {
+      return false
+    }
+    if (item.kind === 'setup') {
+      return options.windowsSetupExe
+    }
+    if (item.kind === 'msi') {
+      return options.windowsMsi
+    }
+    if (item.kind === 'portable') {
+      return options.windowsPortableZip
+    }
+  }
+  return false
+}
+
+/**
+ * @param {ReleaseArtifactOptions} [options]
+ * @returns {Required<ReleaseArtifactOptions>}
+ */
+export function normalizeReleaseArtifactOptions(options = {}) {
+  return {
+    buildWindowsX64: options.buildWindowsX64 ?? DEFAULT_RELEASE_ARTIFACT_OPTIONS.buildWindowsX64,
+    buildMacosX64: options.buildMacosX64 ?? DEFAULT_RELEASE_ARTIFACT_OPTIONS.buildMacosX64,
+    buildMacosArm64: options.buildMacosArm64 ?? DEFAULT_RELEASE_ARTIFACT_OPTIONS.buildMacosArm64,
+    windowsSetupExe: options.windowsSetupExe ?? DEFAULT_RELEASE_ARTIFACT_OPTIONS.windowsSetupExe,
+    windowsMsi: options.windowsMsi ?? DEFAULT_RELEASE_ARTIFACT_OPTIONS.windowsMsi,
+    windowsPortableZip: options.windowsPortableZip ?? DEFAULT_RELEASE_ARTIFACT_OPTIONS.windowsPortableZip,
+  }
+}
+
+/**
+ * @param {string} version
+ * @param {ReleaseArtifactOptions} [options]
+ * @returns {Array<DefaultReleaseArtifact & { filename: string }>}
+ */
+export function listReleaseArtifactNames(version, options = DEFAULT_RELEASE_ARTIFACT_OPTIONS) {
+  const normalized = normalizeReleaseArtifactOptions(options)
+  return DEFAULT_RELEASE_ARTIFACTS
+    .filter(item => shouldIncludeReleaseArtifact(item, normalized))
+    .map(item => ({
+      ...item,
+      filename: buildArtifactName({
+        version,
+        platform: item.platform,
+        arch: item.arch,
+        kind: item.kind,
+      }),
+    }))
+}
+
+/**
  * @param {string} version
  * @returns {Array<DefaultReleaseArtifact & { filename: string }>}
  */
 export function listDefaultReleaseArtifactNames(version) {
-  return DEFAULT_RELEASE_ARTIFACTS.map(item => ({
-    ...item,
-    filename: buildArtifactName({
-      version,
-      platform: item.platform,
-      arch: item.arch,
-      kind: item.kind,
-    }),
-  }))
+  return listReleaseArtifactNames(version, DEFAULT_RELEASE_ARTIFACT_OPTIONS)
 }
