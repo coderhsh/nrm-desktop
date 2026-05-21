@@ -1,4 +1,4 @@
-/* @desc 渲染 Release 安装包选择说明（英文 + 中文），供 prepare-release 拼接到 release body。 */
+/* @desc 渲染 Release 安装包短说明（英文），供 prepare-release 拼接到 release body。 */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,10 +13,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
 
-const TEMPLATE_FILES = {
-  en: path.join(rootDir, 'docs', 'release-install-guide.md'),
-  zh: path.join(rootDir, 'docs', 'release-install-guide.zh-CN.md'),
-}
+const RELEASE_TEMPLATE_FILE = path.join(rootDir, 'docs', 'release-install-guide.release.md')
 
 /**
  * @param {string} name
@@ -33,7 +30,7 @@ function parseArgValue(name) {
 /**
  * @returns {string}
  */
-function resolveGitHubRepository() {
+export function resolveGitHubRepository() {
   if (process.env.GITHUB_REPOSITORY) {
     return process.env.GITHUB_REPOSITORY
   }
@@ -53,6 +50,26 @@ function resolveGitHubRepository() {
 }
 
 /**
+ * @param {string} version
+ * @param {string} filePath
+ * @returns {string}
+ */
+export function buildDocBlobUrl(version, filePath) {
+  const repository = resolveGitHubRepository()
+  return `https://github.com/${repository}/blob/v${version}/${filePath}`
+}
+
+/**
+ * @param {string} version
+ * @returns {string}
+ */
+export function buildChangelogLinksLine(version) {
+  const englishUrl = buildDocBlobUrl(version, 'CHANGELOG.md')
+  const chineseUrl = buildDocBlobUrl(version, 'CHANGELOG.zh-CN.md')
+  return `[Full changelog](${englishUrl}) · [完整更新日志](${chineseUrl})`
+}
+
+/**
  * @param {string} repository owner/repo
  * @param {string} version
  * @param {string} filename
@@ -65,43 +82,38 @@ function buildReleaseAssetUrl(repository, version, filename) {
 /**
  * @param {string} repository
  * @param {string} version
- * @param {'en' | 'zh'} locale
+ * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
  * @returns {string}
  */
-/**
- * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
- */
-function buildDownloadTable(repository, version, locale, artifactOptions) {
+function buildDownloadList(repository, version, artifactOptions) {
   const artifacts = artifactOptions
     ? listReleaseArtifactNames(version, normalizeReleaseArtifactOptions(artifactOptions))
     : listDefaultReleaseArtifactNames(version)
-  const isZh = locale === 'zh'
-  const headers = isZh
-    ? ['平台', '文件', '说明', '下载']
-    : ['Platform', 'File', 'Notes', 'Download']
-  const rows = artifacts.map(item => {
-    const platform = isZh ? item.labelZh : item.labelEn
-    const note = isZh ? item.noteZh : item.noteEn
-    const downloadLabel = isZh ? '下载' : 'Download'
-    const url = buildReleaseAssetUrl(repository, version, item.filename)
-    return `| ${platform} | \`${item.filename}\` | ${note} | [${downloadLabel}](${url}) |`
-  })
 
-  return [`| ${headers.join(' | ')} |`, `| ${headers.map(() => '---').join(' | ')} |`, ...rows].join('\n')
+  return artifacts
+    .map(item => {
+      const url = buildReleaseAssetUrl(repository, version, item.filename)
+      return `- [${item.labelEn} — \`${item.filename}\`](${url})`
+    })
+    .join('\n')
 }
 
 /**
  * @param {string} templatePath
- * @param {{ downloadTable: string, chineseGuideLink?: string }} replacements
+ * @param {{ downloadList: string, englishGuideLink: string, chineseGuideLink: string }} replacements
  * @returns {string}
  */
 function renderTemplate(templatePath, replacements) {
   let content = readFileSync(templatePath, 'utf8')
-  content = content.replace('{{DOWNLOAD_TABLE}}', replacements.downloadTable)
-  if (replacements.chineseGuideLink) {
-    content = content.replace('{{CHINESE_GUIDE_LINK}}', replacements.chineseGuideLink)
-  }
-  if (content.includes('{{DOWNLOAD_TABLE}}') || content.includes('{{CHINESE_GUIDE_LINK}}')) {
+  content = content.replace('{{DOWNLOAD_LIST}}', replacements.downloadList)
+  content = content.replace('{{ENGLISH_GUIDE_LINK}}', replacements.englishGuideLink)
+  content = content.replace('{{CHINESE_GUIDE_LINK}}', replacements.chineseGuideLink)
+
+  if (
+    content.includes('{{DOWNLOAD_LIST}}')
+    || content.includes('{{ENGLISH_GUIDE_LINK}}')
+    || content.includes('{{CHINESE_GUIDE_LINK}}')
+  ) {
     throw new Error(`[render-release-install-guide] 模板仍有未替换占位符: ${templatePath}`)
   }
   return content.trim()
@@ -110,39 +122,18 @@ function renderTemplate(templatePath, replacements) {
 /**
  * @param {string} version
  * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
- * @returns {{ english: string, chinese: string, chineseGuideLink: string }}
- */
-export function renderReleaseInstallGuide(version, artifactOptions) {
-  const repository = resolveGitHubRepository()
-  const tag = `v${version}`
-  const chineseGuideLink = `https://github.com/${repository}/blob/${tag}/docs/release-install-guide.zh-CN.md`
-
-  const english = renderTemplate(TEMPLATE_FILES.en, {
-    downloadTable: buildDownloadTable(repository, version, 'en', artifactOptions),
-    chineseGuideLink,
-  })
-  const chinese = renderTemplate(TEMPLATE_FILES.zh, {
-    downloadTable: buildDownloadTable(repository, version, 'zh', artifactOptions),
-  })
-
-  return { english, chinese, chineseGuideLink }
-}
-
-/**
- * @param {string} version
- * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
  * @returns {string}
  */
 export function buildReleaseInstallSection(version, artifactOptions) {
-  const { english, chinese } = renderReleaseInstallGuide(version, artifactOptions)
-  return `${english}
+  const repository = resolveGitHubRepository()
+  const englishGuideLink = buildDocBlobUrl(version, 'docs/release-install-guide.md')
+  const chineseGuideLink = buildDocBlobUrl(version, 'docs/release-install-guide.zh-CN.md')
 
-<details>
-<summary>简体中文 / Chinese</summary>
-
-${chinese}
-
-</details>`
+  return renderTemplate(RELEASE_TEMPLATE_FILE, {
+    downloadList: buildDownloadList(repository, version, artifactOptions),
+    englishGuideLink,
+    chineseGuideLink,
+  })
 }
 
 const invokedDirectly =

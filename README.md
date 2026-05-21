@@ -112,7 +112,7 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 
 1. Develop on `dev`, then merge into `main` (PR or direct merge).
 2. Open **Actions → Release Installers → Run workflow** on **`main`**.
-3. Enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, **overwrite_release**, and choose platforms/installer formats, then run.
+3. Enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, **overwrite_release**, **cleanup_release_assets**, and choose platforms/installer formats, then run.
 4. CI will bump versions, archive changelogs, commit to `main`, build installers, create a GitHub Release, and **merge the release commit back into `dev`**.
 5. Locally: `git checkout dev && git pull origin dev` to continue development.
 
@@ -122,13 +122,14 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 |----------|------------|
 | First publish failed and no GitHub Release exists for that version | Re-run the workflow with the **same version**; CI uses **retry** mode and skips bumping version or archiving changelogs |
 | Release already exists and you need to re-upload installers | Enable **overwrite_release**; **version** must match the current `package.json` version; CI overwrites release assets and retargets the tag to the latest build commit |
+| Duplicate or legacy-named installers on the release need cleanup | Enable **cleanup_release_assets** (often together with **overwrite_release**); removes all `nrm-desktop*` assets for that version before upload |
 | Release exists but overwrite is not enabled | The workflow fails at the pre-check step with a clear message |
 
 Retry and overwrite runs **do not** sync a release commit to `dev` (no new bump commit is created).
 
 Default release artifacts: Windows `setup.exe`, `.msi`, `portable.zip`, and macOS Apple Silicon `.dmg`; uncheck any formats you do not want to publish.
 
-Before releasing, you can edit the install guide templates under [`docs/release-install-guide.md`](./docs/release-install-guide.md) and [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md). The release notes will include English download instructions by default, with a collapsible Chinese section; filenames and download links are generated automatically from the build config.
+Before releasing, edit [`docs/release-install-guide.release.md`](./docs/release-install-guide.release.md) (short English Downloads section on the Release page), and [`docs/release-install-guide.md`](./docs/release-install-guide.md) / [`docs/release-install-guide.zh-CN.md`](./docs/release-install-guide.zh-CN.md) (full install docs linked from the Release). The Release body has two sections — **Release Notes** and **Downloads** — all in English by default; each section ends with links to the full English doc and a Chinese doc (e.g. 完整更新日志, 安装说明).
 
 ### Build only (no Release)
 
