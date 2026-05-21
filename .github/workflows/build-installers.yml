@@ -1,0 +1,107 @@
+name: Build Installers
+
+# 手动触发：在 GitHub Actions 页面点击 Run workflow 后才会开始打包。
+on:
+  workflow_dispatch:
+
+# 这里只需要读取仓库源码，不创建 Release、不写入 tag，也不上传到仓库内容区。
+permissions:
+  contents: read
+
+# 同一个分支重复触发时取消旧任务，避免多个耗时的 Tauri 打包任务排队。
+concurrency:
+  group: build-installers-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 让脚本识别当前运行在 CI 环境；macOS 打包脚本会据此使用非交互方式生成 DMG。
+  CI: true
+  # 关闭 Rust 增量编译，CI 上更稳定，也更利于缓存复用。
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    name: Build ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+
+    strategy:
+      # 一个平台失败时不取消其他平台，方便一次触发后看到所有平台的真实状态。
+      fail-fast: false
+      matrix:
+        include:
+          # Windows 必须在 Windows runner 上打 MSI；现有 build:win 脚本会同时产出 MSI 和 NSIS。
+          - label: Windows x64
+            os: windows-latest
+            build-command: pnpm build:win
+            artifact-name: nrm-desktop-windows-x64
+            artifact-path: |
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+              src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+
+          # Intel Mac runner，用于产出 x64 DMG。
+          - label: macOS Intel
+            os: macos-15-intel
+            build-command: pnpm build
+            artifact-name: nrm-desktop-macos-x64
+            artifact-path: src-tauri/target/release/bundle/dmg/*.dmg
+
+          # Apple Silicon runner，用于产出 arm64 DMG。
+          - label: macOS Apple Silicon
+            os: macos-15
+            build-command: pnpm build
+            artifact-name: nrm-desktop-macos-arm64
+            artifact-path: src-tauri/target/release/bundle/dmg/*.dmg
+
+    steps:
+      # 拉取仓库源码。
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 固定 pnpm 版本，避免不同 runner 默认版本不一致。
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      # Node 22 符合 package.json 的 engines 约束；同时启用 pnpm 依赖缓存。
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # 安装 stable Rust toolchain，供 Tauri 后端编译使用。
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Windows 打包脚本显式指定 x86_64-pc-windows-msvc target，提前安装目标平台。
+      - name: Add Windows Rust target
+        if: runner.os == 'Windows'
+        run: rustup target add x86_64-pc-windows-msvc
+
+      # 缓存 Cargo registry、git 依赖和 src-tauri/target，减少重复构建耗时。
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          cache-on-failure: true
+
+      # 使用 lockfile 安装前端依赖，保证 CI 与仓库锁定版本一致。
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 执行矩阵中指定的平台构建命令：Windows 用 build:win，macOS 用 build。
+      - name: Build installer
+        run: ${{ matrix.build-command }}
+
+      # 上传安装包到本次 workflow run 的 Artifacts；找不到产物时直接失败，避免空包误判。
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
+          if-no-files-found: error
+          retention-days: 14
