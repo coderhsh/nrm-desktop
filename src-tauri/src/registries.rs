@@ -58,7 +58,6 @@ fn migrate_from_legacy_preset_model(mut data: CustomData) -> CustomData {
             registries.push(Registry {
                 name: custom.name.clone(),
                 url: custom.url.clone(),
-                is_custom: true,
             });
         } else {
             registries.push(preset.clone());
@@ -70,7 +69,6 @@ fn migrate_from_legacy_preset_model(mut data: CustomData) -> CustomData {
             registries.push(Registry {
                 name: custom.name.clone(),
                 url: custom.url.clone(),
-                is_custom: true,
             });
         }
     }
@@ -86,7 +84,6 @@ fn normalize_registry_entries(registries: Vec<Registry>) -> Vec<Registry> {
         .map(|r| Registry {
             name: r.name.trim().to_string(),
             url: r.url.trim().to_string(),
-            is_custom: true,
         })
         .filter(|r| !r.name.is_empty() && !r.url.is_empty())
         .collect()
@@ -216,7 +213,6 @@ fn insert_merged_current_registry(name: &str, url: &str) -> io::Result<()> {
     data.registries.push(Registry {
         name: name.to_string(),
         url: url.to_string(),
-        is_custom: true,
     });
     save_custom_data(&data)
 }
@@ -265,7 +261,6 @@ pub fn add(name: &str, url: &str) -> io::Result<()> {
     custom.push(Registry {
         name: name.to_string(),
         url: url.to_string(),
-        is_custom: true,
     });
 
     save_custom(&custom)
@@ -315,7 +310,6 @@ pub fn import_custom(imported: &[Registry]) -> io::Result<()> {
         .map(|r| Registry {
             name: r.name.trim().to_string(),
             url: r.url.trim().to_string(),
-            is_custom: true,
         })
         .filter(|r| !r.name.is_empty() && !r.url.is_empty())
         .collect();
