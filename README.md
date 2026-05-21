@@ -43,7 +43,7 @@ Switch, manage, and test npm registries — without touching the terminal.
 
 **Workflow Tools**
 - Import/export registry configuration
-- Registry detail dialog with quick copy (URL, auth token, etc.)
+- Registry detail dialog with quick copy (URL, latency, category, etc.)
 - System tray for fast switching without opening the main window
 
 **Personalization**
