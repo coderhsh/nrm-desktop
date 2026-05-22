@@ -1,6 +1,6 @@
 [package]
 name = "nrm-desktop"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2021"
 description = "nrm-desktop - GUI for npm registry management"
 
