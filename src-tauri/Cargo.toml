@@ -1,6 +1,6 @@
 [package]
 name = "nrm-desktop"
-version = "1.0.1"
+version = "1.1.0"
 edition = "2021"
 description = "nrm-desktop - GUI for npm registry management"
 
@@ -21,3 +21,4 @@ serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 tokio = { version = "1", features = ["sync"] }
 sys-locale = "0.3"
+tauri-plugin-updater = "2"

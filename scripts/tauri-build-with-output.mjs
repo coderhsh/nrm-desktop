@@ -5,8 +5,16 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { getMacDmgArtifactName } from './artifact-names.mjs'
+import {
+  getMacDmgArtifactName,
+  getMacUpdaterArchiveArtifactName,
+  getUpdaterSignatureArtifactName,
+} from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+import {
+  removeTauriBuildConfigOverlay,
+  writeTauriBuildConfigOverlay,
+} from './tauri-build-config-overlay.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -119,22 +127,174 @@ async function pathExists(filePath) {
  * Run tauri build command and inherit terminal output.
  * @returns {Promise<void>}
  */
-function runTauriBuild() {
-  return new Promise((resolve, reject) => {
-    const child = spawnPnpm(['tauri', 'build'], {
-      cwd: rootDir,
-      stdio: 'inherit',
-      env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
+async function runTauriBuild() {
+  const configPath = await writeTauriBuildConfigOverlay({
+    bundle: { createUpdaterArtifacts: shouldCreateUpdaterArtifacts() },
+  })
+  const args = ['tauri', 'build', '--config', configPath]
+
+  try {
+    await new Promise((resolve, reject) => {
+      const child = spawnPnpm(args, {
+        cwd: rootDir,
+        stdio: 'inherit',
+        env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
+      })
+
+      child.on('error', reject)
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`构建进程被信号中断: ${signal}`))
+          return
+        }
+        if (code !== 0) {
+          reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
+          return
+        }
+        resolve()
+      })
     })
+  } finally {
+    await removeTauriBuildConfigOverlay(configPath)
+  }
+}
+
+/**
+ * Run tauri build with explicit bundle targets.
+ * @param {string[]} bundles
+ * @returns {Promise<void>}
+ */
+async function runTauriBuildWithBundles(bundles) {
+  const configPath = await writeTauriBuildConfigOverlay({
+    bundle: { createUpdaterArtifacts: shouldCreateUpdaterArtifacts() },
+  })
+  const args = [
+    'tauri',
+    'build',
+    '--bundles',
+    bundles.join(','),
+    '--config',
+    configPath,
+  ]
+
+  try {
+    await new Promise((resolve, reject) => {
+      const child = spawnPnpm(args, {
+        cwd: rootDir,
+        stdio: 'inherit',
+        env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
+      })
+
+      child.on('error', reject)
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`构建进程被信号中断: ${signal}`))
+          return
+        }
+        if (code !== 0) {
+          reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
+          return
+        }
+        resolve()
+      })
+    })
+  } finally {
+    await removeTauriBuildConfigOverlay(configPath)
+  }
+}
+
+/**
+ * @returns {boolean}
+ */
+function shouldCreateUpdaterArtifacts() {
+  return Boolean(process.env.TAURI_SIGNING_PRIVATE_KEY?.trim())
+}
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {Promise<number|null>}
+ */
+function runCommand(command, args) {
+  return new Promise(resolve => {
+    const child = spawn(command, args, {
+      cwd: rootDir,
+      stdio: 'ignore',
+      env: process.env,
+    })
+    child.on('error', () => resolve(null))
+    child.on('exit', code => resolve(code))
+  })
+}
+
+/**
+ * Detach stale DMG mounts that can make `hdiutil create -ov` fail with "Resource busy".
+ * @param {string} volumeName
+ * @returns {Promise<void>}
+ */
+async function detachMountedDmgVolumes(volumeName) {
+  if (process.platform !== 'darwin') {
+    return
+  }
+
+  const mountPoint = `/Volumes/${volumeName}`
+  await runCommand('bash', ['-lc', `
+    set +e
+    hdiutil info 2>/dev/null | awk -v mount="${mountPoint}" '
+      /^\\/dev\\/disk/ { device=$1; sub(/:$/, "", device) }
+      $0 ~ mount { if (device != "") print device }
+    ' | while read -r device; do
+      hdiutil detach "$device" -force >/dev/null 2>&1 || true
+    done
+  `])
+}
+
+/**
+ * Remove cached/partial DMG outputs before creating a fresh image.
+ * @param {string} dmgDir
+ * @returns {Promise<void>}
+ */
+async function cleanupMacDmgWorkspace(dmgDir) {
+  await detachMountedDmgVolumes('nrm-desktop')
+  await fs.rm(dmgDir, { recursive: true, force: true })
+  await fs.mkdir(dmgDir, { recursive: true })
+}
+
+/**
+ * @param {string} stagingDir
+ * @param {string} outputPath
+ * @returns {Promise<void>}
+ */
+function runHdiutilCreate(stagingDir, outputPath) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      'hdiutil',
+      [
+        'create',
+        '-volname',
+        'nrm-desktop',
+        '-srcfolder',
+        stagingDir,
+        '-ov',
+        '-format',
+        'UDZO',
+        outputPath,
+      ],
+      {
+        cwd: rootDir,
+        stdio: 'inherit',
+        env: process.env,
+      }
+    )
 
     child.on('error', reject)
     child.on('exit', (code, signal) => {
       if (signal) {
-        reject(new Error(`构建进程被信号中断: ${signal}`))
+        reject(new Error(`hdiutil 进程被信号中断: ${signal}`))
         return
       }
       if (code !== 0) {
-        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
+        reject(new Error(`hdiutil 生成 dmg 失败，退出码: ${code ?? 'unknown'}`))
         return
       }
       resolve()
@@ -143,33 +303,11 @@ function runTauriBuild() {
 }
 
 /**
- * Run tauri build with explicit bundle targets.
- * @param {string[]} bundles
+ * @param {number} ms
  * @returns {Promise<void>}
  */
-function runTauriBuildWithBundles(bundles) {
-  const args = ['tauri', 'build', '--bundles', bundles.join(',')]
-
-  return new Promise((resolve, reject) => {
-    const child = spawnPnpm(args, {
-      cwd: rootDir,
-      stdio: 'inherit',
-      env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
-    })
-
-    child.on('error', reject)
-    child.on('exit', (code, signal) => {
-      if (signal) {
-        reject(new Error(`构建进程被信号中断: ${signal}`))
-        return
-      }
-      if (code !== 0) {
-        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
-        return
-      }
-      resolve()
-    })
-  })
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**
@@ -184,12 +322,15 @@ async function createNonInteractiveMacDmg(appVersion) {
   }
 
   const dmgDir = path.join(bundleDir, 'dmg')
-  await fs.mkdir(dmgDir, { recursive: true })
-
   const dmgName = getMacDmgArtifactName(appVersion)
   const dmgPath = path.join(dmgDir, dmgName)
 
+  await cleanupMacDmgWorkspace(dmgDir)
+
   const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nrm-desktop-dmg-'))
+  const tempDmgPath = path.join(os.tmpdir(), `nrm-desktop-${process.pid}-${Date.now()}.dmg`)
+  const maxAttempts = 3
+
   try {
     const stagedAppPath = path.join(stagingDir, 'nrm-desktop.app')
     const applicationsLinkPath = path.join(stagingDir, 'Applications')
@@ -200,41 +341,35 @@ async function createNonInteractiveMacDmg(appVersion) {
       throw new Error(`创建 Applications 快捷方式失败: ${error instanceof Error ? error.message : String(error)}`)
     }
 
-    await new Promise((resolve, reject) => {
-      const child = spawn(
-        'hdiutil',
-        [
-          'create',
-          '-volname',
-          'nrm-desktop',
-          '-srcfolder',
-          stagingDir,
-          '-ov',
-          '-format',
-          'UDZO',
-          dmgPath,
-        ],
-        {
-          cwd: rootDir,
-          stdio: 'inherit',
-          env: process.env,
-        }
-      )
+    /** @type {Error | null} */
+    let lastError = null
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await fs.rm(tempDmgPath, { force: true })
+      await detachMountedDmgVolumes('nrm-desktop')
 
-      child.on('error', reject)
-      child.on('exit', (code, signal) => {
-        if (signal) {
-          reject(new Error(`hdiutil 进程被信号中断: ${signal}`))
-          return
+      try {
+        await runHdiutilCreate(stagingDir, tempDmgPath)
+        lastError = null
+        break
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+        if (attempt < maxAttempts) {
+          process.stderr.write(
+            `[tauri-build] hdiutil 第 ${attempt} 次失败，${attempt + 1}/${maxAttempts} 次重试…\n`
+          )
+          await sleep(attempt * 2000)
         }
-        if (code !== 0) {
-          reject(new Error(`hdiutil 生成 dmg 失败，退出码: ${code ?? 'unknown'}`))
-          return
-        }
-        resolve()
-      })
-    })
+      }
+    }
+
+    if (lastError) {
+      throw lastError
+    }
+
+    await fs.rm(dmgPath, { force: true })
+    await fs.rename(tempDmgPath, dmgPath)
   } finally {
+    await fs.rm(tempDmgPath, { force: true })
     await fs.rm(stagingDir, { recursive: true, force: true })
   }
 }
@@ -273,6 +408,15 @@ function isInstallerArtifact(filePath) {
 }
 
 /**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isUpdaterArtifact(filePath) {
+  const base = path.basename(filePath).toLowerCase()
+  return base.endsWith('.app.tar.gz') || base.endsWith('.app.tar.gz.sig') || base.endsWith('.exe.sig')
+}
+
+/**
  * Recursively remove empty directories.
  * @param {string} directory
  * @returns {Promise<void>}
@@ -299,10 +443,10 @@ async function removeEmptyDirectories(directory) {
 }
 
 /**
- * Keep only installer artifacts under bundle directory.
+ * Keep only release artifacts under bundle directory.
  * @returns {Promise<void>}
  */
-async function pruneBundleArtifactsToInstallers() {
+async function pruneBundleArtifactsToReleaseAssets() {
   let artifacts
   try {
     artifacts = await collectArtifacts(bundleDir)
@@ -310,7 +454,7 @@ async function pruneBundleArtifactsToInstallers() {
     return
   }
 
-  const removable = artifacts.filter(filePath => !isInstallerArtifact(filePath))
+  const removable = artifacts.filter(filePath => !isInstallerArtifact(filePath) && !isUpdaterArtifact(filePath))
   for (const filePath of removable) {
     await fs.rm(filePath, { force: true })
   }
@@ -362,6 +506,64 @@ async function renameMacDmgArtifacts(appVersion) {
 }
 
 /**
+ * Rename generated macOS updater archives to nrm-desktop_{version}_macos_{arch}.app.tar.gz.
+ * @param {string} appVersion
+ * @returns {Promise<void>}
+ */
+async function renameMacUpdaterArtifacts(appVersion) {
+  const macosDir = path.join(bundleDir, 'macos')
+  const targetName = getMacUpdaterArchiveArtifactName(appVersion)
+  const targetPath = path.join(macosDir, targetName)
+  const targetSignaturePath = path.join(macosDir, getUpdaterSignatureArtifactName(targetName))
+
+  let entries
+  try {
+    entries = await fs.readdir(macosDir, { withFileTypes: true })
+  } catch {
+    return
+  }
+
+  const archiveFiles = entries
+    .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.app.tar.gz'))
+    .map(entry => path.join(macosDir, entry.name))
+
+  if (archiveFiles.length === 0) {
+    return
+  }
+
+  const sourcePath = archiveFiles.includes(targetPath)
+    ? targetPath
+    : archiveFiles.sort((left, right) => right.localeCompare(left))[0]
+  const sourceSignaturePath = `${sourcePath}.sig`
+
+  if (sourcePath !== targetPath) {
+    if (await pathExists(targetPath)) {
+      await fs.rm(targetPath, { force: true })
+    }
+    await fs.rename(sourcePath, targetPath)
+  }
+
+  if (await pathExists(sourceSignaturePath)) {
+    if (sourceSignaturePath !== targetSignaturePath) {
+      if (await pathExists(targetSignaturePath)) {
+        await fs.rm(targetSignaturePath, { force: true })
+      }
+      await fs.rename(sourceSignaturePath, targetSignaturePath)
+    }
+  }
+
+  for (const filePath of archiveFiles) {
+    if (filePath !== targetPath && await pathExists(filePath)) {
+      await fs.rm(filePath, { force: true })
+    }
+    const signaturePath = `${filePath}.sig`
+    if (signaturePath !== targetSignaturePath && await pathExists(signaturePath)) {
+      await fs.rm(signaturePath, { force: true })
+    }
+  }
+}
+
+/**
  * Print main binary path plus bundle files.
  * @returns {Promise<void>}
  */
@@ -376,7 +578,7 @@ async function printArtifacts() {
   }
 
   const sortedArtifacts = artifacts.sort((left, right) => left.localeCompare(right))
-  const installerArtifacts = sortedArtifacts.filter(isInstallerArtifact)
+  const releaseArtifacts = sortedArtifacts.filter(filePath => isInstallerArtifact(filePath) || isUpdaterArtifact(filePath))
   process.stdout.write('\n=== 打包产物 ===\n')
 
   if (!hasBundleDir) {
@@ -384,13 +586,13 @@ async function printArtifacts() {
     return
   }
 
-  if (installerArtifacts.length === 0) {
-    process.stdout.write('bundle 目录内未发现安装包产物，请检查打包配置。\n')
+  if (releaseArtifacts.length === 0) {
+    process.stdout.write('bundle 目录内未发现发布产物，请检查打包配置。\n')
     return
   }
 
-  process.stdout.write('\n安装包文件:\n')
-  installerArtifacts.forEach((artifactPath, index) => {
+  process.stdout.write('\n发布文件:\n')
+  releaseArtifacts.forEach((artifactPath, index) => {
     process.stdout.write(`${index + 1}. ${artifactPath}\n`)
   })
 }
@@ -410,8 +612,11 @@ async function main() {
       await renameMacDmgArtifacts(appVersion)
     }
   }
+  if (process.platform === 'darwin') {
+    await renameMacUpdaterArtifacts(appVersion)
+  }
   await renameMsiFilesStripLocaleSuffix()
-  await pruneBundleArtifactsToInstallers()
+  await pruneBundleArtifactsToReleaseAssets()
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
   process.stdout.write(`\n打包总时长: ${formatBuildDuration(elapsedMs)}（${elapsedMs} ms）\n`)

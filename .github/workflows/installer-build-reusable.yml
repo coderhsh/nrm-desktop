@@ -36,6 +36,13 @@ on:
       artifact_retention_days:
         type: number
         default: 14
+    secrets:
+      TAURI_SIGNING_PRIVATE_KEY:
+        required: false
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD:
+        required: false
+      TAURI_UPDATER_PUBKEY:
+        required: false
     outputs:
       selected_platforms:
         value: ${{ jobs.prepare.outputs.selected_platforms }}
@@ -242,6 +249,30 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
 
+      - name: Verify updater signing secrets
+        if: inputs.is_tag_release == true
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_UPDATER_PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY" ]] || missing+=("TAURI_SIGNING_PRIVATE_KEY")
+          [[ -n "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]] || missing+=("TAURI_SIGNING_PRIVATE_KEY_PASSWORD")
+          [[ -n "$TAURI_UPDATER_PUBKEY" ]] || missing+=("TAURI_UPDATER_PUBKEY")
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "::error::缺少 updater 签名密钥 Secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Apply updater public key
+        if: inputs.is_tag_release == true
+        env:
+          TAURI_UPDATER_PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
+        run: node ./scripts/apply-updater-pubkey.mjs
+
       - name: Write build summary
         shell: bash
         env:
@@ -265,6 +296,8 @@ jobs:
           NRM_WINDOWS_SETUP_EXE: ${{ needs.prepare.outputs.windows_setup_exe }}
           NRM_WINDOWS_MSI: ${{ needs.prepare.outputs.windows_msi }}
           NRM_WINDOWS_PORTABLE_ZIP: ${{ needs.prepare.outputs.windows_portable_zip }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: ${{ matrix.build-command }}
 
       - name: Create Windows portable zip
@@ -295,6 +328,15 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ inputs.artifact_retention_days }}
 
+      - name: Upload Windows setup.exe signature artifact
+        if: runner.os == 'Windows' && needs.prepare.outputs.windows_setup_exe == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-setup.exe.sig
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}-setup.exe.sig
+          if-no-files-found: error
+          retention-days: ${{ inputs.artifact_retention_days }}
+
       - name: Upload Windows MSI artifact
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_msi == 'true'
         uses: actions/upload-artifact@v4
@@ -319,5 +361,23 @@ jobs:
         with:
           name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.dmg
           path: src-tauri/target/release/bundle/dmg/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.dmg
+          if-no-files-found: error
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Upload macOS updater archive artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.app.tar.gz
+          path: src-tauri/target/release/bundle/macos/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.app.tar.gz
+          if-no-files-found: error
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Upload macOS updater signature artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.app.tar.gz.sig
+          path: src-tauri/target/release/bundle/macos/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.app.tar.gz.sig
           if-no-files-found: error
           retention-days: ${{ inputs.artifact_retention_days }}

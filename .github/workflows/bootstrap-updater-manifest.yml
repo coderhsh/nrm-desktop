@@ -1,0 +1,51 @@
+name: Bootstrap updater manifest
+
+# 一次性修复：当 v1.x Release 上已有 latest.json，但 updater Release 尚未创建时使用。
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: 源 Release tag（从该 Release 复制 latest.json，如 v1.1.0）
+        type: string
+        required: true
+        default: v1.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    name: Publish latest.json to updater release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download latest.json from source release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_TAG="${{ inputs.source_tag }}"
+          gh release download "$SOURCE_TAG" --pattern latest.json --dir .
+          test -f latest.json
+
+      - name: Publish to updater release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node ./scripts/publish-updater-manifest.mjs \
+            --manifest-file latest.json \
+            --target-ref "${{ github.sha }}"
+
+      - name: Write summary
+        shell: bash
+        run: |
+          {
+            echo "### updater manifest 已发布"
+            echo ""
+            echo "- 源 Release：\`${{ inputs.source_tag }}\`"
+            echo "- 客户端地址：https://github.com/${{ github.repository }}/releases/download/updater/latest.json"
+          } >> "$GITHUB_STEP_SUMMARY"

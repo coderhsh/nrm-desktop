@@ -7,7 +7,12 @@ import { fileURLToPath } from 'node:url'
 import {
   getWindowsMsiArtifactName,
   getWindowsSetupArtifactName,
+  getUpdaterSignatureArtifactName,
 } from './artifact-names.mjs'
+import {
+  removeTauriBuildConfigOverlay,
+  writeTauriBuildConfigOverlay,
+} from './tauri-build-config-overlay.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
 
@@ -267,6 +272,7 @@ async function renameMsiFilesStripLocaleSuffix() {
  */
 async function renameWindowsInstallers(version) {
   const setupTarget = path.join(bundleDir, 'nsis', getWindowsSetupArtifactName(version))
+  const setupSignatureTarget = path.join(bundleDir, 'nsis', getUpdaterSignatureArtifactName(getWindowsSetupArtifactName(version)))
   const msiTarget = path.join(bundleDir, 'msi', getWindowsMsiArtifactName(version))
 
   const nsisDir = path.join(bundleDir, 'nsis')
@@ -282,15 +288,26 @@ async function renameWindowsInstallers(version) {
         : exeFiles.sort((left, right) => right.localeCompare(left))[0]
 
       if (sourcePath !== setupTarget) {
+        const sourceSignaturePath = `${sourcePath}.sig`
         if (await pathExists(setupTarget)) {
           await fs.rm(setupTarget, { force: true })
         }
         await fs.rename(sourcePath, setupTarget)
+        if (await pathExists(sourceSignaturePath)) {
+          if (await pathExists(setupSignatureTarget)) {
+            await fs.rm(setupSignatureTarget, { force: true })
+          }
+          await fs.rename(sourceSignaturePath, setupSignatureTarget)
+        }
       }
 
       for (const filePath of exeFiles) {
         if (filePath !== setupTarget) {
           await fs.rm(filePath, { force: true })
+        }
+        const signaturePath = `${filePath}.sig`
+        if (signaturePath !== setupSignatureTarget && await pathExists(signaturePath)) {
+          await fs.rm(signaturePath, { force: true })
         }
       }
     }
@@ -392,11 +409,16 @@ async function printArtifacts() {
  * @param {{ setupExe: boolean, msi: boolean, portableZip: boolean, needsBundle: boolean }} selection
  * @returns {Promise<void>}
  */
-function runTauriBuildWin(selection) {
+async function runTauriBuildWin(selection) {
   const isWin = process.platform === 'win32'
   const basePath = process.env.PATH ?? ''
   const pathParts = basePath.split(path.delimiter).filter(Boolean)
   const mergedPath = [...new Set([...EXTRA_PATH_DIRS, ...pathParts])].join(path.delimiter)
+  const buildConfig = {
+    bundle: {
+      createUpdaterArtifacts: shouldCreateUpdaterArtifacts(),
+    },
+  }
 
   /** @type {string[]} */
   const args = ['tauri', 'build', '--target', WIN_TARGET]
@@ -413,10 +435,7 @@ function runTauriBuildWin(selection) {
      * 即使指定了 Windows target，也会拒绝 `nsis/msi`（仅识别 dmg/app 等）。
      * 因此改用 `--config` 覆盖 bundle.targets，仅构建 NSIS。
      */
-    const crossBuildConfig = JSON.stringify({
-      bundle: { targets: 'nsis' },
-    })
-    args.push('--config', crossBuildConfig)
+    buildConfig.bundle.targets = 'nsis'
     args.push('--runner', 'cargo-xwin')
     process.stdout.write('[tauri-build-win] 非 Windows：仅构建 NSIS（需已安装 NSIS、LLVM/LLD 与 cargo-xwin）；MSI 请在 Windows 上执行 pnpm build:win。\n\n')
   } else {
@@ -431,39 +450,53 @@ function runTauriBuildWin(selection) {
     args.push('--bundles', bundles.join(','))
   }
 
-  return new Promise((resolve, reject) => {
-    let combinedOutput = ''
-    const child = spawnPnpm(args, {
-      cwd: rootDir,
-      stdio: ['inherit', 'pipe', 'pipe'],
-      env: { ...process.env, PATH: mergedPath },
-    })
+  const configPath = await writeTauriBuildConfigOverlay(buildConfig)
+  args.push('--config', configPath)
 
-    child.stdout.on('data', chunk => {
-      const text = String(chunk)
-      combinedOutput += text
-      process.stdout.write(text)
-    })
-    child.stderr.on('data', chunk => {
-      const text = String(chunk)
-      combinedOutput += text
-      process.stderr.write(text)
-    })
+  try {
+    await new Promise((resolve, reject) => {
+      let combinedOutput = ''
+      const child = spawnPnpm(args, {
+        cwd: rootDir,
+        stdio: ['inherit', 'pipe', 'pipe'],
+        env: { ...process.env, PATH: mergedPath },
+      })
 
-    child.on('error', reject)
-    child.on('exit', (code, signal) => {
-      if (signal) {
-        reject(new Error(`构建进程被信号中断: ${signal}`))
-        return
-      }
-      if (code !== 0) {
-        const tail = combinedOutput.slice(-2000).trim()
-        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}\n${tail}`))
-        return
-      }
-      resolve()
+      child.stdout.on('data', chunk => {
+        const text = String(chunk)
+        combinedOutput += text
+        process.stdout.write(text)
+      })
+      child.stderr.on('data', chunk => {
+        const text = String(chunk)
+        combinedOutput += text
+        process.stderr.write(text)
+      })
+
+      child.on('error', reject)
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`构建进程被信号中断: ${signal}`))
+          return
+        }
+        if (code !== 0) {
+          const tail = combinedOutput.slice(-2000).trim()
+          reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}\n${tail}`))
+          return
+        }
+        resolve()
+      })
     })
-  })
+  } finally {
+    await removeTauriBuildConfigOverlay(configPath)
+  }
+}
+
+/**
+ * @returns {boolean}
+ */
+function shouldCreateUpdaterArtifacts() {
+  return Boolean(process.env.TAURI_SIGNING_PRIVATE_KEY?.trim())
 }
 
 /**

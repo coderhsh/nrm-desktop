@@ -352,6 +352,11 @@ pub fn exit_app(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
+pub fn restart_app(app: tauri::AppHandle) {
+    app.restart();
+}
+
+#[tauri::command]
 pub fn hide_main_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
         window.hide().map_err(|e| format!("隐藏主窗口失败: {}", e))?;

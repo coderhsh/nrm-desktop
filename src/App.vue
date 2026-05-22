@@ -11,6 +11,7 @@ import CurrentSource from '@/components/CurrentSource.vue'
 import SpeedTest from '@/components/SpeedTest.vue'
 import ProxySettings from '@/components/ProxySettings.vue'
 import SettingsDrawer from '@/components/SettingsDrawer.vue'
+import AppUpdateDialog from '@/components/AppUpdateDialog.vue'
 import CloseConfirmDialog from '@/components/CloseConfirmDialog.vue'
 import * as api from '@/api/tauri'
 import type { NodeNpmVersions } from '@/api/tauri'
@@ -19,6 +20,7 @@ import { useShellIntro } from '@/composables/useShellIntro'
 import { useI18n, coerceAppLanguage } from '@/composables/useI18n'
 import { useCloseBehavior } from '@/composables/useCloseBehavior'
 import { useConfigIO } from '@/composables/useConfigIO'
+import { useAppUpdate } from '@/composables/useAppUpdate'
 
 const store = useRegistryStore()
 const theme = useTheme()
@@ -39,6 +41,7 @@ const shellIntroClass = computed(() => ({
   'app-shell-intro-run': introPhase.value === 'run',
 }))
 const { t, language } = useI18n()
+const appUpdate = useAppUpdate()
 const showProxySettings = ref(false)
 const showSettingsDialog = ref(false)
 const nodeNpmVersions = ref<NodeNpmVersions | null>(null)
@@ -115,6 +118,14 @@ onMounted(async () => {
   })
 
   await initCloseHandler()
+
+  void appUpdate.checkForUpdate({
+    silent: true,
+    force: false,
+    openDialog: true,
+  }).catch(() => {
+    // Startup update checks should not interrupt normal app launch.
+  })
 })
 
 onBeforeUnmount(() => {
@@ -237,6 +248,8 @@ async function openGithubHome() {
       <SettingsDrawer
         v-model:visible="showSettingsDialog"
       />
+
+      <AppUpdateDialog />
 
       <!-- Close Confirm Dialog -->
       <CloseConfirmDialog

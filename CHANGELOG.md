@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-22
+
+### Added
+
+- In-app auto-update via Tauri updater: silent check on startup (at most once every 24 hours), manual check from Settings, and an update dialog with release notes
+- Download progress, install-and-restart flow, and per-version dismiss in the update dialog
+- CI release pipeline generates signed updater artifacts and publishes `latest.json` to the fixed `updater` release for clients to consume
+
+### Changed
+
+- Installer builds in CI now require updater signing secrets and embed the updater public key at build time
+
 ## [1.0.1] - 2026-05-21
 
 ### Added
@@ -52,6 +64,7 @@ First stable release.
 - Autostart, close behavior (minimize to tray or quit), and single-instance lock
 - Proxy settings backend (UI entry optional in later releases)
 
-[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.0
 [1.0.1]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.1
 [1.0.0]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.0
