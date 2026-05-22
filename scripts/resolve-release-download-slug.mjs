@@ -80,7 +80,7 @@ function runCommand(command, args) {
  * @param {string} url
  * @returns {string}
  */
-function extractDownloadSlug(url) {
+export function extractDownloadSlug(url) {
   const match = url.match(/\/releases\/download\/([^/]+)\//)
   if (!match) {
     throw new Error(`[resolve-release-download-slug] 无法从 URL 解析 slug: ${url}`)
@@ -97,14 +97,17 @@ function isNonEmptyString(value) {
 }
 
 /**
+ * @param {{
+ *   tagName?: string
+ *   tag_name?: string
+ *   isDraft?: boolean
+ *   draft?: boolean
+ *   assets?: Array<{ browser_download_url?: string, url?: string }>
+ * }} release
  * @param {string} tag
  * @returns {string}
  */
-function resolveDownloadSlugFromRelease(tag) {
-  const repository = resolveGitHubRepository()
-  const releaseRaw = runCommand('gh', ['api', `repos/${repository}/releases/tags/${tag}`])
-  /** @type {{ tag_name?: string, draft?: boolean, assets?: Array<{ browser_download_url?: string, url?: string }> }} */
-  const release = JSON.parse(releaseRaw)
+export function resolveDownloadSlugFromReleaseData(release, tag) {
   const assets = release.assets ?? []
 
   if (assets.length === 0) {
@@ -120,13 +123,52 @@ function resolveDownloadSlugFromRelease(tag) {
     }
   }
 
-  if (isNonEmptyString(release.tag_name) && release.draft !== true) {
-    return release.tag_name
+  const tagName = release.tagName ?? release.tag_name
+  const isDraft = release.isDraft ?? release.draft
+  if (isNonEmptyString(tagName) && isDraft !== true) {
+    return tagName
   }
 
   throw new Error(
     `[resolve-release-download-slug] Release ${tag} 资产缺少可用的下载 URL（共 ${assets.length} 个资产）`,
   )
+}
+
+/**
+ * Draft Release 不会创建 git tag，`/releases/tags/{tag}` 会 404。
+ * 优先用 `gh release view` 按 release 的 tagName 查找（含 draft）。
+ * @param {string} tag
+ * @returns {unknown}
+ */
+function fetchReleaseByTag(tag) {
+  try {
+    return JSON.parse(runCommand('gh', [
+      'release', 'view', tag,
+      '--json', 'tagName,isDraft,assets',
+    ]))
+  } catch (error) {
+    const listRaw = runCommand('gh', [
+      'release', 'list',
+      '--json', 'tagName,isDraft,assets',
+      '--limit', '100',
+    ])
+    const releases = JSON.parse(listRaw)
+    const matched = releases.find(item => item?.tagName === tag)
+    if (!matched) {
+      throw error
+    }
+    return matched
+  }
+}
+
+/**
+ * @param {string} tag
+ * @returns {string}
+ */
+export function resolveDownloadSlugFromRelease(tag) {
+  resolveGitHubRepository()
+  const release = fetchReleaseByTag(tag)
+  return resolveDownloadSlugFromReleaseData(release, tag)
 }
 
 function main() {
@@ -141,9 +183,13 @@ function main() {
   process.stdout.write(`[resolve-release-download-slug] ${tag} -> ${downloadSlug}\n`)
 }
 
-try {
-  main()
-} catch (error) {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
-  process.exit(1)
+const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
+
+if (invokedDirectly) {
+  try {
+    main()
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+    process.exit(1)
+  }
 }
