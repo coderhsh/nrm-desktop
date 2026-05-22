@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-05-22
+
 ### Changed
 
 - test update
@@ -86,7 +88,8 @@ First stable release.
 - Autostart, close behavior (minimize to tray or quit), and single-instance lock
 - Proxy settings backend (UI entry optional in later releases)
 
-[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.4...HEAD
+[1.1.4]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.4
 [1.1.3]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.3
 [1.1.2]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.2
 [1.1.1]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.1
