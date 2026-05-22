@@ -1,9 +1,9 @@
 /* @desc 在 commit 确定后生成 GitHub Release body（含 commit SHA 文档链接）。 */
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { buildChangelogLinksLine, buildReleaseInstallSection } from './render-release-install-guide.mjs'
+import { buildChangelogLinksLine, buildReleaseInstallSection, readReleaseArtifactOptionsFromEnv } from './render-release-install-guide.mjs'
 import { readChineseReleaseSection, readEnglishReleaseSection } from './prepare-release.mjs'
 
 /**
@@ -62,7 +62,7 @@ export function buildReleaseNotesSection(englishSection, chineseSection, commitS
 ${englishContent}
 
 <details>
-<summary><b>完整更新日志（中文）</b></summary>
+<summary><b>更新日志（中文）</b></summary>
 
 ${chineseContent}
 
@@ -78,9 +78,16 @@ ${buildChangelogLinksLine(commitSha)}`
  * @param {string} commitSha
  * @returns {string}
  */
-export function buildReleaseBody(version, englishSection, chineseSection, commitSha) {
+export function buildReleaseBody(
+  version,
+  englishSection,
+  chineseSection,
+  commitSha,
+  artifactOptions,
+  downloadSlug,
+) {
   const releaseNotes = buildReleaseNotesSection(englishSection, chineseSection, commitSha)
-  const installSection = buildReleaseInstallSection(commitSha)
+  const installSection = buildReleaseInstallSection(version, artifactOptions, downloadSlug)
   return `${releaseNotes}
 
 ---
@@ -91,6 +98,8 @@ ${installSection}`
 function main() {
   const version = parseArgValue('--version')
   const commitSha = parseArgValue('--commit-sha')
+  const downloadSlug = parseArgValue('--download-slug') || `v${version}`
+  const outputFile = parseArgValue('--output-file')
 
   if (!version) {
     throw new Error('[build-release-body] 缺少参数 --version，例如 --version 1.0.1')
@@ -101,15 +110,26 @@ function main() {
 
   const englishSection = readEnglishReleaseSection(version)
   const chineseSection = readChineseReleaseSection(version)
-  const releaseBody = buildReleaseBody(version, englishSection, chineseSection, commitSha)
+  const releaseBody = buildReleaseBody(
+    version,
+    englishSection,
+    chineseSection,
+    commitSha,
+    readReleaseArtifactOptionsFromEnv(),
+    downloadSlug,
+  )
+
+  if (outputFile) {
+    writeFileSync(outputFile, releaseBody, 'utf8')
+  }
 
   writeGithubOutput('release_body', releaseBody)
-  process.stdout.write(`[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}）\n`)
+  process.stdout.write(
+    `[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}, slug=${downloadSlug}）\n`,
+  )
 }
 
-const invokedDirectly =
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
+const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
 
 if (invokedDirectly) {
   try {
