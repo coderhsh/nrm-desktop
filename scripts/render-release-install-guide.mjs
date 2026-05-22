@@ -285,7 +285,7 @@ function buildMacosSection(macArtifacts, repository, downloadSlug, locale) {
     locale,
   )
 
-  return `<details>
+  return `<details open>
 <summary><b>${text.osMacosSummary}</b></summary>
 
 ${items}
@@ -334,7 +334,7 @@ function buildWindowsSection(winArtifacts, repository, downloadSlug, locale) {
   const text = DOWNLOADS_TEXT[locale]
   const items = buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale)
 
-  return `<details>
+  return `<details open>
 <summary><b>${text.osWindowsSummary}</b></summary>
 
 ${text.windowsRequirements}
