@@ -57,22 +57,20 @@ const WINDOWS_ITEM_COPY = {
 /** @type {Record<'en' | 'zh', Record<string, string>>>} */
 const DOWNLOADS_TEXT = {
   en: {
-    macosDownloadSummary: 'Download macOS packages',
-    windowsDownloadSummary: 'Download Windows packages',
+    osMacosSummary: '🍎 macOS',
+    osWindowsSummary: '💻 Windows',
     windowsRequirements:
       'Windows 10 / 11 x64 (Windows 7 not supported). [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) required.',
     standardHeader: 'Standard (recommended)',
-    otherHeader: 'Other formats',
     chineseGuideSummary: '下载指引（中文）',
     noPackages: 'No installation packages were built for this release.',
   },
   zh: {
-    macosDownloadSummary: '下载 macOS 安装包',
-    windowsDownloadSummary: '下载 Windows 安装包',
+    osMacosSummary: '🍎 macOS',
+    osWindowsSummary: '💻 Windows',
     windowsRequirements:
       'Windows 10 / 11 x64（不支持 Windows 7）。需安装 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。',
     standardHeader: '正常版本（推荐）',
-    otherHeader: '其他格式',
     chineseGuideSummary: '下载指引（中文）',
     noPackages: '本次 Release 未构建任何安装包。',
   },
@@ -287,10 +285,8 @@ function buildMacosSection(macArtifacts, repository, version, locale) {
     locale,
   )
 
-  return `### macOS
-
-<details>
-<summary><b>${text.macosDownloadSummary}</b></summary>
+  return `<details>
+<summary><b>${text.osMacosSummary}</b></summary>
 
 ${items}
 
@@ -307,31 +303,20 @@ ${items}
 function buildWindowsLinksBlock(winArtifacts, repository, version, locale) {
   const text = DOWNLOADS_TEXT[locale]
   const byKind = Object.fromEntries(winArtifacts.map(item => [item.kind, item]))
-  const setupItems = WINDOWS_KIND_ORDER.filter(kind => kind === 'setup' && byKind[kind])
-    .map(kind => byKind[kind])
-  const otherItems = WINDOWS_KIND_ORDER.filter(kind => kind !== 'setup' && byKind[kind])
-    .map(kind => byKind[kind])
+  const lines = []
 
-  const sections = []
-
-  if (setupItems.length > 0) {
-    sections.push(
-      `**${text.standardHeader}**`,
-      '',
-      buildDownloadItemLines(setupItems, repository, version, locale),
-    )
+  for (const kind of WINDOWS_KIND_ORDER) {
+    const item = byKind[kind]
+    if (!item) {
+      continue
+    }
+    if (kind === 'setup' && lines.length === 0) {
+      lines.push(`**${text.standardHeader}**`, '')
+    }
+    lines.push(buildDownloadItemLine(item, repository, version, locale))
   }
 
-  if (otherItems.length > 0) {
-    sections.push(
-      '',
-      `**${text.otherHeader}**`,
-      '',
-      buildDownloadItemLines(otherItems, repository, version, locale),
-    )
-  }
-
-  return sections.join('\n').trim()
+  return lines.join('\n')
 }
 
 /**
@@ -347,16 +332,14 @@ function buildWindowsSection(winArtifacts, repository, version, locale) {
   }
 
   const text = DOWNLOADS_TEXT[locale]
-  const links = buildWindowsLinksBlock(winArtifacts, repository, version, locale)
+  const items = buildWindowsLinksBlock(winArtifacts, repository, version, locale)
 
-  return `### Windows
+  return `<details>
+<summary><b>${text.osWindowsSummary}</b></summary>
 
 ${text.windowsRequirements}
 
-<details>
-<summary><b>${text.windowsDownloadSummary}</b></summary>
-
-${links}
+${items}
 
 </details>`
 }

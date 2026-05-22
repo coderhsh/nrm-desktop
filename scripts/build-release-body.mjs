@@ -62,7 +62,7 @@ export function buildReleaseNotesSection(englishSection, chineseSection, commitS
 ${englishContent}
 
 <details>
-<summary><b>完整更新日志（中文）</b></summary>
+<summary><b>更新日志（中文）</b></summary>
 
 ${chineseContent}
 
@@ -101,21 +101,13 @@ function main() {
 
   const englishSection = readEnglishReleaseSection(version)
   const chineseSection = readChineseReleaseSection(version)
-  const releaseBody = buildReleaseBody(
-    version,
-    englishSection,
-    chineseSection,
-    commitSha,
-    readReleaseArtifactOptionsFromEnv(),
-  )
+  const releaseBody = buildReleaseBody(version, englishSection, chineseSection, commitSha, readReleaseArtifactOptionsFromEnv())
 
   writeGithubOutput('release_body', releaseBody)
   process.stdout.write(`[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}）\n`)
 }
 
-const invokedDirectly =
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
+const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
 
 if (invokedDirectly) {
   try {
