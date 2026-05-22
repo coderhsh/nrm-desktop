@@ -1,9 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildReleaseAssetUrlMap,
   extractDownloadSlug,
   resolveDownloadSlugFromReleaseData,
 } from './resolve-release-download-slug.mjs'
+
+describe('buildReleaseAssetUrlMap', () => {
+  it('maps asset names to browser_download_url', () => {
+    const map = buildReleaseAssetUrlMap({
+      assets: [
+        {
+          name: 'nrm-desktop_1.1.0_macos_aarch64.dmg',
+          browser_download_url: 'https://github.com/coderhsh/nrm-desktop/releases/download/untagged-23cbae849905a3885cd0/nrm-desktop_1.1.0_macos_aarch64.dmg',
+        },
+        {
+          name: 'nrm-desktop_1.1.0_windows_x64-setup.exe',
+          browser_download_url: 'https://github.com/coderhsh/nrm-desktop/releases/download/untagged-23cbae849905a3885cd0/nrm-desktop_1.1.0_windows_x64-setup.exe',
+        },
+      ],
+    })
+
+    expect(map['nrm-desktop_1.1.0_macos_aarch64.dmg']).toContain('untagged-23cbae849905a3885cd0')
+  })
+})
 
 describe('resolveDownloadSlugFromReleaseData', () => {
   it('extracts slug from draft release asset URLs', () => {

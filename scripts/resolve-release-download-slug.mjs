@@ -135,6 +135,99 @@ export function resolveDownloadSlugFromReleaseData(release, tag) {
 }
 
 /**
+ * @param {{
+ *   tagName?: string
+ *   tag_name?: string
+ *   isDraft?: boolean
+ *   draft?: boolean
+ *   assets?: Array<{ name?: string, browser_download_url?: string, url?: string }>
+ * }} release
+ * @returns {Record<string, string>}
+ */
+export function buildReleaseAssetUrlMap(release) {
+  /** @type {Record<string, string>} */
+  const map = {}
+
+  for (const asset of release.assets ?? []) {
+    if (isNonEmptyString(asset.name) && isNonEmptyString(asset.browser_download_url)) {
+      map[asset.name] = asset.browser_download_url
+    }
+  }
+
+  return map
+}
+
+/**
+ * @param {string} releaseId
+ * @returns {unknown}
+ */
+function fetchReleaseById(releaseId) {
+  const repository = resolveGitHubRepository()
+  const releaseRaw = runCommand('gh', ['api', `repos/${repository}/releases/${releaseId}`])
+  return JSON.parse(releaseRaw)
+}
+
+/**
+ * @param {string} tag
+ * @returns {Array<{ databaseId?: number, tagName?: string }>}
+ */
+function fetchReleaseSummariesByTag(tag) {
+  const listRaw = runCommand('gh', [
+    'release', 'list',
+    '--json', 'databaseId,tagName',
+    '--limit', '100',
+  ])
+  const releases = JSON.parse(listRaw).filter(item => item?.tagName === tag)
+  if (releases.length > 0) {
+    return releases
+  }
+
+  try {
+    const release = JSON.parse(runCommand('gh', [
+      'release', 'view', tag,
+      '--json', 'databaseId,tagName',
+    ]))
+    return [release]
+  } catch {
+    return []
+  }
+}
+
+/**
+ * 选取同 tag 下资产齐全且最新的 release，并使用 GitHub 返回的 browser_download_url。
+ * @param {string} tag
+ * @param {string[]} expectedFilenames
+ * @returns {{ releaseId: string, assetUrlByFilename: Record<string, string> }}
+ */
+export function resolveReleaseAssetUrls(tag, expectedFilenames) {
+  const summaries = fetchReleaseSummariesByTag(tag)
+    .sort((left, right) => (right.databaseId ?? 0) - (left.databaseId ?? 0))
+
+  if (summaries.length === 0) {
+    throw new Error(`[resolve-release-download-slug] 未找到 Release ${tag}`)
+  }
+
+  for (const summary of summaries) {
+    if (!summary.databaseId) {
+      continue
+    }
+
+    const release = fetchReleaseById(String(summary.databaseId))
+    const assetUrlByFilename = buildReleaseAssetUrlMap(release)
+    if (expectedFilenames.every(filename => assetUrlByFilename[filename])) {
+      return {
+        releaseId: String(summary.databaseId),
+        assetUrlByFilename,
+      }
+    }
+  }
+
+  throw new Error(
+    `[resolve-release-download-slug] Release ${tag} 找不到包含全部安装包的资产 URL`,
+  )
+}
+
+/**
  * @param {string} releaseId
  * @param {string} tag
  * @returns {string}

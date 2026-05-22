@@ -4,7 +4,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { buildChangelogLinksLine, buildReleaseInstallSection, readReleaseArtifactOptionsFromEnv } from './render-release-install-guide.mjs'
+import { listReleaseArtifactNames } from './artifact-names.mjs'
 import { readChineseReleaseSection, readEnglishReleaseSection } from './prepare-release.mjs'
+import { resolveReleaseAssetUrls } from './resolve-release-download-slug.mjs'
 
 /**
  * @param {string} name
@@ -84,10 +86,10 @@ export function buildReleaseBody(
   chineseSection,
   commitSha,
   artifactOptions,
-  downloadSlug,
+  downloadOptions,
 ) {
   const releaseNotes = buildReleaseNotesSection(englishSection, chineseSection, commitSha)
-  const installSection = buildReleaseInstallSection(version, artifactOptions, downloadSlug)
+  const installSection = buildReleaseInstallSection(version, artifactOptions, downloadOptions)
   return `${releaseNotes}
 
 ---
@@ -95,9 +97,26 @@ export function buildReleaseBody(
 ${installSection}`
 }
 
+/**
+ * @param {string} version
+ * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} artifactOptions
+ * @param {Record<string, string>} assetUrlByFilename
+ */
+export function assertReleaseAssetsPresent(version, artifactOptions, assetUrlByFilename) {
+  const artifacts = listReleaseArtifactNames(version, artifactOptions)
+  const missing = artifacts
+    .filter(item => !assetUrlByFilename[item.filename])
+    .map(item => item.filename)
+
+  if (missing.length > 0) {
+    throw new Error(`[build-release-body] Release 缺少安装包资产 URL: ${missing.join(', ')}`)
+  }
+}
+
 function main() {
   const version = parseArgValue('--version')
   const commitSha = parseArgValue('--commit-sha')
+  const releaseId = parseArgValue('--release-id')
   const downloadSlug = parseArgValue('--download-slug') || `v${version}`
   const outputFile = parseArgValue('--output-file')
 
@@ -108,15 +127,31 @@ function main() {
     throw new Error('[build-release-body] 缺少参数 --commit-sha')
   }
 
+  const artifactOptions = readReleaseArtifactOptionsFromEnv()
   const englishSection = readEnglishReleaseSection(version)
   const chineseSection = readChineseReleaseSection(version)
+
+  /** @type {string | { downloadSlug?: string, assetUrlByFilename?: Record<string, string> }} */
+  let downloadOptions = downloadSlug
+  let resolvedReleaseId = releaseId
+  if (releaseId) {
+    const expectedFilenames = listReleaseArtifactNames(version, artifactOptions).map(item => item.filename)
+    const resolved = resolveReleaseAssetUrls(`v${version}`, expectedFilenames)
+    resolvedReleaseId = resolved.releaseId
+    assertReleaseAssetsPresent(version, artifactOptions, resolved.assetUrlByFilename)
+    downloadOptions = {
+      downloadSlug,
+      assetUrlByFilename: resolved.assetUrlByFilename,
+    }
+  }
+
   const releaseBody = buildReleaseBody(
     version,
     englishSection,
     chineseSection,
     commitSha,
-    readReleaseArtifactOptionsFromEnv(),
-    downloadSlug,
+    artifactOptions,
+    downloadOptions,
   )
 
   if (outputFile) {
@@ -124,8 +159,11 @@ function main() {
   }
 
   writeGithubOutput('release_body', releaseBody)
+  if (resolvedReleaseId) {
+    writeGithubOutput('release_id', resolvedReleaseId)
+  }
   process.stdout.write(
-    `[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}, slug=${downloadSlug}）\n`,
+    `[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}${resolvedReleaseId ? `, release=#${resolvedReleaseId}` : `, slug=${downloadSlug}`}）\n`,
   )
 }
 

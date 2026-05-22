@@ -377,16 +377,8 @@ jobs:
           fi
           gh release upload updater release-assets/latest.json --clobber
 
-      - name: Resolve release download slug
-        id: release_slug
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          node ./scripts/resolve-release-download-slug.mjs \
-            --version "${{ needs.prepare-release.outputs.version }}" \
-            --release-id "${{ steps.create_release.outputs.id }}"
-
       - name: Build and update release body
+        id: build_release_body
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
@@ -397,10 +389,12 @@ jobs:
           RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
         run: |
           set -euo pipefail
-          TAG="v${{ needs.prepare-release.outputs.version }}"
+          RELEASE_ID="${{ steps.create_release.outputs.id }}"
           node ./scripts/build-release-body.mjs \
             --version "${{ needs.prepare-release.outputs.version }}" \
             --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}" \
-            --download-slug "${{ steps.release_slug.outputs.download_slug }}" \
+            --release-id "$RELEASE_ID" \
             --output-file release-body.md
-          gh release edit "$TAG" --notes-file release-body.md
+          RESOLVED_RELEASE_ID="${{ steps.build_release_body.outputs.release_id }}"
+          jq -n --rawfile body release-body.md '{body: $body}' \
+            | gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${RESOLVED_RELEASE_ID}" --input -
