@@ -211,6 +211,106 @@ function shouldCreateUpdaterArtifacts() {
 }
 
 /**
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {Promise<number|null>}
+ */
+function runCommand(command, args) {
+  return new Promise(resolve => {
+    const child = spawn(command, args, {
+      cwd: rootDir,
+      stdio: 'ignore',
+      env: process.env,
+    })
+    child.on('error', () => resolve(null))
+    child.on('exit', code => resolve(code))
+  })
+}
+
+/**
+ * Detach stale DMG mounts that can make `hdiutil create -ov` fail with "Resource busy".
+ * @param {string} volumeName
+ * @returns {Promise<void>}
+ */
+async function detachMountedDmgVolumes(volumeName) {
+  if (process.platform !== 'darwin') {
+    return
+  }
+
+  const mountPoint = `/Volumes/${volumeName}`
+  await runCommand('bash', ['-lc', `
+    set +e
+    hdiutil info 2>/dev/null | awk -v mount="${mountPoint}" '
+      /^\\/dev\\/disk/ { device=$1; sub(/:$/, "", device) }
+      $0 ~ mount { if (device != "") print device }
+    ' | while read -r device; do
+      hdiutil detach "$device" -force >/dev/null 2>&1 || true
+    done
+  `])
+}
+
+/**
+ * Remove cached/partial DMG outputs before creating a fresh image.
+ * @param {string} dmgDir
+ * @returns {Promise<void>}
+ */
+async function cleanupMacDmgWorkspace(dmgDir) {
+  await detachMountedDmgVolumes('nrm-desktop')
+  await fs.rm(dmgDir, { recursive: true, force: true })
+  await fs.mkdir(dmgDir, { recursive: true })
+}
+
+/**
+ * @param {string} stagingDir
+ * @param {string} outputPath
+ * @returns {Promise<void>}
+ */
+function runHdiutilCreate(stagingDir, outputPath) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      'hdiutil',
+      [
+        'create',
+        '-volname',
+        'nrm-desktop',
+        '-srcfolder',
+        stagingDir,
+        '-ov',
+        '-format',
+        'UDZO',
+        outputPath,
+      ],
+      {
+        cwd: rootDir,
+        stdio: 'inherit',
+        env: process.env,
+      }
+    )
+
+    child.on('error', reject)
+    child.on('exit', (code, signal) => {
+      if (signal) {
+        reject(new Error(`hdiutil 进程被信号中断: ${signal}`))
+        return
+      }
+      if (code !== 0) {
+        reject(new Error(`hdiutil 生成 dmg 失败，退出码: ${code ?? 'unknown'}`))
+        return
+      }
+      resolve()
+    })
+  })
+}
+
+/**
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
  * Create a plain DMG from generated .app without Finder automation.
  * @param {string} appVersion semver from package.json (after sync)
  * @returns {Promise<void>}
@@ -222,12 +322,15 @@ async function createNonInteractiveMacDmg(appVersion) {
   }
 
   const dmgDir = path.join(bundleDir, 'dmg')
-  await fs.mkdir(dmgDir, { recursive: true })
-
   const dmgName = getMacDmgArtifactName(appVersion)
   const dmgPath = path.join(dmgDir, dmgName)
 
+  await cleanupMacDmgWorkspace(dmgDir)
+
   const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nrm-desktop-dmg-'))
+  const tempDmgPath = path.join(os.tmpdir(), `nrm-desktop-${process.pid}-${Date.now()}.dmg`)
+  const maxAttempts = 3
+
   try {
     const stagedAppPath = path.join(stagingDir, 'nrm-desktop.app')
     const applicationsLinkPath = path.join(stagingDir, 'Applications')
@@ -238,41 +341,35 @@ async function createNonInteractiveMacDmg(appVersion) {
       throw new Error(`创建 Applications 快捷方式失败: ${error instanceof Error ? error.message : String(error)}`)
     }
 
-    await new Promise((resolve, reject) => {
-      const child = spawn(
-        'hdiutil',
-        [
-          'create',
-          '-volname',
-          'nrm-desktop',
-          '-srcfolder',
-          stagingDir,
-          '-ov',
-          '-format',
-          'UDZO',
-          dmgPath,
-        ],
-        {
-          cwd: rootDir,
-          stdio: 'inherit',
-          env: process.env,
-        }
-      )
+    /** @type {Error | null} */
+    let lastError = null
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await fs.rm(tempDmgPath, { force: true })
+      await detachMountedDmgVolumes('nrm-desktop')
 
-      child.on('error', reject)
-      child.on('exit', (code, signal) => {
-        if (signal) {
-          reject(new Error(`hdiutil 进程被信号中断: ${signal}`))
-          return
+      try {
+        await runHdiutilCreate(stagingDir, tempDmgPath)
+        lastError = null
+        break
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+        if (attempt < maxAttempts) {
+          process.stderr.write(
+            `[tauri-build] hdiutil 第 ${attempt} 次失败，${attempt + 1}/${maxAttempts} 次重试…\n`
+          )
+          await sleep(attempt * 2000)
         }
-        if (code !== 0) {
-          reject(new Error(`hdiutil 生成 dmg 失败，退出码: ${code ?? 'unknown'}`))
-          return
-        }
-        resolve()
-      })
-    })
+      }
+    }
+
+    if (lastError) {
+      throw lastError
+    }
+
+    await fs.rm(dmgPath, { force: true })
+    await fs.rename(tempDmgPath, dmgPath)
   } finally {
+    await fs.rm(tempDmgPath, { force: true })
     await fs.rm(stagingDir, { recursive: true, force: true })
   }
 }
