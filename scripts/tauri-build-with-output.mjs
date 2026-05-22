@@ -11,6 +11,10 @@ import {
   getUpdaterSignatureArtifactName,
 } from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
+import {
+  removeTauriBuildConfigOverlay,
+  writeTauriBuildConfigOverlay,
+} from './tauri-build-config-overlay.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -123,30 +127,36 @@ async function pathExists(filePath) {
  * Run tauri build command and inherit terminal output.
  * @returns {Promise<void>}
  */
-function runTauriBuild() {
-  const args = ['tauri', 'build', '--config', JSON.stringify({
+async function runTauriBuild() {
+  const configPath = await writeTauriBuildConfigOverlay({
     bundle: { createUpdaterArtifacts: shouldCreateUpdaterArtifacts() },
-  })]
-  return new Promise((resolve, reject) => {
-    const child = spawnPnpm(args, {
-      cwd: rootDir,
-      stdio: 'inherit',
-      env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
-    })
-
-    child.on('error', reject)
-    child.on('exit', (code, signal) => {
-      if (signal) {
-        reject(new Error(`构建进程被信号中断: ${signal}`))
-        return
-      }
-      if (code !== 0) {
-        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
-        return
-      }
-      resolve()
-    })
   })
+  const args = ['tauri', 'build', '--config', configPath]
+
+  try {
+    await new Promise((resolve, reject) => {
+      const child = spawnPnpm(args, {
+        cwd: rootDir,
+        stdio: 'inherit',
+        env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
+      })
+
+      child.on('error', reject)
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`构建进程被信号中断: ${signal}`))
+          return
+        }
+        if (code !== 0) {
+          reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
+          return
+        }
+        resolve()
+      })
+    })
+  } finally {
+    await removeTauriBuildConfigOverlay(configPath)
+  }
 }
 
 /**
@@ -154,38 +164,43 @@ function runTauriBuild() {
  * @param {string[]} bundles
  * @returns {Promise<void>}
  */
-function runTauriBuildWithBundles(bundles) {
+async function runTauriBuildWithBundles(bundles) {
+  const configPath = await writeTauriBuildConfigOverlay({
+    bundle: { createUpdaterArtifacts: shouldCreateUpdaterArtifacts() },
+  })
   const args = [
     'tauri',
     'build',
     '--bundles',
     bundles.join(','),
     '--config',
-    JSON.stringify({
-      bundle: { createUpdaterArtifacts: shouldCreateUpdaterArtifacts() },
-    }),
+    configPath,
   ]
 
-  return new Promise((resolve, reject) => {
-    const child = spawnPnpm(args, {
-      cwd: rootDir,
-      stdio: 'inherit',
-      env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
-    })
+  try {
+    await new Promise((resolve, reject) => {
+      const child = spawnPnpm(args, {
+        cwd: rootDir,
+        stdio: 'inherit',
+        env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
+      })
 
-    child.on('error', reject)
-    child.on('exit', (code, signal) => {
-      if (signal) {
-        reject(new Error(`构建进程被信号中断: ${signal}`))
-        return
-      }
-      if (code !== 0) {
-        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
-        return
-      }
-      resolve()
+      child.on('error', reject)
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`构建进程被信号中断: ${signal}`))
+          return
+        }
+        if (code !== 0) {
+          reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}`))
+          return
+        }
+        resolve()
+      })
     })
-  })
+  } finally {
+    await removeTauriBuildConfigOverlay(configPath)
+  }
 }
 
 /**
