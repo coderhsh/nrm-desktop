@@ -1,5 +1,5 @@
 /* @desc 从已创建的 GitHub Release 资产 URL 解析 downloads 路径 slug（v1.0.1 或 untagged-xxx）。 */
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -33,45 +33,100 @@ function writeGithubOutput(key, value) {
 }
 
 /**
+ * @returns {string}
+ */
+function resolveGitHubRepository() {
+  if (process.env.GITHUB_REPOSITORY) {
+    return process.env.GITHUB_REPOSITORY
+  }
+
+  const pkgPath = path.join(rootDir, 'package.json')
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+  const repoUrl = pkg.repository?.url
+  if (typeof repoUrl !== 'string') {
+    throw new Error('[resolve-release-download-slug] 无法解析 GitHub 仓库地址')
+  }
+
+  const match = repoUrl.match(/github\.com[/:]([^/]+\/[^/.]+?)(?:\.git)?$/i)
+  if (!match) {
+    throw new Error('[resolve-release-download-slug] package.json repository.url 不是 GitHub 地址')
+  }
+  return match[1]
+}
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {string}
+ */
+function runCommand(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: rootDir,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: process.env,
+  })
+
+  if (result.status !== 0) {
+    throw new Error(
+      `[resolve-release-download-slug] ${command} ${args.join(' ')} 失败:\n${result.stderr || result.stdout}`,
+    )
+  }
+
+  return result.stdout.trim()
+}
+
+/**
+ * @param {string} url
+ * @returns {string}
+ */
+function extractDownloadSlug(url) {
+  const match = url.match(/\/releases\/download\/([^/]+)\//)
+  if (!match) {
+    throw new Error(`[resolve-release-download-slug] 无法从 URL 解析 slug: ${url}`)
+  }
+  return match[1]
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim() !== ''
+}
+
+/**
  * @param {string} tag
  * @returns {string}
  */
 function resolveDownloadSlugFromRelease(tag) {
-  const result = spawnSync(
-    'gh',
-    ['release', 'view', tag, '--json', 'assets'],
-    {
-      cwd: rootDir,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
-    },
-  )
+  const repository = resolveGitHubRepository()
+  const releaseRaw = runCommand('gh', ['api', `repos/${repository}/releases/tags/${tag}`])
+  /** @type {{ tag_name?: string, draft?: boolean, assets?: Array<{ browser_download_url?: string, url?: string }> }} */
+  const release = JSON.parse(releaseRaw)
+  const assets = release.assets ?? []
 
-  if (result.status !== 0) {
-    throw new Error(
-      `[resolve-release-download-slug] 无法读取 Release ${tag}：\n${result.stderr || result.stdout}`,
-    )
-  }
-
-  /** @type {{ assets?: Array<{ browser_download_url?: string }> }} */
-  const payload = JSON.parse(result.stdout)
-  const assets = payload.assets ?? []
   if (assets.length === 0) {
     throw new Error(`[resolve-release-download-slug] Release ${tag} 尚无安装包资产，无法解析下载 slug`)
   }
 
-  const firstUrl = assets[0]?.browser_download_url
-  if (typeof firstUrl !== 'string' || firstUrl.trim() === '') {
-    throw new Error(`[resolve-release-download-slug] Release ${tag} 资产缺少 browser_download_url`)
+  for (const asset of assets) {
+    if (isNonEmptyString(asset.browser_download_url)) {
+      return extractDownloadSlug(asset.browser_download_url)
+    }
+    if (isNonEmptyString(asset.url) && asset.url.includes('/releases/download/')) {
+      return extractDownloadSlug(asset.url)
+    }
   }
 
-  const match = firstUrl.match(/\/releases\/download\/([^/]+)\//)
-  if (!match) {
-    throw new Error(`[resolve-release-download-slug] 无法从 URL 解析 slug: ${firstUrl}`)
+  if (isNonEmptyString(release.tag_name) && release.draft !== true) {
+    return release.tag_name
   }
 
-  return match[1]
+  throw new Error(
+    `[resolve-release-download-slug] Release ${tag} 资产缺少可用的下载 URL（共 ${assets.length} 个资产）`,
+  )
 }
 
 function main() {
