@@ -262,20 +262,6 @@ jobs:
           ref: ${{ needs.prepare-release.outputs.commit_sha }}
           fetch-depth: 0
 
-      - name: Build release body
-        id: body
-        env:
-          RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
-          RELEASE_BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
-          RELEASE_BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
-          RELEASE_WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
-          RELEASE_WINDOWS_MSI: ${{ inputs.windows_msi }}
-          RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
-        run: |
-          node ./scripts/build-release-body.mjs \
-            --version "${{ needs.prepare-release.outputs.version }}" \
-            --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}"
-
       - name: Remove orphan tag before retry publish
         if: needs.check-release.outputs.prepare_mode == 'retry'
         env:
@@ -354,8 +340,35 @@ jobs:
           tag_name: v${{ needs.prepare-release.outputs.version }}
           name: nrm-desktop v${{ needs.prepare-release.outputs.version }}
           target_commitish: ${{ needs.prepare-release.outputs.commit_sha }}
-          body: ${{ steps.body.outputs.release_body }}
+          body: _Release notes are being generated…_
           files: release-assets/**/*
           draft: ${{ inputs.draft_release }}
           prerelease: false
           overwrite_files: true
+
+      - name: Resolve release download slug
+        id: release_slug
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node ./scripts/resolve-release-download-slug.mjs \
+            --version "${{ needs.prepare-release.outputs.version }}"
+
+      - name: Build and update release body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
+          RELEASE_BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
+          RELEASE_BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
+          RELEASE_WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
+          RELEASE_WINDOWS_MSI: ${{ inputs.windows_msi }}
+          RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.prepare-release.outputs.version }}"
+          node ./scripts/build-release-body.mjs \
+            --version "${{ needs.prepare-release.outputs.version }}" \
+            --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}" \
+            --download-slug "${{ steps.release_slug.outputs.download_slug }}" \
+            --output-file release-body.md
+          gh release edit "$TAG" --notes-file release-body.md

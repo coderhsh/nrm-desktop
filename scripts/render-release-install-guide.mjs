@@ -148,12 +148,12 @@ export function buildDocBlobUrl(commitSha, filePath) {
 
 /**
  * @param {string} repository owner/repo
- * @param {string} version
+ * @param {string} downloadSlug Release 下载 slug（如 v1.0.1 或 untagged-xxx）
  * @param {string} filename
  * @returns {string}
  */
-export function buildReleaseAssetUrl(repository, version, filename) {
-  return `https://github.com/${repository}/releases/download/v${version}/${filename}`
+export function buildReleaseAssetUrl(repository, downloadSlug, filename) {
+  return `https://github.com/${repository}/releases/download/${downloadSlug}/${filename}`
 }
 
 /**
@@ -246,8 +246,8 @@ function getItemDescription(item, locale) {
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildDownloadItemLine(item, repository, version, locale) {
-  const url = buildReleaseAssetUrl(repository, version, item.filename)
+function buildDownloadItemLine(item, repository, downloadSlug, locale) {
+  const url = buildReleaseAssetUrl(repository, downloadSlug, item.filename)
   const link = artifactDownloadLink(item, url, locale)
   return `- ${link}: ${getItemDescription(item, locale)}`
 }
@@ -255,24 +255,24 @@ function buildDownloadItemLine(item, repository, version, locale) {
 /**
  * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} artifacts
  * @param {string} repository
- * @param {string} version
+ * @param {string} downloadSlug
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildDownloadItemLines(artifacts, repository, version, locale) {
+function buildDownloadItemLines(artifacts, repository, downloadSlug, locale) {
   return artifacts
-    .map(item => buildDownloadItemLine(item, repository, version, locale))
+    .map(item => buildDownloadItemLine(item, repository, downloadSlug, locale))
     .join('\n')
 }
 
 /**
  * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} macArtifacts
  * @param {string} repository
- * @param {string} version
+ * @param {string} downloadSlug
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildMacosSection(macArtifacts, repository, version, locale) {
+function buildMacosSection(macArtifacts, repository, downloadSlug, locale) {
   if (macArtifacts.length === 0) {
     return ''
   }
@@ -281,7 +281,7 @@ function buildMacosSection(macArtifacts, repository, version, locale) {
   const items = buildDownloadItemLines(
     sortMacArtifacts(macArtifacts),
     repository,
-    version,
+    downloadSlug,
     locale,
   )
 
@@ -300,7 +300,7 @@ ${items}
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildWindowsLinksBlock(winArtifacts, repository, version, locale) {
+function buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale) {
   const text = DOWNLOADS_TEXT[locale]
   const byKind = Object.fromEntries(winArtifacts.map(item => [item.kind, item]))
   const lines = []
@@ -313,7 +313,7 @@ function buildWindowsLinksBlock(winArtifacts, repository, version, locale) {
     if (kind === 'setup' && lines.length === 0) {
       lines.push(`**${text.standardHeader}**`, '')
     }
-    lines.push(buildDownloadItemLine(item, repository, version, locale))
+    lines.push(buildDownloadItemLine(item, repository, downloadSlug, locale))
   }
 
   return lines.join('\n')
@@ -322,17 +322,17 @@ function buildWindowsLinksBlock(winArtifacts, repository, version, locale) {
 /**
  * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} winArtifacts
  * @param {string} repository
- * @param {string} version
+ * @param {string} downloadSlug
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildWindowsSection(winArtifacts, repository, version, locale) {
+function buildWindowsSection(winArtifacts, repository, downloadSlug, locale) {
   if (winArtifacts.length === 0) {
     return ''
   }
 
   const text = DOWNLOADS_TEXT[locale]
-  const items = buildWindowsLinksBlock(winArtifacts, repository, version, locale)
+  const items = buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale)
 
   return `<details>
 <summary><b>${text.osWindowsSummary}</b></summary>
@@ -352,10 +352,10 @@ ${items}
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, version, locale) {
+function buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug, locale) {
   const sections = [
-    buildMacosSection(macArtifacts, repository, version, locale),
-    buildWindowsSection(winArtifacts, repository, version, locale),
+    buildMacosSection(macArtifacts, repository, downloadSlug, locale),
+    buildWindowsSection(winArtifacts, repository, downloadSlug, locale),
   ].filter(Boolean)
 
   if (sections.length === 0) {
@@ -369,12 +369,12 @@ function buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, 
  * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} macArtifacts
  * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} winArtifacts
  * @param {string} repository
- * @param {string} version
+ * @param {string} downloadSlug
  * @returns {string}
  */
-function buildDownloadsContent(macArtifacts, winArtifacts, repository, version) {
-  const english = buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, version, 'en')
-  const chinese = buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, version, 'zh')
+function buildDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug) {
+  const english = buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug, 'en')
+  const chinese = buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug, 'zh')
 
   return `${english}
 
@@ -404,16 +404,18 @@ function renderTemplate(templatePath, replacements) {
 /**
  * @param {string} version
  * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
+ * @param {string} [downloadSlug] Release 下载 slug，默认 v{version}
  * @returns {string}
  */
-export function buildReleaseInstallSection(version, artifactOptions) {
+export function buildReleaseInstallSection(version, artifactOptions, downloadSlug) {
   const repository = resolveGitHubRepository()
+  const slug = downloadSlug || `v${version}`
   const artifacts = listReleaseArtifactNames(version, artifactOptions ?? readReleaseArtifactOptionsFromEnv())
   const macArtifacts = artifacts.filter(item => item.platform === 'macos')
   const winArtifacts = artifacts.filter(item => item.platform === 'windows')
 
   return renderTemplate(RELEASE_TEMPLATE_FILE, {
-    downloadsContent: buildDownloadsContent(macArtifacts, winArtifacts, repository, version),
+    downloadsContent: buildDownloadsContent(macArtifacts, winArtifacts, repository, slug),
   })
 }
 
