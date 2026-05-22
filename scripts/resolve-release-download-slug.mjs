@@ -169,28 +169,33 @@ function fetchReleaseById(releaseId) {
 
 /**
  * @param {string} tag
- * @returns {Array<{ databaseId?: number, tagName?: string }>}
+ * @returns {Array<{ id: number, tagName: string, createdAt?: string }>}
  */
 function fetchReleaseSummariesByTag(tag) {
-  const listRaw = runCommand('gh', [
-    'release', 'list',
-    '--json', 'databaseId,tagName',
-    '--limit', '100',
-  ])
-  const releases = JSON.parse(listRaw).filter(item => item?.tagName === tag)
-  if (releases.length > 0) {
-    return releases
-  }
+  const repository = resolveGitHubRepository()
+  const listRaw = runCommand('gh', ['api', `repos/${repository}/releases`, '--paginate'])
+  /** @type {Array<{ id?: number, tag_name?: string, created_at?: string }>} */
+  const releases = JSON.parse(listRaw)
 
-  try {
-    const release = JSON.parse(runCommand('gh', [
-      'release', 'view', tag,
-      '--json', 'databaseId,tagName',
-    ]))
-    return [release]
-  } catch {
-    return []
+  return releases
+    .filter(item => item?.tag_name === tag && typeof item.id === 'number')
+    .map(item => ({
+      id: item.id,
+      tagName: item.tag_name,
+      createdAt: item.created_at,
+    }))
+}
+
+/**
+ * @param {{ id: number, createdAt?: string }} left
+ * @param {{ id: number, createdAt?: string }} right
+ * @returns {number}
+ */
+function compareReleaseSummariesNewestFirst(left, right) {
+  if (left.createdAt && right.createdAt) {
+    return right.createdAt.localeCompare(left.createdAt)
   }
+  return right.id - left.id
 }
 
 /**
@@ -201,22 +206,18 @@ function fetchReleaseSummariesByTag(tag) {
  */
 export function resolveReleaseAssetUrls(tag, expectedFilenames) {
   const summaries = fetchReleaseSummariesByTag(tag)
-    .sort((left, right) => (right.databaseId ?? 0) - (left.databaseId ?? 0))
+    .sort(compareReleaseSummariesNewestFirst)
 
   if (summaries.length === 0) {
     throw new Error(`[resolve-release-download-slug] 未找到 Release ${tag}`)
   }
 
   for (const summary of summaries) {
-    if (!summary.databaseId) {
-      continue
-    }
-
-    const release = fetchReleaseById(String(summary.databaseId))
+    const release = fetchReleaseById(String(summary.id))
     const assetUrlByFilename = buildReleaseAssetUrlMap(release)
     if (expectedFilenames.every(filename => assetUrlByFilename[filename])) {
       return {
-        releaseId: String(summary.databaseId),
+        releaseId: String(summary.id),
         assetUrlByFilename,
       }
     }
@@ -252,19 +253,11 @@ function fetchReleaseByTag(tag) {
       '--json', 'tagName,isDraft,assets',
     ]))
   } catch (error) {
-    const listRaw = runCommand('gh', [
-      'release', 'list',
-      '--json', 'databaseId,tagName,isDraft,assets',
-      '--limit', '100',
-    ])
-    const releases = JSON.parse(listRaw)
-    const matched = releases
-      .filter(item => item?.tagName === tag)
-      .sort((left, right) => (right.databaseId ?? 0) - (left.databaseId ?? 0))[0]
-    if (!matched) {
+    const summaries = fetchReleaseSummariesByTag(tag).sort(compareReleaseSummariesNewestFirst)
+    if (summaries.length === 0) {
       throw error
     }
-    return matched
+    return fetchReleaseById(String(summaries[0].id))
   }
 }
 
