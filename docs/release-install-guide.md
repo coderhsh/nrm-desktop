@@ -1,18 +1,22 @@
 # Download Links
 
-Download packages from the [GitHub Releases](https://github.com/coderhsh/nrm-desktop/releases) page. On each release, file names such as **`.dmg`**, **`setup.exe`**, **`.zip`**, and **`.msi`** are clickable download links.
+Download packages from the [GitHub Releases](https://github.com/coderhsh/nrm-desktop/releases) page.
 
 ## macOS
 
-**`.dmg` (Recommended for macOS users)**: Double-click the downloaded file and drag the app into the Applications folder.
+[Apple M chip](https://github.com/coderhsh/nrm-desktop/releases/latest) | [Intel chip](https://github.com/coderhsh/nrm-desktop/releases/latest)
 
-> **Note**: Default releases include the Apple Silicon (M1 / M2 / M3 / M4) build. Intel Mac builds can be produced via the CI build workflow when needed.
+After downloading, double-click the `.dmg` file and drag the app into the Applications folder.
+
+> **Note**: Default releases include the Apple Silicon build. Intel Mac builds can be produced via the CI build workflow when needed.
 
 ## Windows
 
-1. **`setup.exe` (Recommended)**: Standard installer with Start Menu and Desktop shortcuts.
-2. **`.zip` (Portable)**: Extract and run `nrm-desktop.exe` — no installation required.
-3. **`.msi`**: For IT administrators who need silent or bulk deployment.
+Windows (Windows 7 not supported)
+
+**Standard (recommended)** [x64 (common)](https://github.com/coderhsh/nrm-desktop/releases/latest) | [ARM64 (uncommon)](https://github.com/coderhsh/nrm-desktop/releases/latest)
+
+**Other formats** [Portable x64](https://github.com/coderhsh/nrm-desktop/releases/latest) | [MSI x64](https://github.com/coderhsh/nrm-desktop/releases/latest)
 
 ## Requirements
 

@@ -106,48 +106,63 @@ export function buildChangelogLinksLine(commitSha) {
 
 /**
  * @param {import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }} item
+ * @param {'en' | 'zh'} [locale]
  * @returns {string}
  */
-function artifactDownloadLabel(item) {
-  if (item.kind === 'dmg' && item.arch === 'x64') {
-    return '.dmg (Intel)'
+function artifactDownloadLabel(item, locale = 'en') {
+  if (item.platform === 'macos') {
+    if (item.arch === 'aarch64') {
+      return locale === 'zh' ? 'Apple M芯片' : 'Apple M chip'
+    }
+    if (item.arch === 'x64') {
+      return locale === 'zh' ? 'Intel芯片' : 'Intel chip'
+    }
   }
-  switch (item.kind) {
-    case 'dmg':
-      return '.dmg'
-    case 'setup':
-      return 'setup.exe'
-    case 'portable':
-      return '.zip'
-    case 'msi':
-      return '.msi'
-    default:
-      return item.filename
+
+  if (item.platform === 'windows') {
+    if (item.kind === 'setup') {
+      if (item.arch === 'x64') {
+        return locale === 'zh' ? '64位（常用）' : 'x64 (common)'
+      }
+      if (item.arch === 'aarch64') {
+        return locale === 'zh' ? 'ARM64（不常用）' : 'ARM64 (uncommon)'
+      }
+    }
+    if (item.kind === 'portable') {
+      return locale === 'zh' ? '便携版（64位）' : 'Portable x64'
+    }
+    if (item.kind === 'msi') {
+      return locale === 'zh' ? 'MSI（64位）' : 'MSI x64'
+    }
   }
+
+  return item.filename
 }
 
 /**
  * @param {import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }} item
  * @param {string} url
+ * @param {'en' | 'zh'} [locale]
  * @returns {string}
  */
-function artifactDownloadLink(item, url) {
-  return `[${artifactDownloadLabel(item)}](${url})`
+function artifactDownloadLink(item, url, locale = 'en') {
+  return `[${artifactDownloadLabel(item, locale)}](${url})`
 }
 
 /**
  * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} artifacts
  * @param {string} repository
  * @param {string} version
+ * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildInlineDownloadLinks(artifacts, repository, version) {
+function buildGroupedDownloadLinks(artifacts, repository, version, locale) {
   return artifacts
     .map(item => {
       const url = buildReleaseAssetUrl(repository, version, item.filename)
-      return artifactDownloadLink(item, url)
+      return artifactDownloadLink(item, url, locale)
     })
-    .join(' · ')
+    .join(' | ')
 }
 
 /**
@@ -161,26 +176,32 @@ function buildMacosContent(macArtifacts, repository, version) {
     return 'No macOS packages were built for this release.'
   }
 
-  const lines = macArtifacts.map((item, index) => {
-    const url = buildReleaseAssetUrl(repository, version, item.filename)
-    const link = artifactDownloadLink(item, url)
-    if (index === 0) {
-      return `**${link} (Recommended for macOS users)**: This is the standard installation method for macOS. After downloading, double-click to open and drag the app icon to the "Applications" folder to complete the installation. It offers the most native and clean experience.`
+  const sorted = [...macArtifacts].sort((left, right) => {
+    if (left.arch === right.arch) {
+      return 0
     }
-    return `**${link}**: ${item.noteEn}`
+    return left.arch === 'aarch64' ? -1 : 1
   })
 
-  return lines.join('\n\n')
+  return `${buildGroupedDownloadLinks(sorted, repository, version, 'en')}
+
+After downloading, double-click the \`.dmg\` file and drag the app into the Applications folder.`
 }
 
-/** @type {Record<'setup' | 'portable' | 'msi', string>} */
+/** @type {Record<'setup' | 'portable' | 'msi', { en: string, zh: string }>} */
 const WINDOWS_ITEM_COPY = {
-  setup:
-    '**{link} (Recommended for Windows users)**: This is the most common installer for Windows. It will guide you through the installation process and automatically create shortcuts in the Start Menu and on the Desktop, providing the most complete integrated experience.',
-  portable:
-    '**{link} (Portable version, no installation required)**: This is a green, no-install version. Simply unzip and run directly — it won\'t write any registry entries or configuration files to your system. Ideal for use on USB drives or for quick trials.',
-  msi:
-    '**{link} (Windows bulk deployment / Administrator)**: This is a standard Windows Installer package, primarily intended for enterprise IT administrators or advanced users who need silent installations or bulk deployments. It supports unattended installation via Group Policy and other methods.',
+  setup: {
+    en: 'Standard installer with Start Menu and Desktop shortcuts.',
+    zh: '常见安装程序，会自动创建开始菜单和桌面快捷方式。',
+  },
+  portable: {
+    en: 'Extract and run directly — no installation required.',
+    zh: '解压后直接运行，无需安装。',
+  },
+  msi: {
+    en: 'For IT administrators who need silent or bulk deployment.',
+    zh: '面向企业 IT 管理员，支持静默安装与批量部署。',
+  },
 }
 
 /** @type {readonly ('setup' | 'portable' | 'msi')[]} */
@@ -198,16 +219,70 @@ function buildWindowsContent(winArtifacts, repository, version) {
   }
 
   const byKind = Object.fromEntries(winArtifacts.map(item => [item.kind, item]))
-  const lines = WINDOWS_KIND_ORDER
+  const setupItems = byKind.setup ? [byKind.setup] : []
+  const otherItems = WINDOWS_KIND_ORDER
+    .filter(kind => kind !== 'setup' && byKind[kind])
+    .map(kind => byKind[kind])
+
+  const sections = [
+    'Windows (Windows 7 not supported)',
+    '',
+    `**Standard (recommended)** ${buildGroupedDownloadLinks(setupItems, repository, version, 'en')}`,
+  ]
+
+  if (otherItems.length > 0) {
+    sections.push(
+      '',
+      `**Other formats** ${buildGroupedDownloadLinks(otherItems, repository, version, 'en')}`,
+    )
+  }
+
+  const detailLines = WINDOWS_KIND_ORDER
     .filter(kind => byKind[kind])
-    .map((kind, index) => {
+    .map(kind => {
       const item = byKind[kind]
       const url = buildReleaseAssetUrl(repository, version, item.filename)
-      const link = artifactDownloadLink(item, url)
-      return `${index + 1}. ${WINDOWS_ITEM_COPY[kind].replace('{link}', link)}`
+      const link = artifactDownloadLink(item, url, 'en')
+      return `- ${link}: ${WINDOWS_ITEM_COPY[kind].en}`
     })
 
-  return lines.join('\n\n')
+  sections.push('', ...detailLines)
+
+  return sections.join('\n')
+}
+
+/**
+ * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} macArtifacts
+ * @param {Array<import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }>} winArtifacts
+ * @param {string} repository
+ * @param {string} version
+ * @param {'en' | 'zh'} locale
+ * @returns {string}
+ */
+function buildPlatformDownloadBlock(macArtifacts, winArtifacts, repository, version, locale) {
+  const macSorted = [...macArtifacts].sort((left, right) => {
+    if (left.arch === right.arch) {
+      return 0
+    }
+    return left.arch === 'aarch64' ? -1 : 1
+  })
+  const setupItems = winArtifacts.filter(item => item.kind === 'setup')
+  const otherItems = winArtifacts.filter(item => item.kind !== 'setup')
+
+  const macLine = macSorted.length > 0
+    ? `**macOS** ${buildGroupedDownloadLinks(macSorted, repository, version, locale)}`
+    : ''
+  const winHeader = locale === 'zh' ? '**Windows**（不支持 Windows 7）' : '**Windows** (Windows 7 not supported)'
+  const standardHeader = locale === 'zh' ? '**正常版本（推荐）**' : '**Standard (recommended)**'
+  const otherHeader = locale === 'zh' ? '**其他格式**' : '**Other formats**'
+  const setupLine = setupItems.length > 0
+    ? `${standardHeader} ${buildGroupedDownloadLinks(setupItems, repository, version, locale)}`
+    : ''
+  const otherLine = otherItems.length > 0
+    ? `${otherHeader} ${buildGroupedDownloadLinks(otherItems, repository, version, locale)}`
+    : ''
+
+  return [macLine, winHeader, setupLine, otherLine].filter(Boolean).join('\n\n')
 }
 
 /**
@@ -216,9 +291,10 @@ function buildWindowsContent(winArtifacts, repository, version) {
  * @param {string} version
  * @returns {string}
  */
-function buildDownloadFooter(artifacts, repository, version) {
-  const links = buildInlineDownloadLinks(artifacts, repository, version)
-  return `**Download links:** ${links}\n\n**下载地址：** ${links}`
+function buildDownloadFooter(macArtifacts, winArtifacts, repository, version) {
+  const enBlock = buildPlatformDownloadBlock(macArtifacts, winArtifacts, repository, version, 'en')
+  const zhBlock = buildPlatformDownloadBlock(macArtifacts, winArtifacts, repository, version, 'zh')
+  return `**Download links**\n\n${enBlock}\n\n**下载地址**\n\n${zhBlock}`
 }
 
 /**
@@ -256,7 +332,7 @@ export function buildReleaseInstallSection(version, artifactOptions) {
   return renderTemplate(RELEASE_TEMPLATE_FILE, {
     macosContent: buildMacosContent(macArtifacts, repository, version),
     windowsContent: buildWindowsContent(winArtifacts, repository, version),
-    downloadFooter: buildDownloadFooter(artifacts, repository, version),
+    downloadFooter: buildDownloadFooter(macArtifacts, winArtifacts, repository, version),
   })
 }
 
