@@ -9,6 +9,8 @@
 
 ## [未发布]
 
+## [1.1.5] - 2026-05-22
+
 ### Changed
 
 - 测试更新
@@ -92,7 +94,8 @@
 - 开机自启动、关闭行为（最小化到托盘或退出）、单实例锁
 - 代理配置后端能力（界面入口可在后续版本开放）
 
-[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.4...HEAD
+[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.5...HEAD
+[1.1.5]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.5
 [1.1.4]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.4
 [1.1.3]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.3
 [1.1.2]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.2

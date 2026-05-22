@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedayzhu/tauri-docs-cn/refs/heads/dev/.schemas/config.schema.json",
   "productName": "nrm-desktop",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "identifier": "com.nrm-desktop",
   "build": {
     "frontendDist": "../dist",
