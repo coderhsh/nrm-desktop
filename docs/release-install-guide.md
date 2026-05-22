@@ -8,6 +8,11 @@ Download packages from the [GitHub Releases](https://github.com/coderhsh/nrm-des
 
 After downloading, double-click the `.dmg` file and drag the app into the Applications folder.
 
+If macOS reports **"nrm-desktop.app is damaged and can't be opened"**, it is usually Gatekeeper blocking an unsigned download, not file corruption. Either:
+
+1. Run in Terminal: `xattr -cr /Applications/nrm-desktop.app`
+2. Right-click the app in Finder and choose **Open** once
+
 > **Note**: Default releases include the Apple Silicon build. Intel Mac builds can be produced via the CI build workflow when needed.
 
 ## Windows

@@ -13,6 +13,7 @@ import {
   readEnglishReleaseSection,
 } from './prepare-release.mjs'
 import { readReleaseArtifactOptionsFromEnv } from './render-release-install-guide.mjs'
+import { fetchReleaseAssetUrlMap } from './resolve-release-download-slug.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -96,6 +97,7 @@ async function assertFileExists(filePath) {
  *   notes: string
  *   pubDate: string
  *   artifactOptions?: import('./artifact-names.mjs').ReleaseArtifactOptions
+ *   assetUrlByFilename?: Record<string, string>
  * }} options
  * @returns {Promise<{ version: string, notes: string, pub_date: string, platforms: Record<string, { signature: string, url: string }> }>}
  */
@@ -116,7 +118,8 @@ export async function buildUpdaterManifest(options) {
 
     manifestPlatforms[item.platform] = {
       signature,
-      url: buildReleaseAssetUrl(options.repository, options.releaseTag, item.urlFilename),
+      url: options.assetUrlByFilename?.[item.urlFilename]
+        ?? buildReleaseAssetUrl(options.repository, options.releaseTag, item.urlFilename),
     }
   }
 
@@ -131,6 +134,7 @@ export async function buildUpdaterManifest(options) {
 async function main() {
   const version = parseArgValue('--version')
   const commitSha = parseArgValue('--commit-sha')
+  const releaseId = parseArgValue('--release-id')
   const assetsDirInput = parseArgValue('--dir') || 'release-assets'
   const outputFileInput = parseArgValue('--output-file') || path.join(assetsDirInput, UPDATER_MANIFEST_FILENAME)
   const repository = parseArgValue('--repository') || process.env.GITHUB_REPOSITORY || 'coderhsh/nrm-desktop'
@@ -142,6 +146,8 @@ async function main() {
 
   const assetsDir = path.resolve(rootDir, assetsDirInput)
   const outputFile = path.resolve(rootDir, outputFileInput)
+  const artifactOptions = readReleaseArtifactOptionsFromEnv()
+  const assetUrlByFilename = releaseId ? fetchReleaseAssetUrlMap(releaseId) : undefined
   const manifest = await buildUpdaterManifest({
     version,
     assetsDir,
@@ -149,7 +155,8 @@ async function main() {
     releaseTag,
     notes: buildUpdaterNotes(version, commitSha),
     pubDate: new Date().toISOString(),
-    artifactOptions: readReleaseArtifactOptionsFromEnv(),
+    artifactOptions,
+    assetUrlByFilename,
   })
 
   writeFileSync(outputFile, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')

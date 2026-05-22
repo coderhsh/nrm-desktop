@@ -96,6 +96,36 @@ describe('buildUpdaterManifest', () => {
     })
   })
 
+  it('prefers assetUrlByFilename over releaseTag URLs', async () => {
+    await withTempDir(async dir => {
+      const version = '1.2.3'
+      const windowsSetup = getWindowsSetupArtifactName(version)
+      await writeAssetPair(dir, windowsSetup, 'windows-signature')
+
+      const manifest = await buildUpdaterManifest({
+        version,
+        assetsDir: dir,
+        repository: 'coderhsh/nrm-desktop',
+        releaseTag: 'v1.2.3',
+        notes: '',
+        pubDate: '2026-05-22T00:00:00.000Z',
+        assetUrlByFilename: {
+          [windowsSetup]: 'https://github.com/coderhsh/nrm-desktop/releases/download/untagged-abc/setup.exe',
+        },
+        artifactOptions: {
+          buildWindowsX64: true,
+          buildMacosArm64: false,
+          buildMacosX64: false,
+          windowsSetupExe: true,
+          windowsMsi: false,
+          windowsPortableZip: false,
+        },
+      })
+
+      expect(manifest.platforms['windows-x86_64']?.url).toContain('untagged-abc')
+    })
+  })
+
   it('fails when a required signature is missing', async () => {
     await withTempDir(async dir => {
       const version = '1.2.3'

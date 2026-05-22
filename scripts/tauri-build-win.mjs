@@ -9,6 +9,10 @@ import {
   getWindowsSetupArtifactName,
   getUpdaterSignatureArtifactName,
 } from './artifact-names.mjs'
+import {
+  removeTauriBuildConfigOverlay,
+  writeTauriBuildConfigOverlay,
+} from './tauri-build-config-overlay.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
 
@@ -405,7 +409,7 @@ async function printArtifacts() {
  * @param {{ setupExe: boolean, msi: boolean, portableZip: boolean, needsBundle: boolean }} selection
  * @returns {Promise<void>}
  */
-function runTauriBuildWin(selection) {
+async function runTauriBuildWin(selection) {
   const isWin = process.platform === 'win32'
   const basePath = process.env.PATH ?? ''
   const pathParts = basePath.split(path.delimiter).filter(Boolean)
@@ -446,41 +450,46 @@ function runTauriBuildWin(selection) {
     args.push('--bundles', bundles.join(','))
   }
 
-  args.push('--config', JSON.stringify(buildConfig))
+  const configPath = await writeTauriBuildConfigOverlay(buildConfig)
+  args.push('--config', configPath)
 
-  return new Promise((resolve, reject) => {
-    let combinedOutput = ''
-    const child = spawnPnpm(args, {
-      cwd: rootDir,
-      stdio: ['inherit', 'pipe', 'pipe'],
-      env: { ...process.env, PATH: mergedPath },
-    })
+  try {
+    await new Promise((resolve, reject) => {
+      let combinedOutput = ''
+      const child = spawnPnpm(args, {
+        cwd: rootDir,
+        stdio: ['inherit', 'pipe', 'pipe'],
+        env: { ...process.env, PATH: mergedPath },
+      })
 
-    child.stdout.on('data', chunk => {
-      const text = String(chunk)
-      combinedOutput += text
-      process.stdout.write(text)
-    })
-    child.stderr.on('data', chunk => {
-      const text = String(chunk)
-      combinedOutput += text
-      process.stderr.write(text)
-    })
+      child.stdout.on('data', chunk => {
+        const text = String(chunk)
+        combinedOutput += text
+        process.stdout.write(text)
+      })
+      child.stderr.on('data', chunk => {
+        const text = String(chunk)
+        combinedOutput += text
+        process.stderr.write(text)
+      })
 
-    child.on('error', reject)
-    child.on('exit', (code, signal) => {
-      if (signal) {
-        reject(new Error(`构建进程被信号中断: ${signal}`))
-        return
-      }
-      if (code !== 0) {
-        const tail = combinedOutput.slice(-2000).trim()
-        reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}\n${tail}`))
-        return
-      }
-      resolve()
+      child.on('error', reject)
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          reject(new Error(`构建进程被信号中断: ${signal}`))
+          return
+        }
+        if (code !== 0) {
+          const tail = combinedOutput.slice(-2000).trim()
+          reject(new Error(`tauri build 失败，退出码: ${code ?? 'unknown'}\n${tail}`))
+          return
+        }
+        resolve()
+      })
     })
-  })
+  } finally {
+    await removeTauriBuildConfigOverlay(configPath)
+  }
 }
 
 /**

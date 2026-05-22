@@ -310,23 +310,6 @@ jobs:
             --version "${{ needs.prepare-release.outputs.version }}" \
             --dir release-assets
 
-      - name: Generate updater manifest
-        env:
-          RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
-          RELEASE_BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
-          RELEASE_BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
-          RELEASE_WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
-          RELEASE_WINDOWS_MSI: ${{ inputs.windows_msi }}
-          RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
-        run: |
-          node ./scripts/generate-updater-manifest.mjs \
-            --version "${{ needs.prepare-release.outputs.version }}" \
-            --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}" \
-            --dir release-assets \
-            --repository "${{ github.repository }}" \
-            --release-tag "v${{ needs.prepare-release.outputs.version }}" \
-            --output-file release-assets/latest.json
-
       - name: Remove stale release installer assets
         if: inputs.cleanup_release_assets == true
         env:
@@ -353,6 +336,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create GitHub Release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.prepare-release.outputs.version }}
@@ -364,27 +348,8 @@ jobs:
           prerelease: false
           overwrite_files: true
 
-      - name: Update fixed updater manifest release
-        if: inputs.draft_release == false
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! gh release view updater >/dev/null 2>&1; then
-            gh release create updater --title "nrm-desktop updater manifest" --notes "Static manifest consumed by Tauri updater."
-          fi
-          gh release upload updater release-assets/latest.json --clobber
-
-      - name: Resolve release download slug
-        id: release_slug
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          node ./scripts/resolve-release-download-slug.mjs \
-            --version "${{ needs.prepare-release.outputs.version }}"
-
-      - name: Build and update release body
+      - name: Build release body
+        id: build_release_body
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
@@ -395,10 +360,54 @@ jobs:
           RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
         run: |
           set -euo pipefail
-          TAG="v${{ needs.prepare-release.outputs.version }}"
           node ./scripts/build-release-body.mjs \
             --version "${{ needs.prepare-release.outputs.version }}" \
             --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}" \
-            --download-slug "${{ steps.release_slug.outputs.download_slug }}" \
+            --release-id "${{ steps.create_release.outputs.id }}" \
             --output-file release-body.md
-          gh release edit "$TAG" --notes-file release-body.md
+
+      - name: Update release body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          RELEASE_ID="${{ steps.create_release.outputs.id }}"
+          if [[ -z "$RELEASE_ID" ]]; then
+            echo "::error::缺少 create_release.outputs.id，无法更新 Release body。"
+            exit 1
+          fi
+          jq -n --rawfile body release-body.md '{body: $body}' \
+            | gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" --input -
+          if [[ "${{ inputs.draft_release }}" != "true" ]]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" -f draft=false
+          fi
+
+      - name: Generate and publish updater manifest
+        if: inputs.draft_release == false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
+          RELEASE_BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
+          RELEASE_BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
+          RELEASE_WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
+          RELEASE_WINDOWS_MSI: ${{ inputs.windows_msi }}
+          RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.prepare-release.outputs.version }}"
+          RELEASE_ID="${{ steps.create_release.outputs.id }}"
+          TAG="v${VERSION}"
+
+          node ./scripts/generate-updater-manifest.mjs \
+            --version "$VERSION" \
+            --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}" \
+            --release-id "$RELEASE_ID" \
+            --dir release-assets \
+            --repository "${{ github.repository }}" \
+            --release-tag "$TAG" \
+            --output-file release-assets/latest.json
+
+          node ./scripts/publish-updater-manifest.mjs \
+            --manifest-file release-assets/latest.json \
+            --version-tag "$TAG" \
+            --target-ref "${{ needs.prepare-release.outputs.commit_sha }}"

@@ -157,10 +157,15 @@ export function isUpdateUnavailableError(error: unknown): error is AppUpdateUnav
 }
 
 export function formatUpdateError(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message
+  const message = error instanceof Error && error.message
+    ? error.message
+    : String(error)
+
+  if (/could not fetch a valid release json/i.test(message)) {
+    return '无法获取更新清单（latest.json）。请先完成一次非 Draft 的 Release Installers 发布，并确认 GitHub 上存在 updater Release。'
   }
-  return String(error)
+
+  return message
 }
 
 export function formatBytes(bytes: number): string {

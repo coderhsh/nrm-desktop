@@ -54,6 +54,8 @@ const DOWNLOADS_TEXT = {
     osWindowsSummary: '💻 Windows',
     windowsRequirements:
       'Windows 10 / 11 x64 (Windows 7 not supported). [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) required.',
+    macosGatekeeperNote:
+      'If macOS says the app is **damaged**, it is usually Gatekeeper blocking an unsigned download — the app is not corrupted. Remove quarantine: `xattr -cr /Applications/nrm-desktop.app`, or right-click the app in Finder and choose **Open** once.',
     standardHeader: 'Standard (recommended)',
     chineseGuideSummary: '下载指引（中文）',
     noPackages: 'No installation packages were built for this release.',
@@ -63,6 +65,8 @@ const DOWNLOADS_TEXT = {
     osWindowsSummary: '💻 Windows',
     windowsRequirements:
       'Windows 10 / 11 x64（不支持 Windows 7）。需安装 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。',
+    macosGatekeeperNote:
+      '若提示应用「已损坏」，通常是 macOS Gatekeeper 拦截未公证的下载包，并非文件损坏。可在终端执行 `xattr -cr /Applications/nrm-desktop.app` 清除隔离属性，或在 Finder 中右键应用选择「打开」一次。',
     standardHeader: '正常版本（推荐）',
     chineseGuideSummary: '下载指引（中文）',
     noPackages: '本次 Release 未构建任何安装包。',
@@ -235,12 +239,14 @@ function getItemDescription(item, locale) {
 /**
  * @param {import('./artifact-names.mjs').DefaultReleaseArtifact & { filename: string }} item
  * @param {string} repository
- * @param {string} version
+ * @param {string} downloadSlug
  * @param {'en' | 'zh'} locale
+ * @param {Record<string, string> | undefined} assetUrlByFilename
  * @returns {string}
  */
-function buildDownloadItemLine(item, repository, downloadSlug, locale) {
-  const url = buildReleaseAssetUrl(repository, downloadSlug, item.filename)
+function buildDownloadItemLine(item, repository, downloadSlug, locale, assetUrlByFilename) {
+  const url = assetUrlByFilename?.[item.filename]
+    ?? buildReleaseAssetUrl(repository, downloadSlug, item.filename)
   const link = artifactDownloadLink(item, url, locale)
   return `- ${link}: ${getItemDescription(item, locale)}`
 }
@@ -250,11 +256,12 @@ function buildDownloadItemLine(item, repository, downloadSlug, locale) {
  * @param {string} repository
  * @param {string} downloadSlug
  * @param {'en' | 'zh'} locale
+ * @param {Record<string, string> | undefined} assetUrlByFilename
  * @returns {string}
  */
-function buildDownloadItemLines(artifacts, repository, downloadSlug, locale) {
+function buildDownloadItemLines(artifacts, repository, downloadSlug, locale, assetUrlByFilename) {
   return artifacts
-    .map(item => buildDownloadItemLine(item, repository, downloadSlug, locale))
+    .map(item => buildDownloadItemLine(item, repository, downloadSlug, locale, assetUrlByFilename))
     .join('\n')
 }
 
@@ -265,7 +272,7 @@ function buildDownloadItemLines(artifacts, repository, downloadSlug, locale) {
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildMacosSection(macArtifacts, repository, downloadSlug, locale) {
+function buildMacosSection(macArtifacts, repository, downloadSlug, locale, assetUrlByFilename) {
   if (macArtifacts.length === 0) {
     return ''
   }
@@ -276,10 +283,13 @@ function buildMacosSection(macArtifacts, repository, downloadSlug, locale) {
     repository,
     downloadSlug,
     locale,
+    assetUrlByFilename,
   )
 
   return `<details open>
 <summary><b>${text.osMacosSummary}</b></summary>
+
+${text.macosGatekeeperNote}
 
 ${items}
 
@@ -293,7 +303,7 @@ ${items}
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale) {
+function buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale, assetUrlByFilename) {
   const text = DOWNLOADS_TEXT[locale]
   const byKind = Object.fromEntries(winArtifacts.map(item => [item.kind, item]))
   const lines = []
@@ -306,7 +316,7 @@ function buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale) 
     if (kind === 'setup' && lines.length === 0) {
       lines.push(`**${text.standardHeader}**`, '')
     }
-    lines.push(buildDownloadItemLine(item, repository, downloadSlug, locale))
+    lines.push(buildDownloadItemLine(item, repository, downloadSlug, locale, assetUrlByFilename))
   }
 
   return lines.join('\n')
@@ -319,13 +329,13 @@ function buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale) 
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildWindowsSection(winArtifacts, repository, downloadSlug, locale) {
+function buildWindowsSection(winArtifacts, repository, downloadSlug, locale, assetUrlByFilename) {
   if (winArtifacts.length === 0) {
     return ''
   }
 
   const text = DOWNLOADS_TEXT[locale]
-  const items = buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale)
+  const items = buildWindowsLinksBlock(winArtifacts, repository, downloadSlug, locale, assetUrlByFilename)
 
   return `<details open>
 <summary><b>${text.osWindowsSummary}</b></summary>
@@ -345,10 +355,17 @@ ${items}
  * @param {'en' | 'zh'} locale
  * @returns {string}
  */
-function buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug, locale) {
+function buildLocalizedDownloadsContent(
+  macArtifacts,
+  winArtifacts,
+  repository,
+  downloadSlug,
+  locale,
+  assetUrlByFilename,
+) {
   const sections = [
-    buildMacosSection(macArtifacts, repository, downloadSlug, locale),
-    buildWindowsSection(winArtifacts, repository, downloadSlug, locale),
+    buildMacosSection(macArtifacts, repository, downloadSlug, locale, assetUrlByFilename),
+    buildWindowsSection(winArtifacts, repository, downloadSlug, locale, assetUrlByFilename),
   ].filter(Boolean)
 
   if (sections.length === 0) {
@@ -365,9 +382,23 @@ function buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, 
  * @param {string} downloadSlug
  * @returns {string}
  */
-function buildDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug) {
-  const english = buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug, 'en')
-  const chinese = buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug, 'zh')
+function buildDownloadsContent(macArtifacts, winArtifacts, repository, downloadSlug, assetUrlByFilename) {
+  const english = buildLocalizedDownloadsContent(
+    macArtifacts,
+    winArtifacts,
+    repository,
+    downloadSlug,
+    'en',
+    assetUrlByFilename,
+  )
+  const chinese = buildLocalizedDownloadsContent(
+    macArtifacts,
+    winArtifacts,
+    repository,
+    downloadSlug,
+    'zh',
+    assetUrlByFilename,
+  )
 
   return `${english}
 
@@ -397,18 +428,29 @@ function renderTemplate(templatePath, replacements) {
 /**
  * @param {string} version
  * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} [artifactOptions]
- * @param {string} [downloadSlug] Release 下载 slug，默认 v{version}
+ * @param {string | { downloadSlug?: string, assetUrlByFilename?: Record<string, string> }} [downloadOptions]
  * @returns {string}
  */
-export function buildReleaseInstallSection(version, artifactOptions, downloadSlug) {
+export function buildReleaseInstallSection(version, artifactOptions, downloadOptions) {
   const repository = resolveGitHubRepository()
-  const slug = downloadSlug || `v${version}`
+  const downloadSlug = typeof downloadOptions === 'string'
+    ? downloadOptions
+    : downloadOptions?.downloadSlug || `v${version}`
+  const assetUrlByFilename = typeof downloadOptions === 'object'
+    ? downloadOptions?.assetUrlByFilename
+    : undefined
   const artifacts = listReleaseArtifactNames(version, artifactOptions ?? readReleaseArtifactOptionsFromEnv())
   const macArtifacts = artifacts.filter(item => item.platform === 'macos')
   const winArtifacts = artifacts.filter(item => item.platform === 'windows')
 
   return renderTemplate(RELEASE_TEMPLATE_FILE, {
-    downloadsContent: buildDownloadsContent(macArtifacts, winArtifacts, repository, slug),
+    downloadsContent: buildDownloadsContent(
+      macArtifacts,
+      winArtifacts,
+      repository,
+      downloadSlug,
+      assetUrlByFilename,
+    ),
   })
 }
 
