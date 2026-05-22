@@ -377,7 +377,7 @@ jobs:
           fi
           gh release upload updater release-assets/latest.json --clobber
 
-      - name: Build and update release body
+      - name: Build release body
         id: build_release_body
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -389,12 +389,24 @@ jobs:
           RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
         run: |
           set -euo pipefail
-          RELEASE_ID="${{ steps.create_release.outputs.id }}"
           node ./scripts/build-release-body.mjs \
             --version "${{ needs.prepare-release.outputs.version }}" \
             --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}" \
-            --release-id "$RELEASE_ID" \
+            --release-id "${{ steps.create_release.outputs.id }}" \
             --output-file release-body.md
-          RESOLVED_RELEASE_ID="${{ steps.build_release_body.outputs.release_id }}"
+
+      - name: Update release body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          RELEASE_ID="${{ steps.create_release.outputs.id }}"
+          if [[ -z "$RELEASE_ID" ]]; then
+            echo "::error::缺少 create_release.outputs.id，无法更新 Release body。"
+            exit 1
+          fi
           jq -n --rawfile body release-body.md '{body: $body}' \
-            | gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${RESOLVED_RELEASE_ID}" --input -
+            | gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" --input -
+          if [[ "${{ inputs.draft_release }}" != "true" ]]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" -f draft=false
+          fi

@@ -159,12 +159,36 @@ export function buildReleaseAssetUrlMap(release) {
 
 /**
  * @param {string} releaseId
+ * @param {number} [maxAttempts]
  * @returns {unknown}
  */
-function fetchReleaseById(releaseId) {
+function fetchReleaseById(releaseId, maxAttempts = 1) {
   const repository = resolveGitHubRepository()
-  const releaseRaw = runCommand('gh', ['api', `repos/${repository}/releases/${releaseId}`])
-  return JSON.parse(releaseRaw)
+  /** @type {unknown} */
+  let lastError
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const result = spawnSync('gh', ['api', `repos/${repository}/releases/${releaseId}`], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: process.env,
+    })
+
+    if (result.status === 0) {
+      return JSON.parse(result.stdout.trim())
+    }
+
+    lastError = new Error(
+      `[resolve-release-download-slug] gh api repos/${repository}/releases/${releaseId} 失败:\n${result.stderr || result.stdout}`,
+    )
+
+    if (attempt < maxAttempts) {
+      spawnSync('sleep', ['2'], { cwd: rootDir, stdio: 'ignore' })
+    }
+  }
+
+  throw lastError
 }
 
 /**
@@ -199,12 +223,45 @@ function compareReleaseSummariesNewestFirst(left, right) {
 }
 
 /**
- * 选取同 tag 下资产齐全且最新的 release，并使用 GitHub 返回的 browser_download_url。
+ * 从指定 release 读取 GitHub 返回的 browser_download_url。
+ * @param {string} releaseId
+ * @param {string[]} expectedFilenames
+ * @returns {{ releaseId: string, assetUrlByFilename: Record<string, string> }}
+ */
+export function resolveReleaseAssetUrls(releaseId, expectedFilenames) {
+  const maxAttempts = 5
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const release = fetchReleaseById(releaseId)
+    const assetUrlByFilename = buildReleaseAssetUrlMap(release)
+    const missing = expectedFilenames.filter(filename => !assetUrlByFilename[filename])
+
+    if (missing.length === 0) {
+      return {
+        releaseId,
+        assetUrlByFilename,
+      }
+    }
+
+    if (attempt < maxAttempts) {
+      spawnSync('sleep', ['2'], { cwd: rootDir, stdio: 'ignore' })
+      continue
+    }
+
+    throw new Error(
+      `[resolve-release-download-slug] Release #${releaseId} 缺少安装包资产 URL: ${missing.join(', ')}`,
+    )
+  }
+
+  throw new Error(`[resolve-release-download-slug] Release #${releaseId} 无法解析安装包资产 URL`)
+}
+
+/**
  * @param {string} tag
  * @param {string[]} expectedFilenames
  * @returns {{ releaseId: string, assetUrlByFilename: Record<string, string> }}
  */
-export function resolveReleaseAssetUrls(tag, expectedFilenames) {
+export function resolveReleaseAssetUrlsByTag(tag, expectedFilenames) {
   const summaries = fetchReleaseSummariesByTag(tag)
     .sort(compareReleaseSummariesNewestFirst)
 
@@ -213,13 +270,10 @@ export function resolveReleaseAssetUrls(tag, expectedFilenames) {
   }
 
   for (const summary of summaries) {
-    const release = fetchReleaseById(String(summary.id))
-    const assetUrlByFilename = buildReleaseAssetUrlMap(release)
-    if (expectedFilenames.every(filename => assetUrlByFilename[filename])) {
-      return {
-        releaseId: String(summary.id),
-        assetUrlByFilename,
-      }
+    try {
+      return resolveReleaseAssetUrls(String(summary.id), expectedFilenames)
+    } catch {
+      continue
     }
   }
 

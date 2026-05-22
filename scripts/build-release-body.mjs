@@ -133,11 +133,9 @@ function main() {
 
   /** @type {string | { downloadSlug?: string, assetUrlByFilename?: Record<string, string> }} */
   let downloadOptions = downloadSlug
-  let resolvedReleaseId = releaseId
   if (releaseId) {
     const expectedFilenames = listReleaseArtifactNames(version, artifactOptions).map(item => item.filename)
-    const resolved = resolveReleaseAssetUrls(`v${version}`, expectedFilenames)
-    resolvedReleaseId = resolved.releaseId
+    const resolved = resolveReleaseAssetUrls(releaseId, expectedFilenames)
     assertReleaseAssetsPresent(version, artifactOptions, resolved.assetUrlByFilename)
     downloadOptions = {
       downloadSlug,
@@ -159,11 +157,8 @@ function main() {
   }
 
   writeGithubOutput('release_body', releaseBody)
-  if (resolvedReleaseId) {
-    writeGithubOutput('release_id', resolvedReleaseId)
-  }
   process.stdout.write(
-    `[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}${resolvedReleaseId ? `, release=#${resolvedReleaseId}` : `, slug=${downloadSlug}`}）\n`,
+    `[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}${releaseId ? `, release=#${releaseId}` : `, slug=${downloadSlug}`}）\n`,
   )
 }
 
