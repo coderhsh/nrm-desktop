@@ -264,6 +264,13 @@ jobs:
 
       - name: Build release body
         id: body
+        env:
+          RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
+          RELEASE_BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
+          RELEASE_BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
+          RELEASE_WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
+          RELEASE_WINDOWS_MSI: ${{ inputs.windows_msi }}
+          RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
         run: |
           node ./scripts/build-release-body.mjs \
             --version "${{ needs.prepare-release.outputs.version }}" \

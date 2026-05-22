@@ -1,6 +1,6 @@
-# Installation Guide
+# Download Links
 
-Download packages from the [GitHub Releases](https://github.com/coderhsh/nrm-desktop/releases) page.
+Download packages from the [GitHub Releases](https://github.com/coderhsh/nrm-desktop/releases) page. On each release, file names such as **`.dmg`**, **`setup.exe`**, **`.zip`**, and **`.msi`** are clickable download links.
 
 ## macOS
 
