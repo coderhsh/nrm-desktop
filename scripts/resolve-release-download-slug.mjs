@@ -135,6 +135,18 @@ export function resolveDownloadSlugFromReleaseData(release, tag) {
 }
 
 /**
+ * @param {string} releaseId
+ * @param {string} tag
+ * @returns {string}
+ */
+export function resolveDownloadSlugFromReleaseId(releaseId, tag) {
+  const repository = resolveGitHubRepository()
+  const releaseRaw = runCommand('gh', ['api', `repos/${repository}/releases/${releaseId}`])
+  const release = JSON.parse(releaseRaw)
+  return resolveDownloadSlugFromReleaseData(release, tag)
+}
+
+/**
  * Draft Release 不会创建 git tag，`/releases/tags/{tag}` 会 404。
  * 优先用 `gh release view` 按 release 的 tagName 查找（含 draft）。
  * @param {string} tag
@@ -149,11 +161,13 @@ function fetchReleaseByTag(tag) {
   } catch (error) {
     const listRaw = runCommand('gh', [
       'release', 'list',
-      '--json', 'tagName,isDraft,assets',
+      '--json', 'databaseId,tagName,isDraft,assets',
       '--limit', '100',
     ])
     const releases = JSON.parse(listRaw)
-    const matched = releases.find(item => item?.tagName === tag)
+    const matched = releases
+      .filter(item => item?.tagName === tag)
+      .sort((left, right) => (right.databaseId ?? 0) - (left.databaseId ?? 0))[0]
     if (!matched) {
       throw error
     }
@@ -177,10 +191,15 @@ function main() {
     throw new Error('[resolve-release-download-slug] 缺少参数 --version')
   }
 
+  const releaseId = parseArgValue('--release-id')
   const tag = `v${version}`
-  const downloadSlug = resolveDownloadSlugFromRelease(tag)
+  const downloadSlug = releaseId
+    ? resolveDownloadSlugFromReleaseId(releaseId, tag)
+    : resolveDownloadSlugFromRelease(tag)
   writeGithubOutput('download_slug', downloadSlug)
-  process.stdout.write(`[resolve-release-download-slug] ${tag} -> ${downloadSlug}\n`)
+  process.stdout.write(
+    `[resolve-release-download-slug] ${tag}${releaseId ? ` (#${releaseId})` : ''} -> ${downloadSlug}\n`,
+  )
 }
 
 const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))

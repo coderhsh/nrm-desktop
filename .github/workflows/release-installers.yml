@@ -353,6 +353,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create GitHub Release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.prepare-release.outputs.version }}
@@ -382,7 +383,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node ./scripts/resolve-release-download-slug.mjs \
-            --version "${{ needs.prepare-release.outputs.version }}"
+            --version "${{ needs.prepare-release.outputs.version }}" \
+            --release-id "${{ steps.create_release.outputs.id }}"
 
       - name: Build and update release body
         env:
