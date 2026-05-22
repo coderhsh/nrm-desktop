@@ -1,11 +1,9 @@
-/* @desc 发布前准备：bump 版本、同步 Tauri/Cargo、归档 CHANGELOG，并输出 Release body。 */
+/* @desc 发布前准备：bump 版本、同步 Tauri/Cargo、归档 CHANGELOG。 */
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { buildChangelogLinksLine, buildReleaseInstallSection } from './render-release-install-guide.mjs'
-import { normalizeReleaseArtifactOptions } from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -191,7 +189,7 @@ function archiveChangelogSection(content, unreleasedLabel, version, date) {
  * @param {string} version
  * @returns {string}
  */
-function extractChangelogVersionSection(content, version) {
+export function extractChangelogVersionSection(content, version) {
   const headerRegex = new RegExp(`^## \\[${escapeRegExp(version)}\\] - \\d{4}-\\d{2}-\\d{2}`, 'm')
   const start = content.search(headerRegex)
   if (start === -1) {
@@ -251,75 +249,21 @@ function escapeRegExp(value) {
 }
 
 /**
- * @param {string} value
- * @param {boolean} fallback
- * @returns {boolean}
- */
-function parseEnvBoolean(value, fallback) {
-  if (value === undefined || value === null || value === '') {
-    return fallback
-  }
-  return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase())
-}
-
-/**
- * @returns {import('./artifact-names.mjs').ReleaseArtifactOptions}
- */
-function readReleaseArtifactOptionsFromEnv() {
-  return normalizeReleaseArtifactOptions({
-    buildWindowsX64: parseEnvBoolean(process.env.RELEASE_BUILD_WINDOWS_X64, true),
-    buildMacosX64: parseEnvBoolean(process.env.RELEASE_BUILD_MACOS_X64, false),
-    buildMacosArm64: parseEnvBoolean(process.env.RELEASE_BUILD_MACOS_ARM64, true),
-    windowsSetupExe: parseEnvBoolean(process.env.RELEASE_WINDOWS_SETUP_EXE, true),
-    windowsMsi: parseEnvBoolean(process.env.RELEASE_WINDOWS_MSI, true),
-    windowsPortableZip: parseEnvBoolean(process.env.RELEASE_WINDOWS_PORTABLE_ZIP, true),
-  })
-}
-
-/**
- * @param {string} englishSection
- * @returns {string}
- */
-function stripChangelogVersionHeader(englishSection) {
-  return englishSection.trim().replace(/^## \[[^\]]+\] - \d{4}-\d{2}-\d{2}\n+/m, '')
-}
-
-/**
- * @param {string} version
- * @param {string} englishSection
- * @returns {string}
- */
-function buildReleaseNotesSection(version, englishSection) {
-  const content = stripChangelogVersionHeader(englishSection)
-  return `## Release Notes
-
-${content}
-
-${buildChangelogLinksLine(version)}`
-}
-
-/**
- * @param {string} version
- * @param {string} englishSection
- * @param {import('./artifact-names.mjs').ReleaseArtifactOptions} artifactOptions
- * @returns {string}
- */
-function buildReleaseBody(version, englishSection, artifactOptions) {
-  const releaseNotes = buildReleaseNotesSection(version, englishSection)
-  const installSection = buildReleaseInstallSection(version, artifactOptions)
-  return `${releaseNotes}
-
----
-
-${installSection}`
-}
-
-/**
  * @param {string} version
  * @returns {string}
  */
-function readExistingEnglishReleaseSection(version) {
+export function readEnglishReleaseSection(version) {
   const changelogPath = path.join(rootDir, 'CHANGELOG.md')
+  const raw = readFileSync(changelogPath, 'utf8')
+  return extractChangelogVersionSection(raw, version)
+}
+
+/**
+ * @param {string} version
+ * @returns {string}
+ */
+export function readChineseReleaseSection(version) {
+  const changelogPath = path.join(rootDir, 'CHANGELOG.zh-CN.md')
   const raw = readFileSync(changelogPath, 'utf8')
   return extractChangelogVersionSection(raw, version)
 }
@@ -372,19 +316,14 @@ function main() {
 
   validateModeAndVersion(mode, version, currentVersion)
 
-  let englishReleaseSection = ''
-
   if (mode === 'fresh') {
     const date = new Date().toISOString().slice(0, 10)
 
     for (const [fileName, unreleasedLabel] of CHANGELOG_FILES) {
       const filePath = path.join(rootDir, fileName)
       const raw = readFileSync(filePath, 'utf8')
-      const { content, releaseSection } = archiveChangelogSection(raw, unreleasedLabel, version, date)
+      const { content } = archiveChangelogSection(raw, unreleasedLabel, version, date)
       writeFileSync(filePath, content, 'utf8')
-      if (fileName === 'CHANGELOG.md') {
-        englishReleaseSection = releaseSection
-      }
     }
 
     pkg.version = version
@@ -392,22 +331,25 @@ function main() {
     syncAppVersionFromPackageJson()
     writeGithubOutput('skip_commit', 'false')
   } else {
-    englishReleaseSection = readExistingEnglishReleaseSection(version)
     writeGithubOutput('skip_commit', 'true')
     process.stdout.write(`[prepare-release] ${mode} 模式：跳过版本 bump 与 CHANGELOG 归档\n`)
   }
 
-  const releaseBody = buildReleaseBody(version, englishReleaseSection, readReleaseArtifactOptionsFromEnv())
   writeGithubOutput('version', version)
-  writeGithubOutput('release_body', releaseBody)
   writeGithubOutput('prepare_mode', mode)
 
   process.stdout.write(`[prepare-release] 已准备发布 v${version}（mode=${mode}）\n`)
 }
 
-try {
-  main()
-} catch (error) {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
-  process.exit(1)
+const invokedDirectly =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(__filename)
+
+if (invokedDirectly) {
+  try {
+    main()
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+    process.exit(1)
+  }
 }

@@ -114,7 +114,6 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
       commit_sha: ${{ steps.push.outputs.commit_sha }}
-      release_body: ${{ steps.release.outputs.release_body }}
       skip_commit: ${{ steps.release.outputs.skip_commit }}
       prepare_mode: ${{ steps.release.outputs.prepare_mode }}
 
@@ -131,13 +130,6 @@ jobs:
 
       - name: Bump version and archive changelog
         id: release
-        env:
-          RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
-          RELEASE_BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
-          RELEASE_BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
-          RELEASE_WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
-          RELEASE_WINDOWS_MSI: ${{ inputs.windows_msi }}
-          RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
         run: |
           node ./scripts/prepare-release.mjs \
             --version "${{ inputs.version }}" \
@@ -264,10 +256,18 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
+      - name: Checkout release commit
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.prepare-release.outputs.commit_sha }}
           fetch-depth: 0
+
+      - name: Build release body
+        id: body
+        run: |
+          node ./scripts/build-release-body.mjs \
+            --version "${{ needs.prepare-release.outputs.version }}" \
+            --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}"
 
       - name: Remove orphan tag before retry publish
         if: needs.check-release.outputs.prepare_mode == 'retry'
@@ -347,7 +347,7 @@ jobs:
           tag_name: v${{ needs.prepare-release.outputs.version }}
           name: nrm-desktop v${{ needs.prepare-release.outputs.version }}
           target_commitish: ${{ needs.prepare-release.outputs.commit_sha }}
-          body: ${{ needs.prepare-release.outputs.release_body }}
+          body: ${{ steps.body.outputs.release_body }}
           files: release-assets/**/*
           draft: ${{ inputs.draft_release }}
           prerelease: false
