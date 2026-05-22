@@ -497,6 +497,32 @@ html:not(.dark) .el-message-box.app-reset-defaults-messagebox .el-message-box__b
   transform: scale(0.98);
 }
 
+/* 信息确认弹窗（如已是最新版本）：确认键与设置抽屉「保存」一致 */
+.el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary {
+  min-width: 5.5rem;
+  padding: 0 1.15rem;
+  background: linear-gradient(180deg, var(--app-category-save-light-top) 0%, var(--app-category-save-light-mid) 52%, var(--app-category-save-light-bot) 100%) !important;
+  border: 1px solid var(--app-category-save-light-border) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    var(--app-category-save-light-shadow) !important;
+}
+
+html:not(.dark) .el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary:hover,
+html:not(.dark) .el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary:focus {
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
+}
+
+.el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary:active {
+  transform: scale(0.98);
+}
+
 /* Drawer slide */
 .el-drawer {
   transition:
@@ -2321,6 +2347,29 @@ html.dark .el-message-box.app-reset-defaults-messagebox .app-reset-defaults-mess
   border-color: var(--el-color-danger) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 16px color-mix(in srgb, var(--el-color-danger) 45%, transparent) !important;
+}
+
+html.dark .el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary {
+  background: linear-gradient(180deg, #76767a 0%, #5c5c60 52%, #515155 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fafafa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary:hover,
+html.dark .el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary:focus {
+  background: linear-gradient(180deg, #838387 0%, #68686d 52%, #5a5a5e 100%) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 14px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.dark .el-message-box.app-info-confirm-messagebox .app-info-confirm-messagebox__btn-confirm.el-button--primary:active {
+  transform: scale(0.98);
 }
 
 /* Dark: loading mask */
