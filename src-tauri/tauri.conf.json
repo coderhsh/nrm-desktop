@@ -25,20 +25,12 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.ico",
-      "icons/icon.icns"
-    ]
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico", "icons/icon.icns"]
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJERDQ4RjMyREY1RDhDMjQKUldRa2pGM2ZNby9Vdlk3NXdqcnZmOVcwSDZSU2FFVTRxbzRWbUptSTltQ3czeXlCc1VzM2ZTWHQK",
-      "endpoints": [
-        "https://github.com/coderhsh/nrm-desktop/releases/download/updater/latest.json"
-      ]
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJGQzFGRTMwQjg2RDBBMTQKUldRVUNtMjRNUDdCTDVmMWxVSnEvdGQxNldzUlZZYzZ2YS8rWUtxRC9kdDhEcWJqVEVwR2tFVGQK",
+      "endpoints": ["https://github.com/coderhsh/nrm-desktop/releases/download/updater/latest.json"]
     }
   }
 }
