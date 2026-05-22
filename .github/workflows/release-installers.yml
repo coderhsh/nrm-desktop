@@ -407,13 +407,7 @@ jobs:
             --release-tag "$TAG" \
             --output-file release-assets/latest.json
 
-          if ! gh release view updater >/dev/null 2>&1; then
-            gh release create updater \
-              --title "nrm-desktop updater manifest" \
-              --notes "Static manifest consumed by Tauri in-app updater. Do not delete." \
-              --draft=false
-          fi
-
-          gh release upload "$TAG" release-assets/latest.json --clobber
-          gh release upload updater release-assets/latest.json --clobber
-          gh release edit updater --draft=false
+          node ./scripts/publish-updater-manifest.mjs \
+            --manifest-file release-assets/latest.json \
+            --version-tag "$TAG" \
+            --target-ref "${{ needs.prepare-release.outputs.commit_sha }}"
