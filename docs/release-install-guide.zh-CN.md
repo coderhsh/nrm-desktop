@@ -1,6 +1,6 @@
-# 安装说明
+# 下载地址
 
-请前往 [GitHub Releases](https://github.com/coderhsh/nrm-desktop/releases) 页面下载安装包。
+请前往 [GitHub Releases](https://github.com/coderhsh/nrm-desktop/releases) 页面下载安装包。每个版本的 Release 页面中，**`.dmg`**、**`setup.exe`**、**`.zip`**、**`.msi`** 等文件名均为可直接点击的下载链接。
 
 ## macOS
 

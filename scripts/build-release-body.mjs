@@ -3,7 +3,7 @@ import { appendFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { buildChangelogLinksLine, buildReleaseInstallSection } from './render-release-install-guide.mjs'
+import { buildChangelogLinksLine, buildReleaseInstallSection, readReleaseArtifactOptionsFromEnv } from './render-release-install-guide.mjs'
 import { readChineseReleaseSection, readEnglishReleaseSection } from './prepare-release.mjs'
 
 /**
@@ -78,9 +78,9 @@ ${buildChangelogLinksLine(commitSha)}`
  * @param {string} commitSha
  * @returns {string}
  */
-export function buildReleaseBody(version, englishSection, chineseSection, commitSha) {
+export function buildReleaseBody(version, englishSection, chineseSection, commitSha, artifactOptions) {
   const releaseNotes = buildReleaseNotesSection(englishSection, chineseSection, commitSha)
-  const installSection = buildReleaseInstallSection(commitSha)
+  const installSection = buildReleaseInstallSection(version, artifactOptions)
   return `${releaseNotes}
 
 ---
@@ -101,7 +101,13 @@ function main() {
 
   const englishSection = readEnglishReleaseSection(version)
   const chineseSection = readChineseReleaseSection(version)
-  const releaseBody = buildReleaseBody(version, englishSection, chineseSection, commitSha)
+  const releaseBody = buildReleaseBody(
+    version,
+    englishSection,
+    chineseSection,
+    commitSha,
+    readReleaseArtifactOptionsFromEnv(),
+  )
 
   writeGithubOutput('release_body', releaseBody)
   process.stdout.write(`[build-release-body] 已生成 v${version} Release body（commit=${commitSha.slice(0, 7)}）\n`)
