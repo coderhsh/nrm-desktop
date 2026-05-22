@@ -17,13 +17,6 @@ const RELEASE_TEMPLATE_FILE = path.join(rootDir, 'docs', 'release-install-guide.
 /** @type {readonly ('setup' | 'portable' | 'msi')[]} */
 const WINDOWS_KIND_ORDER = ['setup', 'portable', 'msi']
 
-/** @type {Record<'en' | 'zh', string>} */
-const DOWNLOADS_INTRO_COPY = {
-  en:
-    'Expand the download section for your operating system. Each link includes a short description to help you choose the right installer.',
-  zh: '请展开对应操作系统的下载区块。每个下载链接后附有简要说明，便于选择适合的安装包。',
-}
-
 /** @type {Record<'en' | 'zh', Record<'aarch64' | 'x64', string>>>} */
 const MACOS_ITEM_COPY = {
   en: {
@@ -362,7 +355,7 @@ function buildLocalizedDownloadsContent(macArtifacts, winArtifacts, repository, 
     return DOWNLOADS_TEXT[locale].noPackages
   }
 
-  return `${DOWNLOADS_INTRO_COPY[locale]}\n\n${sections.join('\n\n')}`
+  return sections.join('\n\n')
 }
 
 /**
