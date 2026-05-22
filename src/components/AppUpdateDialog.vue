@@ -5,15 +5,15 @@ import {
   useAppUpdate,
 } from '@/composables/useAppUpdate'
 import { useI18n } from '@/composables/useI18n'
+import { renderMarkdown } from '@/utils/renderMarkdown'
 
 const { t } = useI18n()
 const appUpdate = useAppUpdate()
 
 const update = computed(() => appUpdate.updateInfo.value)
-const releaseNotes = computed(() => {
-  const body = update.value?.body?.trim()
-  return body || t('app.update.noReleaseNotes')
-})
+const releaseNotesBody = computed(() => update.value?.body?.trim() ?? '')
+const hasReleaseNotes = computed(() => releaseNotesBody.value.length > 0)
+const releaseNotesHtml = computed(() => renderMarkdown(releaseNotesBody.value))
 const currentVersion = computed(() => update.value?.currentVersion ?? '-')
 const newVersion = computed(() => update.value?.version ?? '-')
 const updateDate = computed(() => update.value?.date ?? '-')
@@ -82,7 +82,16 @@ async function handlePrimaryAction() {
 
       <section class="app-update-notes">
         <h4>{{ t('app.update.releaseNotes') }}</h4>
-        <pre>{{ releaseNotes }}</pre>
+        <!-- eslint-disable vue/no-v-html -- Release notes are rendered with markdown-it (html disabled). -->
+        <div
+          v-if="hasReleaseNotes"
+          class="app-update-notes-content"
+          v-html="releaseNotesHtml"
+        />
+        <!-- eslint-enable vue/no-v-html -->
+        <p v-else class="app-update-notes-empty">
+          {{ t('app.update.noReleaseNotes') }}
+        </p>
       </section>
 
       <section
@@ -181,7 +190,8 @@ async function handlePrimaryAction() {
   font-weight: 600;
 }
 
-.app-update-notes pre {
+.app-update-notes-content,
+.app-update-notes-empty {
   max-height: 180px;
   margin: 0;
   padding: 10px 12px;
@@ -190,10 +200,86 @@ async function handlePrimaryAction() {
   border-radius: 8px;
   background: var(--el-fill-color-blank);
   color: var(--el-text-color-regular);
-  font-family: inherit;
   font-size: 12px;
   line-height: 1.6;
-  white-space: pre-wrap;
+  cursor: default;
+  user-select: text;
+}
+
+.app-update-notes-empty {
+  color: var(--el-text-color-secondary);
+}
+
+.app-update-notes-content :deep(p),
+.app-update-notes-content :deep(ul),
+.app-update-notes-content :deep(ol),
+.app-update-notes-content :deep(blockquote) {
+  margin: 0 0 8px;
+}
+
+.app-update-notes-content :deep(p:last-child),
+.app-update-notes-content :deep(ul:last-child),
+.app-update-notes-content :deep(ol:last-child),
+.app-update-notes-content :deep(blockquote:last-child) {
+  margin-bottom: 0;
+}
+
+.app-update-notes-content :deep(h1),
+.app-update-notes-content :deep(h2),
+.app-update-notes-content :deep(h3),
+.app-update-notes-content :deep(h4),
+.app-update-notes-content :deep(h5),
+.app-update-notes-content :deep(h6) {
+  margin: 0 0 8px;
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.app-update-notes-content :deep(ul),
+.app-update-notes-content :deep(ol) {
+  padding-left: 1.25rem;
+}
+
+.app-update-notes-content :deep(li + li) {
+  margin-top: 4px;
+}
+
+.app-update-notes-content :deep(code) {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--el-fill-color-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+}
+
+.app-update-notes-content :deep(pre) {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+}
+
+.app-update-notes-content :deep(pre code) {
+  padding: 0;
+  background: transparent;
+}
+
+.app-update-notes-content :deep(a) {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+
+.app-update-notes-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.app-update-notes-content :deep(blockquote) {
+  padding-left: 10px;
+  border-left: 3px solid var(--el-border-color);
+  color: var(--el-text-color-secondary);
 }
 
 .app-update-progress {

@@ -120,7 +120,13 @@ async function handleCheckForUpdates() {
       openDialog: true,
     })
     if (!update) {
-      ElMessage.success(t('app.update.upToDate'))
+      await ElMessageBox.alert(t('app.update.upToDate'), t('app.update.upToDateTitle'), {
+        confirmButtonText: t('common.confirm'),
+        type: 'success',
+        customClass: 'app-reset-defaults-messagebox',
+        confirmButtonClass: 'app-reset-defaults-messagebox__btn-confirm',
+        showClose: false,
+      })
     }
   } catch (error) {
     if (isUpdateUnavailableError(error)) {

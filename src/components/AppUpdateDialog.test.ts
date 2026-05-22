@@ -42,7 +42,7 @@ vi.mock('@/composables/useI18n', () => ({
         'app.update.noReleaseNotes': '该版本未提供更新日志。',
         'app.update.downloadProgress': '下载进度',
         'app.update.downloadAndInstall': '下载更新',
-        'app.update.installAndRestart': '退出并安装',
+        'app.update.installAndRestart': '重启并更新',
         'common.cancel': '取消',
       }
       return map[key] ?? key
@@ -69,6 +69,33 @@ describe('AppUpdateDialog', () => {
     appUpdateState.downloadStatusText.value = '0 B'
     appUpdateState.hasUpdate.value = true
     appUpdateState.showIndicator.value = true
+  })
+
+  it('renders markdown release notes as read-only content', () => {
+    appUpdateState.updateInfo.value = {
+      currentVersion: '1.0.1',
+      version: '1.0.2',
+      date: '2026-05-22T00:00:00.000Z',
+      body: '## Changed\n\n- **Bold item**',
+    }
+
+    const wrapper = mount(AppUpdateDialog, {
+      global: {
+        stubs: {
+          ElDialog: {
+            template: '<div><slot /><slot name="footer" /></div>',
+          },
+          ElButton: {
+            template: '<button><slot /></button>',
+          },
+          ElProgress: true,
+        },
+      },
+    })
+
+    expect(wrapper.find('.app-update-notes-content').exists()).toBe(true)
+    expect(wrapper.find('.app-update-notes-content pre').exists()).toBe(false)
+    expect(wrapper.find('.app-update-notes-content').html()).toContain('<strong>Bold item</strong>')
   })
 
   it('renders version info and download action when an update is available', () => {
@@ -111,7 +138,7 @@ describe('AppUpdateDialog', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('退出并安装')
+    expect(wrapper.text()).toContain('重启并更新')
     expect(wrapper.text()).toContain('10 B / 10 B')
   })
 })
