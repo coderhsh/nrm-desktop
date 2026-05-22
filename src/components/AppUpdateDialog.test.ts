@@ -71,6 +71,33 @@ describe('AppUpdateDialog', () => {
     appUpdateState.showIndicator.value = true
   })
 
+  it('renders markdown release notes as read-only content', () => {
+    appUpdateState.updateInfo.value = {
+      currentVersion: '1.0.1',
+      version: '1.0.2',
+      date: '2026-05-22T00:00:00.000Z',
+      body: '## Changed\n\n- **Bold item**',
+    }
+
+    const wrapper = mount(AppUpdateDialog, {
+      global: {
+        stubs: {
+          ElDialog: {
+            template: '<div><slot /><slot name="footer" /></div>',
+          },
+          ElButton: {
+            template: '<button><slot /></button>',
+          },
+          ElProgress: true,
+        },
+      },
+    })
+
+    expect(wrapper.find('.app-update-notes-content').exists()).toBe(true)
+    expect(wrapper.find('.app-update-notes-content pre').exists()).toBe(false)
+    expect(wrapper.find('.app-update-notes-content').html()).toContain('<strong>Bold item</strong>')
+  })
+
   it('renders version info and download action when an update is available', () => {
     const wrapper = mount(AppUpdateDialog, {
       global: {
