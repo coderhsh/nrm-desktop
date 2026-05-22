@@ -42,7 +42,7 @@ vi.mock('@/composables/useI18n', () => ({
         'app.update.noReleaseNotes': '该版本未提供更新日志。',
         'app.update.downloadProgress': '下载进度',
         'app.update.downloadAndInstall': '下载更新',
-        'app.update.installAndRestart': '退出并安装',
+        'app.update.installAndRestart': '重启并更新',
         'common.cancel': '取消',
       }
       return map[key] ?? key
@@ -138,7 +138,7 @@ describe('AppUpdateDialog', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('退出并安装')
+    expect(wrapper.text()).toContain('重启并更新')
     expect(wrapper.text()).toContain('10 B / 10 B')
   })
 })
