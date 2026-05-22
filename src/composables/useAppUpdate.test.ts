@@ -145,6 +145,41 @@ describe('useAppUpdate', () => {
     expect(appUpdate.updateInfo.value).toBeNull()
   })
 
+  it('preserves downloaded state when rechecking the same version', async () => {
+    const update = createFakeUpdate('2.0.0')
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+    await appUpdate.downloadUpdate()
+    await appUpdate.closeUpdateDialog()
+
+    expect(appUpdate.downloaded.value).toBe(true)
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: false })
+
+    expect(appUpdate.downloaded.value).toBe(true)
+    expect(appUpdate.showIndicator.value).toBe(true)
+  })
+
+  it('clears downloaded state when a different version is available', async () => {
+    const firstUpdate = createFakeUpdate('2.0.0')
+    const secondUpdate = createFakeUpdate('2.1.0')
+    mocks.check.mockResolvedValueOnce(firstUpdate).mockResolvedValueOnce(secondUpdate)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+    await appUpdate.downloadUpdate()
+    expect(appUpdate.downloaded.value).toBe(true)
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: false })
+
+    expect(appUpdate.downloaded.value).toBe(false)
+    expect(appUpdate.updateInfo.value).toBe(secondUpdate)
+  })
+
   it('maps missing updater manifest errors to a clearer message', async () => {
     const { formatUpdateError } = await loadComposable()
 

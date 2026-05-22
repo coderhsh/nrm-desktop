@@ -113,6 +113,11 @@ async function openAboutInfo() {
 }
 
 async function handleCheckForUpdates() {
+  if (appUpdate.downloaded.value && appUpdate.updateInfo.value) {
+    appUpdate.openUpdateDialog()
+    return
+  }
+
   try {
     const update = await appUpdate.checkForUpdate({
       force: true,
@@ -123,8 +128,8 @@ async function handleCheckForUpdates() {
       await ElMessageBox.alert(t('app.update.upToDate'), t('app.update.upToDateTitle'), {
         confirmButtonText: t('common.confirm'),
         type: 'success',
-        customClass: 'app-reset-defaults-messagebox',
-        confirmButtonClass: 'app-reset-defaults-messagebox__btn-confirm',
+        customClass: 'app-reset-defaults-messagebox app-info-confirm-messagebox',
+        confirmButtonClass: 'app-info-confirm-messagebox__btn-confirm',
         showClose: false,
       })
     }

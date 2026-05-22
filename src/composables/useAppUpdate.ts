@@ -93,10 +93,14 @@ async function checkForUpdate(options: CheckForUpdateOptions = {}): Promise<Upda
 
   checking.value = true
   try {
+    const previousVersion = updateInfo.value?.version
+    const wasDownloaded = downloaded.value
     const update = await check()
     lastCheckAt.value = Date.now()
     updateInfo.value = update
-    resetDownloadState()
+    if (!(update && wasDownloaded && update.version === previousVersion)) {
+      resetDownloadState()
+    }
 
     if (update && openDialog && (!silent || dismissedVersion.value !== update.version)) {
       dialogVisible.value = true
@@ -143,6 +147,10 @@ function dismissCurrentUpdate() {
   if (updateInfo.value?.version) {
     dismissedVersion.value = updateInfo.value.version
   }
+  dialogVisible.value = false
+}
+
+function closeUpdateDialog() {
   dialogVisible.value = false
 }
 
@@ -209,6 +217,7 @@ export function useAppUpdate() {
     downloadUpdate,
     installAndRestart,
     dismissCurrentUpdate,
+    closeUpdateDialog,
     openUpdateDialog,
   }
 }

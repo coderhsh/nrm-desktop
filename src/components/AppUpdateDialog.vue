@@ -6,8 +6,9 @@ import {
 } from '@/composables/useAppUpdate'
 import { useI18n } from '@/composables/useI18n'
 import { renderMarkdown } from '@/utils/renderMarkdown'
+import { formatUpdatePublishDate } from '@/utils/formatLocaleDate'
 
-const { t } = useI18n()
+const { t, language } = useI18n()
 const appUpdate = useAppUpdate()
 
 const update = computed(() => appUpdate.updateInfo.value)
@@ -16,22 +17,34 @@ const hasReleaseNotes = computed(() => releaseNotesBody.value.length > 0)
 const releaseNotesHtml = computed(() => renderMarkdown(releaseNotesBody.value))
 const currentVersion = computed(() => update.value?.currentVersion ?? '-')
 const newVersion = computed(() => update.value?.version ?? '-')
-const updateDate = computed(() => update.value?.date ?? '-')
+const updateDate = computed(() => formatUpdatePublishDate(update.value?.date, language.value))
 const dialogTitle = computed(() => (
   appUpdate.downloaded.value ? t('app.update.readyTitle') : t('app.update.availableTitle')
 ))
 const primaryButtonText = computed(() => (
   appUpdate.downloaded.value ? t('app.update.installAndRestart') : t('app.update.downloadAndInstall')
 ))
+const secondaryButtonText = computed(() => (
+  appUpdate.downloaded.value ? t('app.update.restartLater') : t('common.cancel')
+))
 
 function handleBeforeClose(done: () => void) {
   if (appUpdate.downloading.value || appUpdate.installing.value) return
-  appUpdate.dismissCurrentUpdate()
+  if (appUpdate.downloaded.value) {
+    appUpdate.closeUpdateDialog()
+  } else {
+    appUpdate.dismissCurrentUpdate()
+  }
   done()
 }
 
-function handleCancel() {
+function handleSecondaryAction() {
   if (appUpdate.downloading.value || appUpdate.installing.value) return
+  if (appUpdate.downloaded.value) {
+    appUpdate.closeUpdateDialog()
+    ElMessage.info(t('app.update.restartLaterHint'))
+    return
+  }
   appUpdate.dismissCurrentUpdate()
 }
 
@@ -107,6 +120,9 @@ async function handlePrimaryAction() {
           :indeterminate="appUpdate.downloading.value && appUpdate.downloadProgress.value === null"
           :status="appUpdate.downloaded.value ? 'success' : undefined"
         />
+        <p v-if="appUpdate.downloaded.value" class="app-update-ready-hint">
+          {{ t('app.update.readyHint') }}
+        </p>
       </section>
     </div>
 
@@ -114,9 +130,9 @@ async function handlePrimaryAction() {
       <div class="category-manage-dialog-footer">
         <el-button
           :disabled="appUpdate.downloading.value || appUpdate.installing.value"
-          @click="handleCancel"
+          @click="handleSecondaryAction"
         >
-          {{ t('common.cancel') }}
+          {{ secondaryButtonText }}
         </el-button>
         <el-button
           type="primary"
@@ -294,5 +310,12 @@ async function handlePrimaryAction() {
   gap: 12px;
   color: var(--el-text-color-secondary);
   font-size: 12px;
+}
+
+.app-update-ready-hint {
+  margin: 0;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>
