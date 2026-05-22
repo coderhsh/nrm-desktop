@@ -159,6 +159,14 @@ export function buildReleaseAssetUrlMap(release) {
 
 /**
  * @param {string} releaseId
+ * @returns {Record<string, string>}
+ */
+export function fetchReleaseAssetUrlMap(releaseId) {
+  return buildReleaseAssetUrlMap(fetchReleaseById(releaseId))
+}
+
+/**
+ * @param {string} releaseId
  * @param {number} [maxAttempts]
  * @returns {unknown}
  */

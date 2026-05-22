@@ -144,4 +144,11 @@ describe('useAppUpdate', () => {
     expect(formatUpdateError(new Error('network unavailable'))).toBe('network unavailable')
     expect(appUpdate.updateInfo.value).toBeNull()
   })
+
+  it('maps missing updater manifest errors to a clearer message', async () => {
+    const { formatUpdateError } = await loadComposable()
+
+    expect(formatUpdateError(new Error('Could not fetch a valid release JSON from the remote')))
+      .toContain('latest.json')
+  })
 })
