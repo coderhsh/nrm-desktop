@@ -8,7 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
- test
+
+### Added
+
+- In-app auto-update via Tauri updater: silent check on startup (at most once every 24 hours), manual check from Settings, and an update dialog with release notes
+- Download progress, install-and-restart flow, and per-version dismiss in the update dialog
+- CI release pipeline generates signed updater artifacts and publishes `latest.json` to the fixed `updater` release for clients to consume
+
+### Changed
+
+- Installer builds in CI now require updater signing secrets and embed the updater public key at build time
+
 ## [1.0.1] - 2026-05-21
 
 ### Added
