@@ -54,6 +54,8 @@ const DOWNLOADS_TEXT = {
     osWindowsSummary: '💻 Windows',
     windowsRequirements:
       'Windows 10 / 11 x64 (Windows 7 not supported). [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) required.',
+    macosGatekeeperNote:
+      'If macOS says the app is **damaged**, it is usually Gatekeeper blocking an unsigned download — the app is not corrupted. Remove quarantine: `xattr -cr /Applications/nrm-desktop.app`, or right-click the app in Finder and choose **Open** once.',
     standardHeader: 'Standard (recommended)',
     chineseGuideSummary: '下载指引（中文）',
     noPackages: 'No installation packages were built for this release.',
@@ -63,6 +65,8 @@ const DOWNLOADS_TEXT = {
     osWindowsSummary: '💻 Windows',
     windowsRequirements:
       'Windows 10 / 11 x64（不支持 Windows 7）。需安装 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。',
+    macosGatekeeperNote:
+      '若提示应用「已损坏」，通常是 macOS Gatekeeper 拦截未公证的下载包，并非文件损坏。可在终端执行 `xattr -cr /Applications/nrm-desktop.app` 清除隔离属性，或在 Finder 中右键应用选择「打开」一次。',
     standardHeader: '正常版本（推荐）',
     chineseGuideSummary: '下载指引（中文）',
     noPackages: '本次 Release 未构建任何安装包。',
@@ -284,6 +288,8 @@ function buildMacosSection(macArtifacts, repository, downloadSlug, locale, asset
 
   return `<details open>
 <summary><b>${text.osMacosSummary}</b></summary>
+
+${text.macosGatekeeperNote}
 
 ${items}
 

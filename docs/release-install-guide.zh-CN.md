@@ -8,6 +8,11 @@
 
 下载后双击 `.dmg` 文件，将应用拖入「应用程序」文件夹即可完成安装。
 
+若提示「**nrm-desktop.app 已损坏，无法打开**」，通常是 macOS Gatekeeper 拦截未公证的下载包，并非文件损坏。可任选其一：
+
+1. 终端执行：`xattr -cr /Applications/nrm-desktop.app`
+2. 在 Finder 中右键应用，选择「打开」一次
+
 > **说明**：默认 Release 提供 Apple Silicon 版本。如需 Intel Mac 版本，可通过 CI 手动构建获取。
 
 ## Windows
