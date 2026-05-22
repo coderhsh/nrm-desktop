@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import {
   getWindowsMsiArtifactName,
   getWindowsSetupArtifactName,
+  getUpdaterSignatureArtifactName,
 } from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
@@ -267,6 +268,7 @@ async function renameMsiFilesStripLocaleSuffix() {
  */
 async function renameWindowsInstallers(version) {
   const setupTarget = path.join(bundleDir, 'nsis', getWindowsSetupArtifactName(version))
+  const setupSignatureTarget = path.join(bundleDir, 'nsis', getUpdaterSignatureArtifactName(getWindowsSetupArtifactName(version)))
   const msiTarget = path.join(bundleDir, 'msi', getWindowsMsiArtifactName(version))
 
   const nsisDir = path.join(bundleDir, 'nsis')
@@ -282,15 +284,26 @@ async function renameWindowsInstallers(version) {
         : exeFiles.sort((left, right) => right.localeCompare(left))[0]
 
       if (sourcePath !== setupTarget) {
+        const sourceSignaturePath = `${sourcePath}.sig`
         if (await pathExists(setupTarget)) {
           await fs.rm(setupTarget, { force: true })
         }
         await fs.rename(sourcePath, setupTarget)
+        if (await pathExists(sourceSignaturePath)) {
+          if (await pathExists(setupSignatureTarget)) {
+            await fs.rm(setupSignatureTarget, { force: true })
+          }
+          await fs.rename(sourceSignaturePath, setupSignatureTarget)
+        }
       }
 
       for (const filePath of exeFiles) {
         if (filePath !== setupTarget) {
           await fs.rm(filePath, { force: true })
+        }
+        const signaturePath = `${filePath}.sig`
+        if (signaturePath !== setupSignatureTarget && await pathExists(signaturePath)) {
+          await fs.rm(signaturePath, { force: true })
         }
       }
     }
@@ -397,6 +410,11 @@ function runTauriBuildWin(selection) {
   const basePath = process.env.PATH ?? ''
   const pathParts = basePath.split(path.delimiter).filter(Boolean)
   const mergedPath = [...new Set([...EXTRA_PATH_DIRS, ...pathParts])].join(path.delimiter)
+  const buildConfig = {
+    bundle: {
+      createUpdaterArtifacts: shouldCreateUpdaterArtifacts(),
+    },
+  }
 
   /** @type {string[]} */
   const args = ['tauri', 'build', '--target', WIN_TARGET]
@@ -413,10 +431,7 @@ function runTauriBuildWin(selection) {
      * 即使指定了 Windows target，也会拒绝 `nsis/msi`（仅识别 dmg/app 等）。
      * 因此改用 `--config` 覆盖 bundle.targets，仅构建 NSIS。
      */
-    const crossBuildConfig = JSON.stringify({
-      bundle: { targets: 'nsis' },
-    })
-    args.push('--config', crossBuildConfig)
+    buildConfig.bundle.targets = 'nsis'
     args.push('--runner', 'cargo-xwin')
     process.stdout.write('[tauri-build-win] 非 Windows：仅构建 NSIS（需已安装 NSIS、LLVM/LLD 与 cargo-xwin）；MSI 请在 Windows 上执行 pnpm build:win。\n\n')
   } else {
@@ -430,6 +445,8 @@ function runTauriBuildWin(selection) {
     }
     args.push('--bundles', bundles.join(','))
   }
+
+  args.push('--config', JSON.stringify(buildConfig))
 
   return new Promise((resolve, reject) => {
     let combinedOutput = ''
@@ -464,6 +481,13 @@ function runTauriBuildWin(selection) {
       resolve()
     })
   })
+}
+
+/**
+ * @returns {boolean}
+ */
+function shouldCreateUpdaterArtifacts() {
+  return Boolean(process.env.TAURI_SIGNING_PRIVATE_KEY?.trim())
 }
 
 /**

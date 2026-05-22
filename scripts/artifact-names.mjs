@@ -48,6 +48,15 @@ export function getMacDmgArtifactName(version) {
 
 /**
  * @param {string} version
+ * @param {'aarch64' | 'x64'} [arch]
+ * @returns {string}
+ */
+export function getMacUpdaterArchiveArtifactName(version, arch = getMacArtifactArch()) {
+  return `nrm-desktop_${version}_macos_${arch}.app.tar.gz`
+}
+
+/**
+ * @param {string} version
  * @returns {string}
  */
 export function getWindowsSetupArtifactName(version) {
@@ -57,6 +66,14 @@ export function getWindowsSetupArtifactName(version) {
     arch: 'x64',
     kind: 'setup',
   })
+}
+
+/**
+ * @param {string} filename
+ * @returns {string}
+ */
+export function getUpdaterSignatureArtifactName(filename) {
+  return `${filename}.sig`
 }
 
 /**
@@ -226,6 +243,67 @@ export function listReleaseArtifactNames(version, options = DEFAULT_RELEASE_ARTI
         kind: item.kind,
       }),
     }))
+}
+
+/**
+ * @typedef {Object} ReleaseUpdaterPlatform
+ * @property {'windows-x86_64' | 'darwin-aarch64' | 'darwin-x86_64'} platform
+ * @property {string} urlFilename
+ * @property {string} signatureFilename
+ */
+
+/**
+ * @param {string} version
+ * @param {ReleaseArtifactOptions} [options]
+ * @returns {ReleaseUpdaterPlatform[]}
+ */
+export function listReleaseUpdaterPlatforms(version, options = DEFAULT_RELEASE_ARTIFACT_OPTIONS) {
+  const normalized = normalizeReleaseArtifactOptions(options)
+  /** @type {ReleaseUpdaterPlatform[]} */
+  const platforms = []
+
+  if (normalized.buildWindowsX64 && normalized.windowsSetupExe) {
+    const setupFilename = getWindowsSetupArtifactName(version)
+    platforms.push({
+      platform: 'windows-x86_64',
+      urlFilename: setupFilename,
+      signatureFilename: getUpdaterSignatureArtifactName(setupFilename),
+    })
+  }
+
+  if (normalized.buildMacosArm64) {
+    const archiveFilename = getMacUpdaterArchiveArtifactName(version, 'aarch64')
+    platforms.push({
+      platform: 'darwin-aarch64',
+      urlFilename: archiveFilename,
+      signatureFilename: getUpdaterSignatureArtifactName(archiveFilename),
+    })
+  }
+
+  if (normalized.buildMacosX64) {
+    const archiveFilename = getMacUpdaterArchiveArtifactName(version, 'x64')
+    platforms.push({
+      platform: 'darwin-x86_64',
+      urlFilename: archiveFilename,
+      signatureFilename: getUpdaterSignatureArtifactName(archiveFilename),
+    })
+  }
+
+  return platforms
+}
+
+/**
+ * @param {string} version
+ * @param {ReleaseArtifactOptions} [options]
+ * @returns {string[]}
+ */
+export function listReleaseUpdaterAssetNames(version, options = DEFAULT_RELEASE_ARTIFACT_OPTIONS) {
+  const names = new Set()
+  for (const item of listReleaseUpdaterPlatforms(version, options)) {
+    names.add(item.urlFilename)
+    names.add(item.signatureFilename)
+  }
+  return [...names]
 }
 
 /**

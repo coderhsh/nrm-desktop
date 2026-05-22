@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { Refresh } from '@element-plus/icons-vue'
 import { useTheme } from '@/composables/useTheme'
 import { useI18n } from '@/composables/useI18n'
 import { useAutostart } from '@/composables/useAutostart'
 import { useConfigIO } from '@/composables/useConfigIO'
+import {
+  formatUpdateError,
+  isUpdateUnavailableError,
+  useAppUpdate,
+} from '@/composables/useAppUpdate'
 
 const props = defineProps<{
   visible: boolean
@@ -16,6 +22,7 @@ const emit = defineEmits<{
 
 const theme = useTheme()
 const { t, language } = useI18n()
+const appUpdate = useAppUpdate()
 const {
   autostartEnabled,
   draftAutostartEnabled,
@@ -105,6 +112,25 @@ async function openAboutInfo() {
   }
 }
 
+async function handleCheckForUpdates() {
+  try {
+    const update = await appUpdate.checkForUpdate({
+      force: true,
+      silent: false,
+      openDialog: true,
+    })
+    if (!update) {
+      ElMessage.success(t('app.update.upToDate'))
+    }
+  } catch (error) {
+    if (isUpdateUnavailableError(error)) {
+      ElMessage.info(t('app.update.unavailableInDev'))
+      return
+    }
+    ElMessage.error(t('app.update.checkFailed', { error: formatUpdateError(error) }))
+  }
+}
+
 async function handleReset() {
   const success = await handleResetDefaults()
   if (success) {
@@ -177,6 +203,22 @@ async function handleReset() {
       <el-button class="settings-about-btn w-full" plain @click="openAboutInfo">
         {{ t('app.about.openButton') }}
       </el-button>
+      <el-badge
+        :is-dot="appUpdate.showIndicator.value"
+        class="settings-update-badge"
+      >
+        <el-button
+          class="settings-about-btn settings-update-btn w-full"
+          plain
+          :loading="appUpdate.checking.value"
+          @click="handleCheckForUpdates"
+        >
+          <el-icon v-if="!appUpdate.checking.value" class="mr-1">
+            <Refresh />
+          </el-icon>
+          {{ t('app.update.checkButton') }}
+        </el-button>
+      </el-badge>
     </div>
     <template #footer>
       <div class="flex justify-end">
@@ -221,3 +263,15 @@ async function handleReset() {
     </template>
   </el-dialog>
 </template>
+
+<style scoped>
+.settings-update-badge {
+  display: block;
+  width: 100%;
+}
+
+.settings-update-badge :deep(.el-badge__content.is-fixed.is-dot) {
+  right: 8px;
+  top: 8px;
+}
+</style>

@@ -5,7 +5,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { getMacDmgArtifactName } from './artifact-names.mjs'
+import {
+  getMacDmgArtifactName,
+  getMacUpdaterArchiveArtifactName,
+  getUpdaterSignatureArtifactName,
+} from './artifact-names.mjs'
 import { syncAppVersionFromPackageJson } from './sync-app-version.mjs'
 import { spawnPnpm } from './spawn-pnpm.mjs'
 
@@ -120,8 +124,11 @@ async function pathExists(filePath) {
  * @returns {Promise<void>}
  */
 function runTauriBuild() {
+  const args = ['tauri', 'build', '--config', JSON.stringify({
+    bundle: { createUpdaterArtifacts: shouldCreateUpdaterArtifacts() },
+  })]
   return new Promise((resolve, reject) => {
-    const child = spawnPnpm(['tauri', 'build'], {
+    const child = spawnPnpm(args, {
       cwd: rootDir,
       stdio: 'inherit',
       env: { ...process.env, CARGO_TARGET_DIR: cargoTargetDir },
@@ -148,7 +155,16 @@ function runTauriBuild() {
  * @returns {Promise<void>}
  */
 function runTauriBuildWithBundles(bundles) {
-  const args = ['tauri', 'build', '--bundles', bundles.join(',')]
+  const args = [
+    'tauri',
+    'build',
+    '--bundles',
+    bundles.join(','),
+    '--config',
+    JSON.stringify({
+      bundle: { createUpdaterArtifacts: shouldCreateUpdaterArtifacts() },
+    }),
+  ]
 
   return new Promise((resolve, reject) => {
     const child = spawnPnpm(args, {
@@ -170,6 +186,13 @@ function runTauriBuildWithBundles(bundles) {
       resolve()
     })
   })
+}
+
+/**
+ * @returns {boolean}
+ */
+function shouldCreateUpdaterArtifacts() {
+  return Boolean(process.env.TAURI_SIGNING_PRIVATE_KEY?.trim())
 }
 
 /**
@@ -273,6 +296,15 @@ function isInstallerArtifact(filePath) {
 }
 
 /**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isUpdaterArtifact(filePath) {
+  const base = path.basename(filePath).toLowerCase()
+  return base.endsWith('.app.tar.gz') || base.endsWith('.app.tar.gz.sig') || base.endsWith('.exe.sig')
+}
+
+/**
  * Recursively remove empty directories.
  * @param {string} directory
  * @returns {Promise<void>}
@@ -299,10 +331,10 @@ async function removeEmptyDirectories(directory) {
 }
 
 /**
- * Keep only installer artifacts under bundle directory.
+ * Keep only release artifacts under bundle directory.
  * @returns {Promise<void>}
  */
-async function pruneBundleArtifactsToInstallers() {
+async function pruneBundleArtifactsToReleaseAssets() {
   let artifacts
   try {
     artifacts = await collectArtifacts(bundleDir)
@@ -310,7 +342,7 @@ async function pruneBundleArtifactsToInstallers() {
     return
   }
 
-  const removable = artifacts.filter(filePath => !isInstallerArtifact(filePath))
+  const removable = artifacts.filter(filePath => !isInstallerArtifact(filePath) && !isUpdaterArtifact(filePath))
   for (const filePath of removable) {
     await fs.rm(filePath, { force: true })
   }
@@ -362,6 +394,64 @@ async function renameMacDmgArtifacts(appVersion) {
 }
 
 /**
+ * Rename generated macOS updater archives to nrm-desktop_{version}_macos_{arch}.app.tar.gz.
+ * @param {string} appVersion
+ * @returns {Promise<void>}
+ */
+async function renameMacUpdaterArtifacts(appVersion) {
+  const macosDir = path.join(bundleDir, 'macos')
+  const targetName = getMacUpdaterArchiveArtifactName(appVersion)
+  const targetPath = path.join(macosDir, targetName)
+  const targetSignaturePath = path.join(macosDir, getUpdaterSignatureArtifactName(targetName))
+
+  let entries
+  try {
+    entries = await fs.readdir(macosDir, { withFileTypes: true })
+  } catch {
+    return
+  }
+
+  const archiveFiles = entries
+    .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.app.tar.gz'))
+    .map(entry => path.join(macosDir, entry.name))
+
+  if (archiveFiles.length === 0) {
+    return
+  }
+
+  const sourcePath = archiveFiles.includes(targetPath)
+    ? targetPath
+    : archiveFiles.sort((left, right) => right.localeCompare(left))[0]
+  const sourceSignaturePath = `${sourcePath}.sig`
+
+  if (sourcePath !== targetPath) {
+    if (await pathExists(targetPath)) {
+      await fs.rm(targetPath, { force: true })
+    }
+    await fs.rename(sourcePath, targetPath)
+  }
+
+  if (await pathExists(sourceSignaturePath)) {
+    if (sourceSignaturePath !== targetSignaturePath) {
+      if (await pathExists(targetSignaturePath)) {
+        await fs.rm(targetSignaturePath, { force: true })
+      }
+      await fs.rename(sourceSignaturePath, targetSignaturePath)
+    }
+  }
+
+  for (const filePath of archiveFiles) {
+    if (filePath !== targetPath && await pathExists(filePath)) {
+      await fs.rm(filePath, { force: true })
+    }
+    const signaturePath = `${filePath}.sig`
+    if (signaturePath !== targetSignaturePath && await pathExists(signaturePath)) {
+      await fs.rm(signaturePath, { force: true })
+    }
+  }
+}
+
+/**
  * Print main binary path plus bundle files.
  * @returns {Promise<void>}
  */
@@ -376,7 +466,7 @@ async function printArtifacts() {
   }
 
   const sortedArtifacts = artifacts.sort((left, right) => left.localeCompare(right))
-  const installerArtifacts = sortedArtifacts.filter(isInstallerArtifact)
+  const releaseArtifacts = sortedArtifacts.filter(filePath => isInstallerArtifact(filePath) || isUpdaterArtifact(filePath))
   process.stdout.write('\n=== 打包产物 ===\n')
 
   if (!hasBundleDir) {
@@ -384,13 +474,13 @@ async function printArtifacts() {
     return
   }
 
-  if (installerArtifacts.length === 0) {
-    process.stdout.write('bundle 目录内未发现安装包产物，请检查打包配置。\n')
+  if (releaseArtifacts.length === 0) {
+    process.stdout.write('bundle 目录内未发现发布产物，请检查打包配置。\n')
     return
   }
 
-  process.stdout.write('\n安装包文件:\n')
-  installerArtifacts.forEach((artifactPath, index) => {
+  process.stdout.write('\n发布文件:\n')
+  releaseArtifacts.forEach((artifactPath, index) => {
     process.stdout.write(`${index + 1}. ${artifactPath}\n`)
   })
 }
@@ -410,8 +500,11 @@ async function main() {
       await renameMacDmgArtifacts(appVersion)
     }
   }
+  if (process.platform === 'darwin') {
+    await renameMacUpdaterArtifacts(appVersion)
+  }
   await renameMsiFilesStripLocaleSuffix()
-  await pruneBundleArtifactsToInstallers()
+  await pruneBundleArtifactsToReleaseAssets()
   await printArtifacts()
   const elapsedMs = Date.now() - startedAt
   process.stdout.write(`\n打包总时长: ${formatBuildDuration(elapsedMs)}（${elapsedMs} ms）\n`)

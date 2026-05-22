@@ -234,6 +234,7 @@ jobs:
     name: Build installers
     needs: prepare-release
     uses: ./.github/workflows/installer-build-reusable.yml
+    secrets: inherit
     with:
       checkout_ref: ${{ needs.prepare-release.outputs.commit_sha }}
       is_tag_release: true
@@ -309,6 +310,23 @@ jobs:
             --version "${{ needs.prepare-release.outputs.version }}" \
             --dir release-assets
 
+      - name: Generate updater manifest
+        env:
+          RELEASE_BUILD_WINDOWS_X64: ${{ inputs.build_windows_x64 }}
+          RELEASE_BUILD_MACOS_X64: ${{ inputs.build_macos_x64 }}
+          RELEASE_BUILD_MACOS_ARM64: ${{ inputs.build_macos_arm64 }}
+          RELEASE_WINDOWS_SETUP_EXE: ${{ inputs.windows_setup_exe }}
+          RELEASE_WINDOWS_MSI: ${{ inputs.windows_msi }}
+          RELEASE_WINDOWS_PORTABLE_ZIP: ${{ inputs.windows_portable_zip }}
+        run: |
+          node ./scripts/generate-updater-manifest.mjs \
+            --version "${{ needs.prepare-release.outputs.version }}" \
+            --commit-sha "${{ needs.prepare-release.outputs.commit_sha }}" \
+            --dir release-assets \
+            --repository "${{ github.repository }}" \
+            --release-tag "v${{ needs.prepare-release.outputs.version }}" \
+            --output-file release-assets/latest.json
+
       - name: Remove stale release installer assets
         if: inputs.cleanup_release_assets == true
         env:
@@ -345,6 +363,18 @@ jobs:
           draft: ${{ inputs.draft_release }}
           prerelease: false
           overwrite_files: true
+
+      - name: Update fixed updater manifest release
+        if: inputs.draft_release == false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh release view updater >/dev/null 2>&1; then
+            gh release create updater --title "nrm-desktop updater manifest" --notes "Static manifest consumed by Tauri updater."
+          fi
+          gh release upload updater release-assets/latest.json --clobber
 
       - name: Resolve release download slug
         id: release_slug

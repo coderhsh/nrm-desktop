@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import {
   listReleaseArtifactNames,
+  listReleaseUpdaterAssetNames,
   normalizeReleaseArtifactOptions,
 } from './artifact-names.mjs'
 
@@ -85,8 +86,14 @@ async function main() {
   }
 
   const files = await collectFiles(assetsDir)
-  const expectedArtifacts = listReleaseArtifactNames(version, readReleaseArtifactOptionsFromEnv())
-  const expectedNames = expectedArtifacts.map(item => item.filename)
+  const artifactOptions = readReleaseArtifactOptionsFromEnv()
+  const expectedArtifacts = listReleaseArtifactNames(version, artifactOptions)
+  const expectedNames = [
+    ...new Set([
+      ...expectedArtifacts.map(item => item.filename),
+      ...listReleaseUpdaterAssetNames(version, artifactOptions),
+    ]),
+  ]
 
   /** @type {Map<string, string>} */
   const matchedByName = new Map()
@@ -122,7 +129,7 @@ async function main() {
   await fs.rm(stagingDir, { recursive: true, force: true })
 
   process.stdout.write(
-    `[prepare-release-assets-dir] 已整理 ${expectedNames.length} 个安装包: ${expectedNames.join(', ')}\n`
+    `[prepare-release-assets-dir] 已整理 ${expectedNames.length} 个发布资产: ${expectedNames.join(', ')}\n`
   )
 }
 

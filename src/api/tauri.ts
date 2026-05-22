@@ -88,3 +88,7 @@ export async function detectEnvProxy(): Promise<ProxyConfig> {
 export async function setProxyConfig(config: ProxyConfig): Promise<void> {
   return invoke<void>("set_proxy_config", { config });
 }
+
+export async function restartApp(): Promise<void> {
+  return invoke<void>("restart_app");
+}

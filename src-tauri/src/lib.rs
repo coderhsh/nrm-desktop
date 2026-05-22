@@ -229,6 +229,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             None,
@@ -274,6 +275,7 @@ pub fn run() {
             commands::set_app_language,
             commands::get_node_npm_versions,
             commands::is_autostart_platform_supported,
+            commands::restart_app,
         ])
         .build(tauri::generate_context!())
         .expect("error while building nrm-desktop")
