@@ -113,6 +113,11 @@ async function openAboutInfo() {
 }
 
 async function handleCheckForUpdates() {
+  if (appUpdate.downloaded.value && appUpdate.updateInfo.value) {
+    appUpdate.openUpdateDialog()
+    return
+  }
+
   try {
     const update = await appUpdate.checkForUpdate({
       force: true,
