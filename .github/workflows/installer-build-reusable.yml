@@ -204,6 +204,10 @@ jobs:
         with:
           ref: ${{ inputs.checkout_ref != '' && inputs.checkout_ref || github.sha }}
 
+      - name: Start frontend setup timing
+        run: node ./scripts/ci-timing.mjs start frontend_setup "环境准备/依赖"
+        continue-on-error: true
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -220,8 +224,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: End frontend setup timing
+        if: always()
+        run: node ./scripts/ci-timing.mjs end frontend_setup "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Sync app version
+        run: node ./scripts/ci-timing.mjs run sync_version "版本同步" -- pnpm sync:version
+
       - name: Build frontend
-        run: pnpm sync:version && pnpm ui:build:ci
+        run: node ./scripts/ci-timing.mjs run frontend_build "前端构建" -- pnpm ui:build:ci
+
+      - name: Start frontend dist upload timing
+        run: node ./scripts/ci-timing.mjs start frontend_dist_upload "上传 dist"
+        continue-on-error: true
 
       - name: Upload frontend dist
         uses: actions/upload-artifact@v4
@@ -230,6 +246,16 @@ jobs:
           path: dist
           if-no-files-found: error
           retention-days: 1
+
+      - name: End frontend dist upload timing
+        if: always()
+        run: node ./scripts/ci-timing.mjs end frontend_dist_upload "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Write frontend timing summary
+        if: always()
+        run: node ./scripts/ci-timing.mjs summary "Build frontend 耗时"
+        continue-on-error: true
 
   build:
     name: Build ${{ matrix.label }}
@@ -252,6 +278,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.checkout_ref != '' && inputs.checkout_ref || github.sha }}
+
+      - name: Start build setup timing
+        run: node ./scripts/ci-timing.mjs start build_setup "环境准备/缓存/依赖"
+        continue-on-error: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -341,6 +371,11 @@ jobs:
 
           choco install nsis wixtoolset -y --no-progress
 
+      - name: End build setup timing
+        if: always()
+        run: node ./scripts/ci-timing.mjs end build_setup "${{ job.status }}"
+        continue-on-error: true
+
       - name: Read app version
         shell: bash
         run: |
@@ -396,7 +431,12 @@ jobs:
           NRM_WINDOWS_PORTABLE_ZIP: ${{ needs.prepare.outputs.windows_portable_zip }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: ${{ matrix.build-command }}
+        run: node ./scripts/ci-timing.mjs run tauri_build "Tauri 构建/打包" -- ${{ matrix.build-command }}
+
+      - name: Start Windows portable zip timing
+        if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
+        run: node ./scripts/ci-timing.mjs start windows_portable_zip "Windows portable zip"
+        continue-on-error: true
 
       - name: Create Windows portable zip
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
@@ -416,6 +456,15 @@ jobs:
           New-Item -ItemType Directory -Force -Path $portableRoot | Out-Null
           Copy-Item $exePath "$portableRoot\nrm-desktop.exe" -Force
           Compress-Archive -Path "$portableRoot\*" -DestinationPath $zipPath -Force
+
+      - name: End Windows portable zip timing
+        if: always() && runner.os == 'Windows' && needs.prepare.outputs.windows_portable_zip == 'true'
+        run: node ./scripts/ci-timing.mjs end windows_portable_zip "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Start artifact upload timing
+        run: node ./scripts/ci-timing.mjs start upload_artifacts "上传产物"
+        continue-on-error: true
 
       - name: Upload Windows setup.exe artifact
         if: runner.os == 'Windows' && needs.prepare.outputs.windows_setup_exe == 'true'
@@ -479,3 +528,13 @@ jobs:
           path: src-tauri/target/release/bundle/macos/nrm-desktop_${{ env.APP_VERSION }}_${{ matrix.artifact-suffix }}.app.tar.gz.sig
           if-no-files-found: error
           retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: End artifact upload timing
+        if: always()
+        run: node ./scripts/ci-timing.mjs end upload_artifacts "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Write build timing summary
+        if: always()
+        run: node ./scripts/ci-timing.mjs summary "Build ${{ matrix.label }} 耗时"
+        continue-on-error: true
