@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Add the functionality of displaying status bar metadata for application versions and environment details
+
 ## [1.1.8] - 2026-05-22
 
 ### Changed
