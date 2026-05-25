@@ -881,128 +881,64 @@ html.dark .app-statusbar::after {
   }
 }
 
-.app-statusbar-meta {
-  color: #5c6675;
-  font-variant-numeric: tabular-nums;
-  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
-}
-
 .app-statusbar-meta-area {
   display: flex;
   align-items: center;
-  gap: 8px;
   min-width: 0;
   max-width: min(520px, 48vw);
   margin-right: 8px;
   overflow: hidden;
 }
 
-.app-statusbar-meta-group {
-  display: inline-flex;
+.app-statusbar-meta-line {
+  display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 0;
-  max-width: 100%;
-  padding: 3px 8px 3px 6px;
-  border-radius: 8px;
-  border: 1px solid rgba(30, 41, 59, 0.08);
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-}
-
-.app-statusbar-meta-group--app {
-  flex-shrink: 0;
-}
-
-.app-statusbar-meta-group--runtime {
+  margin: 0;
   min-width: 0;
   overflow: hidden;
-}
-
-.app-statusbar-meta-group__tag {
-  flex-shrink: 0;
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: 0.02em;
-  color: #64748b;
-  background: rgba(30, 41, 59, 0.06);
-}
-
-.app-statusbar-meta-group__body {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
   font-size: 11px;
   line-height: 1.35;
-  color: #4b5565;
-}
-
-.app-statusbar-meta-group__name {
-  font-weight: 600;
-  color: #334155;
-}
-
-.app-statusbar-meta-group__version {
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #475569;
-  background: rgba(30, 41, 59, 0.07);
-}
-
-.app-statusbar-meta-kv {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  color: #64748b;
   white-space: nowrap;
 }
 
-.app-statusbar-meta-kv__value {
+.app-statusbar-meta-line__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.app-statusbar-meta-line__key {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.app-statusbar-meta-line__value {
+  flex-shrink: 0;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
   color: #334155;
 }
 
-html.dark .app-statusbar-meta-group {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+.app-statusbar-meta-line__sep {
+  flex-shrink: 0;
+  color: #cbd5e1;
+  user-select: none;
 }
 
-html.dark .app-statusbar-meta-group__tag {
-  color: rgba(235, 235, 245, 0.58);
-  background: rgba(255, 255, 255, 0.06);
+html.dark .app-statusbar-meta-line__key {
+  color: rgba(235, 235, 245, 0.48);
 }
 
-html.dark .app-statusbar-meta-group__body {
-  color: rgba(235, 235, 245, 0.72);
+html.dark .app-statusbar-meta-line__value {
+  color: rgba(235, 235, 245, 0.9);
 }
 
-html.dark .app-statusbar-meta-group__name,
-html.dark .app-statusbar-meta-kv__value {
-  color: rgba(235, 235, 245, 0.88);
-}
-
-html.dark .app-statusbar-meta-group__version {
-  color: rgba(235, 235, 245, 0.78);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .app-statusbar-meta-kv {
-  color: rgba(235, 235, 245, 0.58);
-}
-
-html.dark .app-statusbar-meta {
-  color: rgba(235, 235, 245, 0.72);
+html.dark .app-statusbar-meta-line__sep {
+  color: rgba(235, 235, 245, 0.22);
 }
 
 /* 底栏 text 按钮：默认 Element 的 fill-color-light 贴在灰蓝条上对比度弱，hover 加深底与描边 */

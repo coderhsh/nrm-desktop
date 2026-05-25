@@ -25,6 +25,7 @@ import { useAppVersion } from '@/composables/useAppVersion'
 import {
   buildStatusBarMetaTitle,
   hasStatusBarMeta,
+  listStatusBarRuntimeItems,
   resolveStatusBarMetaParts,
 } from '@/utils/status-bar-meta'
 
@@ -56,12 +57,17 @@ const statusBarMeta = computed(() =>
   resolveStatusBarMetaParts({
     node: nodeNpmVersions.value?.node,
     npm: nodeNpmVersions.value?.npm,
+    pnpm: nodeNpmVersions.value?.pnpm,
     appName: appName.value,
     appVersion: appVersion.value,
   }),
 )
 const statusBarMetaVisible = computed(() => hasStatusBarMeta(statusBarMeta.value))
 const statusBarMetaTitle = computed(() => buildStatusBarMetaTitle(statusBarMeta.value, t))
+const statusBarAppVisible = computed(
+  () => !!(statusBarMeta.value.appName && statusBarMeta.value.appVersion),
+)
+const statusBarRuntimeItems = computed(() => listStatusBarRuntimeItems(statusBarMeta.value))
 const isProxyFeatureVisible = false
 
 const {
@@ -199,33 +205,36 @@ async function openGithubHome() {
             class="app-statusbar-meta-area"
             :title="statusBarMetaTitle"
           >
-            <div
-              v-if="statusBarMeta.appName && statusBarMeta.appVersion"
-              class="app-statusbar-meta-group app-statusbar-meta-group--app"
-            >
-              <span class="app-statusbar-meta-group__tag">{{ t('app.statusBar.app') }}</span>
-              <span class="app-statusbar-meta-group__body">
-                <span class="app-statusbar-meta-group__name">{{ statusBarMeta.appName }}</span>
-                <span class="app-statusbar-meta-group__version">v{{ statusBarMeta.appVersion }}</span>
+            <p class="app-statusbar-meta-line">
+              <span
+                v-if="statusBarAppVisible"
+                class="app-statusbar-meta-line__item"
+              >
+                <span class="app-statusbar-meta-line__key">{{ statusBarMeta.appName }}</span>
+                <span class="app-statusbar-meta-line__value">v{{ statusBarMeta.appVersion }}</span>
               </span>
-            </div>
 
-            <div
-              v-if="statusBarMeta.nodeVersion || statusBarMeta.npmVersion"
-              class="app-statusbar-meta-group app-statusbar-meta-group--runtime"
-            >
-              <span class="app-statusbar-meta-group__tag">{{ t('app.statusBar.runtime') }}</span>
-              <span class="app-statusbar-meta-group__body">
-                <span v-if="statusBarMeta.nodeVersion" class="app-statusbar-meta-kv">
-                  Node
-                  <span class="app-statusbar-meta-kv__value">{{ statusBarMeta.nodeVersion }}</span>
+              <span
+                v-if="statusBarAppVisible && statusBarRuntimeItems.length > 0"
+                class="app-statusbar-meta-line__sep"
+                aria-hidden="true"
+              >·</span>
+
+              <template
+                v-for="(item, index) in statusBarRuntimeItems"
+                :key="item.key"
+              >
+                <span
+                  v-if="index > 0"
+                  class="app-statusbar-meta-line__sep"
+                  aria-hidden="true"
+                >·</span>
+                <span class="app-statusbar-meta-line__item">
+                  <span class="app-statusbar-meta-line__key">{{ item.label }}</span>
+                  <span class="app-statusbar-meta-line__value">{{ item.value }}</span>
                 </span>
-                <span v-if="statusBarMeta.npmVersion" class="app-statusbar-meta-kv">
-                  npm
-                  <span class="app-statusbar-meta-kv__value">{{ statusBarMeta.npmVersion }}</span>
-                </span>
-              </span>
-            </div>
+              </template>
+            </p>
           </div>
 
           <span class="flex-1"></span>

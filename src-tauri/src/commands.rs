@@ -4,12 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use tauri::{Emitter, Manager};
 
-/// 系统 PATH 中 `node` / `npm` 的版本输出（与 `.npmrc` 实际使用的 CLI 一致）。
+/// 系统 PATH 中 `node` / `npm` / `pnpm` 的版本输出（与 `.npmrc` 实际使用的 CLI 一致）。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeNpmVersions {
     pub node: Option<String>,
     pub npm: Option<String>,
+    pub pnpm: Option<String>,
 }
 
 fn trim_cli_version_output(bytes: &[u8]) -> Option<String> {
@@ -74,12 +75,13 @@ fn run_cli_version_via_login_shell(bin: &str, version_flag: &str) -> Option<Stri
     trim_cli_version_output(&output.stdout).or_else(|| trim_cli_version_output(&output.stderr))
 }
 
-/// 读取当前 shell PATH 下的 Node 与 npm 版本（不成功则为 `null`）。
+/// 读取当前 shell PATH 下的 Node、npm 与 pnpm 版本（不成功则为 `null`）。
 #[tauri::command]
 pub fn get_node_npm_versions() -> NodeNpmVersions {
     NodeNpmVersions {
         node: run_cli_version("node", "-v"),
         npm: run_cli_version("npm", "-v"),
+        pnpm: run_cli_version("pnpm", "-v"),
     }
 }
 
