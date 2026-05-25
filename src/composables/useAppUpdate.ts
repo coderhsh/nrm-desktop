@@ -3,6 +3,7 @@ import { useLocalStorage } from '@vueuse/core'
 import { isTauri } from '@tauri-apps/api/core'
 import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater'
 import { restartApp } from '@/api/tauri'
+import { autoUpdateMode } from '@/composables/useAppUpdatePreferences'
 import type { TranslateFn } from '@/utils/invoke-error-i18n'
 
 export const UPDATE_LAST_CHECK_STORAGE_KEY = 'nrm-desktop-update-last-check-at'
@@ -161,6 +162,26 @@ function openUpdateDialog() {
   }
 }
 
+async function runStartupUpdateCheck(): Promise<void> {
+  if (autoUpdateMode.value === 'off') return
+  if (!isPackagedTauriRuntime()) return
+
+  const mode = autoUpdateMode.value
+  const update = await checkForUpdate({
+    silent: true,
+    force: false,
+    openDialog: mode === 'notify',
+  })
+
+  if (update && mode === 'download' && dismissedVersion.value !== update.version) {
+    try {
+      await downloadUpdate()
+    } catch {
+      // Startup auto-download failures should not interrupt app launch.
+    }
+  }
+}
+
 export function isUpdateUnavailableError(error: unknown): error is AppUpdateUnavailableError {
   return error instanceof AppUpdateUnavailableError
 }
@@ -238,5 +259,6 @@ export function useAppUpdate() {
     dismissCurrentUpdate,
     closeUpdateDialog,
     openUpdateDialog,
+    runStartupUpdateCheck,
   }
 }

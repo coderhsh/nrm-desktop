@@ -131,11 +131,7 @@ onMounted(async () => {
 
   await initCloseHandler()
 
-  void appUpdate.checkForUpdate({
-    silent: true,
-    force: false,
-    openDialog: true,
-  }).catch(() => {
+  void appUpdate.runStartupUpdateCheck().catch(() => {
     // Startup update checks should not interrupt normal app launch.
   })
 })

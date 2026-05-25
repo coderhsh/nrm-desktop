@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const UPDATE_DISMISSED_VERSION_STORAGE_KEY = 'nrm-desktop-update-dismissed-version'
+const UPDATE_AUTO_MODE_STORAGE_KEY = 'nrm-desktop-update-auto-mode'
 
 const mocks = vi.hoisted(() => ({
   check: vi.fn(),
@@ -217,5 +218,62 @@ describe('useAppUpdate', () => {
 
     expect(formatUpdateError(t, new Error(`error sending request for url (${url})`)))
       .toBe(`无法请求更新地址（${url}），请检查网络连接或代理设置`)
+  })
+
+  it('skips startup update checks when auto update mode is off', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('off'))
+    const update = createFakeUpdate()
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).not.toHaveBeenCalled()
+    expect(appUpdate.dialogVisible.value).toBe(false)
+  })
+
+  it('opens the update dialog during notify-mode startup checks', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('notify'))
+    const update = createFakeUpdate()
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(appUpdate.dialogVisible.value).toBe(true)
+  })
+
+  it('auto-downloads during download-mode startup checks', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('download'))
+    const update = createFakeUpdate('2.0.0')
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(update.download).toHaveBeenCalledOnce()
+    expect(appUpdate.downloaded.value).toBe(true)
+    expect(appUpdate.dialogVisible.value).toBe(true)
+  })
+
+  it('does not auto-download a dismissed version during startup checks', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('download'))
+    localStorage.setItem(UPDATE_DISMISSED_VERSION_STORAGE_KEY, '2.0.0')
+    const update = createFakeUpdate('2.0.0')
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(update.download).not.toHaveBeenCalled()
+    expect(appUpdate.downloaded.value).toBe(false)
+    expect(appUpdate.dialogVisible.value).toBe(false)
   })
 })
