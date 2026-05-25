@@ -9,67 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.9] - 2026-05-25
-
-### Changed
-
-- Add the functionality of displaying status bar metadata for application versions and environment details
-
-## [1.1.8] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.7] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.6] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.5] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.4] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.3] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.2] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.1] - 2026-05-22
-
-### Changed
-
-- test update
-
-## [1.1.0] - 2026-05-22
-
 ### Added
 
 - In-app auto-update via Tauri updater: silent check on startup (at most once every 24 hours), manual check from Settings, and an update dialog with release notes
 - Download progress, install-and-restart flow, and per-version dismiss in the update dialog
 - CI release pipeline generates signed updater artifacts and publishes `latest.json` to the fixed `updater` release for clients to consume
+- Status bar metadata for application version and environment details
 
 ### Changed
 
