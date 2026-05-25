@@ -69,6 +69,10 @@ export const useRegistryStore = defineStore('registry', () => {
   }
 
   async function fetchLatency() {
+    if (registries.value.length === 0) {
+      latencyResults.value = {}
+      return
+    }
     latencyLoading.value = true
     try {
       const results = await testAllSpeed()

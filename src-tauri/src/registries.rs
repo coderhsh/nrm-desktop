@@ -98,13 +98,8 @@ fn normalize_custom_data(mut data: CustomData) -> (CustomData, bool) {
         changed = true;
     }
 
-    if data.registries.is_empty() {
-        data.registries = default_registries();
-        changed = true;
-    } else {
-        let normalized = normalize_registry_entries(data.registries);
-        data.registries = normalized;
-    }
+    let normalized = normalize_registry_entries(data.registries);
+    data.registries = normalized;
 
     (data, changed)
 }
