@@ -5,33 +5,46 @@ import {
   useAppUpdate,
 } from '@/composables/useAppUpdate'
 import { useI18n } from '@/composables/useI18n'
+import { renderMarkdown } from '@/utils/renderMarkdown'
+import { formatUpdatePublishDate } from '@/utils/formatLocaleDate'
 
-const { t } = useI18n()
+const { t, language } = useI18n()
 const appUpdate = useAppUpdate()
 
 const update = computed(() => appUpdate.updateInfo.value)
-const releaseNotes = computed(() => {
-  const body = update.value?.body?.trim()
-  return body || t('app.update.noReleaseNotes')
-})
+const releaseNotesBody = computed(() => update.value?.body?.trim() ?? '')
+const hasReleaseNotes = computed(() => releaseNotesBody.value.length > 0)
+const releaseNotesHtml = computed(() => renderMarkdown(releaseNotesBody.value))
 const currentVersion = computed(() => update.value?.currentVersion ?? '-')
 const newVersion = computed(() => update.value?.version ?? '-')
-const updateDate = computed(() => update.value?.date ?? '-')
+const updateDate = computed(() => formatUpdatePublishDate(update.value?.date, language.value))
 const dialogTitle = computed(() => (
   appUpdate.downloaded.value ? t('app.update.readyTitle') : t('app.update.availableTitle')
 ))
 const primaryButtonText = computed(() => (
   appUpdate.downloaded.value ? t('app.update.installAndRestart') : t('app.update.downloadAndInstall')
 ))
+const secondaryButtonText = computed(() => (
+  appUpdate.downloaded.value ? t('app.update.restartLater') : t('common.cancel')
+))
 
 function handleBeforeClose(done: () => void) {
   if (appUpdate.downloading.value || appUpdate.installing.value) return
-  appUpdate.dismissCurrentUpdate()
+  if (appUpdate.downloaded.value) {
+    appUpdate.closeUpdateDialog()
+  } else {
+    appUpdate.dismissCurrentUpdate()
+  }
   done()
 }
 
-function handleCancel() {
+function handleSecondaryAction() {
   if (appUpdate.downloading.value || appUpdate.installing.value) return
+  if (appUpdate.downloaded.value) {
+    appUpdate.closeUpdateDialog()
+    ElMessage.info(t('app.update.restartLaterHint'))
+    return
+  }
   appUpdate.dismissCurrentUpdate()
 }
 
@@ -45,7 +58,7 @@ async function handlePrimaryAction() {
     await appUpdate.downloadUpdate()
     ElMessage.success(t('app.update.downloadComplete'))
   } catch (error) {
-    ElMessage.error(t('app.update.operationFailed', { error: formatUpdateError(error) }))
+    ElMessage.error(t('app.update.operationFailed', { error: formatUpdateError(t, error) }))
   }
 }
 </script>
@@ -82,7 +95,16 @@ async function handlePrimaryAction() {
 
       <section class="app-update-notes">
         <h4>{{ t('app.update.releaseNotes') }}</h4>
-        <pre>{{ releaseNotes }}</pre>
+        <!-- eslint-disable vue/no-v-html -- Release notes are rendered with markdown-it (html disabled). -->
+        <div
+          v-if="hasReleaseNotes"
+          class="app-update-notes-content"
+          v-html="releaseNotesHtml"
+        />
+        <!-- eslint-enable vue/no-v-html -->
+        <p v-else class="app-update-notes-empty">
+          {{ t('app.update.noReleaseNotes') }}
+        </p>
       </section>
 
       <section
@@ -98,6 +120,9 @@ async function handlePrimaryAction() {
           :indeterminate="appUpdate.downloading.value && appUpdate.downloadProgress.value === null"
           :status="appUpdate.downloaded.value ? 'success' : undefined"
         />
+        <p v-if="appUpdate.downloaded.value" class="app-update-ready-hint">
+          {{ t('app.update.readyHint') }}
+        </p>
       </section>
     </div>
 
@@ -105,9 +130,9 @@ async function handlePrimaryAction() {
       <div class="category-manage-dialog-footer">
         <el-button
           :disabled="appUpdate.downloading.value || appUpdate.installing.value"
-          @click="handleCancel"
+          @click="handleSecondaryAction"
         >
-          {{ t('common.cancel') }}
+          {{ secondaryButtonText }}
         </el-button>
         <el-button
           type="primary"
@@ -181,7 +206,8 @@ async function handlePrimaryAction() {
   font-weight: 600;
 }
 
-.app-update-notes pre {
+.app-update-notes-content,
+.app-update-notes-empty {
   max-height: 180px;
   margin: 0;
   padding: 10px 12px;
@@ -190,10 +216,86 @@ async function handlePrimaryAction() {
   border-radius: 8px;
   background: var(--el-fill-color-blank);
   color: var(--el-text-color-regular);
-  font-family: inherit;
   font-size: 12px;
   line-height: 1.6;
-  white-space: pre-wrap;
+  cursor: default;
+  user-select: text;
+}
+
+.app-update-notes-empty {
+  color: var(--el-text-color-secondary);
+}
+
+.app-update-notes-content :deep(p),
+.app-update-notes-content :deep(ul),
+.app-update-notes-content :deep(ol),
+.app-update-notes-content :deep(blockquote) {
+  margin: 0 0 8px;
+}
+
+.app-update-notes-content :deep(p:last-child),
+.app-update-notes-content :deep(ul:last-child),
+.app-update-notes-content :deep(ol:last-child),
+.app-update-notes-content :deep(blockquote:last-child) {
+  margin-bottom: 0;
+}
+
+.app-update-notes-content :deep(h1),
+.app-update-notes-content :deep(h2),
+.app-update-notes-content :deep(h3),
+.app-update-notes-content :deep(h4),
+.app-update-notes-content :deep(h5),
+.app-update-notes-content :deep(h6) {
+  margin: 0 0 8px;
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.app-update-notes-content :deep(ul),
+.app-update-notes-content :deep(ol) {
+  padding-left: 1.25rem;
+}
+
+.app-update-notes-content :deep(li + li) {
+  margin-top: 4px;
+}
+
+.app-update-notes-content :deep(code) {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--el-fill-color-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+}
+
+.app-update-notes-content :deep(pre) {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+}
+
+.app-update-notes-content :deep(pre code) {
+  padding: 0;
+  background: transparent;
+}
+
+.app-update-notes-content :deep(a) {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+
+.app-update-notes-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.app-update-notes-content :deep(blockquote) {
+  padding-left: 10px;
+  border-left: 3px solid var(--el-border-color);
+  color: var(--el-text-color-secondary);
 }
 
 .app-update-progress {
@@ -208,5 +310,12 @@ async function handlePrimaryAction() {
   gap: 12px;
   color: var(--el-text-color-secondary);
   font-size: 12px;
+}
+
+.app-update-ready-hint {
+  margin: 0;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

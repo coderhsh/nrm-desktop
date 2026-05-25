@@ -31,4 +31,5 @@ src-tauri/gen/
 src-tauri/tauri.dev.auto-port.json
 
 # Local editor/tasks state
-.vscode/
+.vscode/*
+!.vscode/settings.json

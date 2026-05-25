@@ -63,20 +63,6 @@ pub fn backup_npmrc() -> io::Result<()> {
     Ok(())
 }
 
-/// Restore from the backup file.
-pub fn restore_backup() -> io::Result<()> {
-    let backup = get_npmrc_path().with_extension("npmrc.nrmbackup");
-    if !backup.exists() {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            "备份文件不存在",
-        ));
-    }
-    let target = get_npmrc_path();
-    copy_with_overwrite(&backup, &target)?;
-    Ok(())
-}
-
 /// Set the registry in .npmrc using atomic write.
 /// Writes to a temporary file first, then renames to .npmrc.
 pub fn set_registry(url: &str) -> io::Result<()> {

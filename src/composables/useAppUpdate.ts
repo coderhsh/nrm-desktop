@@ -3,6 +3,8 @@ import { useLocalStorage } from '@vueuse/core'
 import { isTauri } from '@tauri-apps/api/core'
 import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater'
 import { restartApp } from '@/api/tauri'
+import { autoUpdateMode } from '@/composables/useAppUpdatePreferences'
+import type { TranslateFn } from '@/utils/invoke-error-i18n'
 
 export const UPDATE_LAST_CHECK_STORAGE_KEY = 'nrm-desktop-update-last-check-at'
 export const UPDATE_DISMISSED_VERSION_STORAGE_KEY = 'nrm-desktop-update-dismissed-version'
@@ -20,6 +22,7 @@ const downloadedBytes = ref(0)
 const downloadTotalBytes = ref<number | null>(null)
 const lastCheckAt = useLocalStorage<number>(UPDATE_LAST_CHECK_STORAGE_KEY, 0)
 const dismissedVersion = useLocalStorage<string>(UPDATE_DISMISSED_VERSION_STORAGE_KEY, '')
+let pendingCheckPromise: Promise<Update | null> | null = null
 
 export class AppUpdateUnavailableError extends Error {
   constructor() {
@@ -75,6 +78,28 @@ function updateDownloadProgress(event: DownloadEvent) {
   downloadProgress.value = 100
 }
 
+function runUpdaterCheck(): Promise<Update | null> {
+  if (pendingCheckPromise) return pendingCheckPromise
+
+  checking.value = true
+  pendingCheckPromise = (async () => {
+    const previousVersion = updateInfo.value?.version
+    const wasDownloaded = downloaded.value
+    const update = await check()
+    lastCheckAt.value = Date.now()
+    updateInfo.value = update
+    if (!(update && wasDownloaded && update.version === previousVersion)) {
+      resetDownloadState()
+    }
+    return update
+  })().finally(() => {
+    checking.value = false
+    pendingCheckPromise = null
+  })
+
+  return pendingCheckPromise
+}
+
 async function checkForUpdate(options: CheckForUpdateOptions = {}): Promise<Update | null> {
   const { silent = false, force = false, openDialog = true } = options
 
@@ -87,25 +112,12 @@ async function checkForUpdate(options: CheckForUpdateOptions = {}): Promise<Upda
     return updateInfo.value
   }
 
-  if (checking.value) {
-    return updateInfo.value
+  const update = await runUpdaterCheck()
+  if (update && openDialog && (!silent || dismissedVersion.value !== update.version)) {
+    dialogVisible.value = true
   }
 
-  checking.value = true
-  try {
-    const update = await check()
-    lastCheckAt.value = Date.now()
-    updateInfo.value = update
-    resetDownloadState()
-
-    if (update && openDialog && (!silent || dismissedVersion.value !== update.version)) {
-      dialogVisible.value = true
-    }
-
-    return update
-  } finally {
-    checking.value = false
-  }
+  return update
 }
 
 async function downloadUpdate(): Promise<void> {
@@ -146,9 +158,33 @@ function dismissCurrentUpdate() {
   dialogVisible.value = false
 }
 
+function closeUpdateDialog() {
+  dialogVisible.value = false
+}
+
 function openUpdateDialog() {
   if (updateInfo.value) {
     dialogVisible.value = true
+  }
+}
+
+async function runStartupUpdateCheck(): Promise<void> {
+  if (autoUpdateMode.value === 'off') return
+  if (!isPackagedTauriRuntime()) return
+
+  const mode = autoUpdateMode.value
+  const update = await checkForUpdate({
+    silent: true,
+    force: false,
+    openDialog: mode === 'notify',
+  })
+
+  if (update && mode === 'download' && dismissedVersion.value !== update.version) {
+    try {
+      await downloadUpdate()
+    } catch {
+      // Startup auto-download failures should not interrupt app launch.
+    }
   }
 }
 
@@ -156,16 +192,34 @@ export function isUpdateUnavailableError(error: unknown): error is AppUpdateUnav
   return error instanceof AppUpdateUnavailableError
 }
 
-export function formatUpdateError(error: unknown): string {
-  const message = error instanceof Error && error.message
+export function formatUpdateError(t: TranslateFn, error: unknown): string {
+  const message = (error instanceof Error && error.message
     ? error.message
-    : String(error)
+    : String(error ?? '')).trim()
+  if (!message) return t('backend.unknownError')
 
   if (/could not fetch a valid release json/i.test(message)) {
-    return '无法获取更新清单（latest.json）。请先完成一次非 Draft 的 Release Installers 发布，并确认 GitHub 上存在 updater Release。'
+    return t('app.update.errorMissingManifest')
   }
 
-  return message
+  const sendRequest = /^error sending request for url \((.+)\)$/i.exec(message)
+  if (sendRequest) {
+    return t('app.update.errorRequestFailed', { url: sendRequest[1]!.trim() })
+  }
+
+  const httpStatus = /^HTTP status (?:client|server) error \(([^)]+)\) for url \((.+)\)$/i.exec(message)
+  if (httpStatus) {
+    return t('app.update.errorHttpStatus', {
+      status: httpStatus[1]!.trim(),
+      url: httpStatus[2]!.trim(),
+    })
+  }
+
+  if (/(?:operation timed out|timed out)/i.test(message)) {
+    return t('app.update.errorTimeout')
+  }
+
+  return t('app.update.errorUnknown', { detail: message })
 }
 
 export function formatBytes(bytes: number): string {
@@ -209,6 +263,8 @@ export function useAppUpdate() {
     downloadUpdate,
     installAndRestart,
     dismissCurrentUpdate,
+    closeUpdateDialog,
     openUpdateDialog,
+    runStartupUpdateCheck,
   }
 }

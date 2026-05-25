@@ -263,6 +263,10 @@ jobs:
           ref: ${{ needs.prepare-release.outputs.commit_sha }}
           fetch-depth: 0
 
+      - name: Start release prepare timing
+        run: node ./scripts/ci-timing.mjs start release_prepare "Release 准备/tag 处理"
+        continue-on-error: true
+
       - name: Remove orphan tag before retry publish
         if: needs.check-release.outputs.prepare_mode == 'retry'
         env:
@@ -290,6 +294,15 @@ jobs:
           git fetch origin "$COMMIT"
           git tag -f "$TAG" "$COMMIT"
           git push -f origin "refs/tags/${TAG}"
+
+      - name: End release prepare timing
+        if: always()
+        run: node ./scripts/ci-timing.mjs end release_prepare "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Start release assets timing
+        run: node ./scripts/ci-timing.mjs start release_assets "下载并校验资产"
+        continue-on-error: true
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -334,6 +347,15 @@ jobs:
               echo "- \`${file#release-assets/}\`"
             done
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: End release assets timing
+        if: always()
+        run: node ./scripts/ci-timing.mjs end release_assets "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Start GitHub Release timing
+        run: node ./scripts/ci-timing.mjs start github_release "创建/更新 Release"
+        continue-on-error: true
 
       - name: Create GitHub Release
         id: create_release
@@ -382,6 +404,16 @@ jobs:
             gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" -f draft=false
           fi
 
+      - name: End GitHub Release timing
+        if: always()
+        run: node ./scripts/ci-timing.mjs end github_release "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Start updater manifest timing
+        if: inputs.draft_release == false
+        run: node ./scripts/ci-timing.mjs start updater_manifest "生成并发布 updater manifest"
+        continue-on-error: true
+
       - name: Generate and publish updater manifest
         if: inputs.draft_release == false
         env:
@@ -411,3 +443,13 @@ jobs:
             --manifest-file release-assets/latest.json \
             --version-tag "$TAG" \
             --target-ref "${{ needs.prepare-release.outputs.commit_sha }}"
+
+      - name: End updater manifest timing
+        if: always() && inputs.draft_release == false
+        run: node ./scripts/ci-timing.mjs end updater_manifest "${{ job.status }}"
+        continue-on-error: true
+
+      - name: Write release timing summary
+        if: always()
+        run: node ./scripts/ci-timing.mjs summary "Publish GitHub Release 耗时"
+        continue-on-error: true

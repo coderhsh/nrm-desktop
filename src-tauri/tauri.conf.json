@@ -35,7 +35,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJERDQ4RjMyREY1RDhDMjQKUldRa2pGM2ZNby9Vdlk3NXdqcnZmOVcwSDZSU2FFVTRxbzRWbUptSTltQ3czeXlCc1VzM2ZTWHQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJGQzFGRTMwQjg2RDBBMTQKUldRVUNtMjRNUDdCTDVmMWxVSnEvdGQxNldzUlZZYzZ2YS8rWUtxRC9kdDhEcWJqVEVwR2tFVGQK",
       "endpoints": [
         "https://github.com/coderhsh/nrm-desktop/releases/download/updater/latest.json"
       ]

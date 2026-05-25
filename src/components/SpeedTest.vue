@@ -23,6 +23,7 @@ const testing = ref(true)
 const singleTesting = ref<Record<string, boolean>>({})
 
 const hasResults = computed(() => results.value.length > 0)
+const hasRegistries = computed(() => store.registries.length > 0)
 
 /** 与后端 `test_all`、单次重测一致：成功项按延迟升序，失败置底 */
 function sortLatencyResults(items: LatencyResult[]): LatencyResult[] {
@@ -66,6 +67,14 @@ function syncSingleLatencyResult(item: LatencyResult) {
 const speedRevealStepMs = 76
 
 async function runAllTests() {
+  if (!hasRegistries.value) {
+    results.value = []
+    store.setLatencyResults([])
+    testing.value = false
+    store.setLatencyLoading(false)
+    return
+  }
+
   testing.value = true
   store.setLatencyLoading(true)
   results.value = []
@@ -222,6 +231,7 @@ watch(
           size="small"
           class="speed-test-header-action speed-test-retest-btn speed-test-main-btn shrink-0 !px-2.5 !py-1.5 !rounded-full !border-0 !transition-all !duration-250 !ease-out active:!scale-[0.97]"
           :loading="testing"
+          :disabled="!hasRegistries"
           @click="runAllTests"
         >
           {{ testing ? t('speedTest.testing') : t('speedTest.testAll') }}

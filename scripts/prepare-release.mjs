@@ -214,6 +214,34 @@ export function extractChangelogVersionSection(content, version) {
  * @param {string} content
  * @param {string} unreleasedLabel
  * @param {string} version
+ * @param {string} date
+ * @returns {{ content: string, releaseSection: string, changed: boolean }}
+ */
+export function ensureChangelogVersionSection(content, unreleasedLabel, version, date) {
+  try {
+    return {
+      content,
+      releaseSection: extractChangelogVersionSection(content, version),
+      changed: false,
+    }
+  } catch (error) {
+    const missingVersionSection = error instanceof Error
+      && error.message.includes(`未在 CHANGELOG 中找到版本节 [${version}]`)
+    if (!missingVersionSection) {
+      throw error
+    }
+  }
+
+  return {
+    ...archiveChangelogSection(content, unreleasedLabel, version, date),
+    changed: true,
+  }
+}
+
+/**
+ * @param {string} content
+ * @param {string} unreleasedLabel
+ * @param {string} version
  * @returns {string}
  */
 function updateChangelogLinks(content, unreleasedLabel, version) {
@@ -316,9 +344,9 @@ function main() {
 
   validateModeAndVersion(mode, version, currentVersion)
 
-  if (mode === 'fresh') {
-    const date = new Date().toISOString().slice(0, 10)
+  const date = new Date().toISOString().slice(0, 10)
 
+  if (mode === 'fresh') {
     for (const [fileName, unreleasedLabel] of CHANGELOG_FILES) {
       const filePath = path.join(rootDir, fileName)
       const raw = readFileSync(filePath, 'utf8')
@@ -331,8 +359,23 @@ function main() {
     syncAppVersionFromPackageJson()
     writeGithubOutput('skip_commit', 'false')
   } else {
-    writeGithubOutput('skip_commit', 'true')
-    process.stdout.write(`[prepare-release] ${mode} 模式：跳过版本 bump 与 CHANGELOG 归档\n`)
+    let changelogChanged = false
+    for (const [fileName, unreleasedLabel] of CHANGELOG_FILES) {
+      const filePath = path.join(rootDir, fileName)
+      const raw = readFileSync(filePath, 'utf8')
+      const result = ensureChangelogVersionSection(raw, unreleasedLabel, version, date)
+      if (result.changed) {
+        writeFileSync(filePath, result.content, 'utf8')
+        changelogChanged = true
+      }
+    }
+
+    writeGithubOutput('skip_commit', changelogChanged ? 'false' : 'true')
+    if (changelogChanged) {
+      process.stdout.write(`[prepare-release] ${mode} 模式：版本已同步，已补归档 CHANGELOG\n`)
+    } else {
+      process.stdout.write(`[prepare-release] ${mode} 模式：跳过版本 bump 与 CHANGELOG 归档\n`)
+    }
   }
 
   writeGithubOutput('version', version)

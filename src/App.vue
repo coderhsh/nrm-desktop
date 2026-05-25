@@ -21,6 +21,13 @@ import { useI18n, coerceAppLanguage } from '@/composables/useI18n'
 import { useCloseBehavior } from '@/composables/useCloseBehavior'
 import { useConfigIO } from '@/composables/useConfigIO'
 import { useAppUpdate } from '@/composables/useAppUpdate'
+import { useAppVersion } from '@/composables/useAppVersion'
+import {
+  buildStatusBarMetaTitle,
+  hasStatusBarMeta,
+  listStatusBarRuntimeItems,
+  resolveStatusBarMetaParts,
+} from '@/utils/status-bar-meta'
 
 const store = useRegistryStore()
 const theme = useTheme()
@@ -45,14 +52,22 @@ const appUpdate = useAppUpdate()
 const showProxySettings = ref(false)
 const showSettingsDialog = ref(false)
 const nodeNpmVersions = ref<NodeNpmVersions | null>(null)
-const nodeNpmVersionsLabel = computed(() => {
-  const v = nodeNpmVersions.value
-  if (!v) return ''
-  return t('app.envVersions', {
-    nodeVersion: v.node ?? '—',
-    npmVersion: v.npm ?? '—',
-  })
-})
+const { appName, appVersion, loadAppVersion } = useAppVersion()
+const statusBarMeta = computed(() =>
+  resolveStatusBarMetaParts({
+    node: nodeNpmVersions.value?.node,
+    npm: nodeNpmVersions.value?.npm,
+    pnpm: nodeNpmVersions.value?.pnpm,
+    appName: appName.value,
+    appVersion: appVersion.value,
+  }),
+)
+const statusBarMetaVisible = computed(() => hasStatusBarMeta(statusBarMeta.value))
+const statusBarMetaTitle = computed(() => buildStatusBarMetaTitle(statusBarMeta.value, t))
+const statusBarAppVisible = computed(
+  () => !!(statusBarMeta.value.appName && statusBarMeta.value.appVersion),
+)
+const statusBarRuntimeItems = computed(() => listStatusBarRuntimeItems(statusBarMeta.value))
 const isProxyFeatureVisible = false
 
 const {
@@ -109,9 +124,12 @@ watch(
 onMounted(async () => {
   scheduleIntro()
   await store.fetchRegistries()
-  void api.getNodeNpmVersions().then(v => {
-    nodeNpmVersions.value = v
-  })
+  void Promise.all([
+    api.getNodeNpmVersions().then(v => {
+      nodeNpmVersions.value = v
+    }),
+    loadAppVersion(),
+  ])
   const { listen } = await import('@tauri-apps/api/event')
   unlistenRegistryChanged = await listen<string>('registry-changed', event => {
     store.syncCurrentRegistryByName(event.payload)
@@ -119,11 +137,7 @@ onMounted(async () => {
 
   await initCloseHandler()
 
-  void appUpdate.checkForUpdate({
-    silent: true,
-    force: false,
-    openDialog: true,
-  }).catch(() => {
+  void appUpdate.runStartupUpdateCheck().catch(() => {
     // Startup update checks should not interrupt normal app launch.
   })
 })
@@ -186,13 +200,42 @@ async function openGithubHome() {
 
       <!-- Status bar: full window width (below sidebar + main) -->
       <div class="app-statusbar">
-          <span
-            v-if="nodeNpmVersionsLabel"
-            class="app-statusbar-meta text-xs shrink-0 truncate max-w-[280px] mr-2"
-            :title="nodeNpmVersionsLabel"
+          <div
+            v-if="statusBarMetaVisible"
+            class="app-statusbar-meta-area"
+            :title="statusBarMetaTitle"
           >
-            {{ nodeNpmVersionsLabel }}
-          </span>
+            <p class="app-statusbar-meta-line">
+              <span
+                v-if="statusBarAppVisible"
+                class="app-statusbar-meta-line__item"
+              >
+                <span class="app-statusbar-meta-line__key">{{ statusBarMeta.appName }}</span>
+                <span class="app-statusbar-meta-line__value">v{{ statusBarMeta.appVersion }}</span>
+              </span>
+
+              <span
+                v-if="statusBarAppVisible && statusBarRuntimeItems.length > 0"
+                class="app-statusbar-meta-line__sep"
+                aria-hidden="true"
+              >·</span>
+
+              <template
+                v-for="(item, index) in statusBarRuntimeItems"
+                :key="item.key"
+              >
+                <span
+                  v-if="index > 0"
+                  class="app-statusbar-meta-line__sep"
+                  aria-hidden="true"
+                >·</span>
+                <span class="app-statusbar-meta-line__item">
+                  <span class="app-statusbar-meta-line__key">{{ item.label }}</span>
+                  <span class="app-statusbar-meta-line__value">{{ item.value }}</span>
+                </span>
+              </template>
+            </p>
+          </div>
 
           <span class="flex-1"></span>
 

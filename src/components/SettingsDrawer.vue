@@ -11,6 +11,7 @@ import {
   isUpdateUnavailableError,
   useAppUpdate,
 } from '@/composables/useAppUpdate'
+import { useAppUpdatePreferences, type AutoUpdateMode } from '@/composables/useAppUpdatePreferences'
 
 const props = defineProps<{
   visible: boolean
@@ -23,6 +24,11 @@ const emit = defineEmits<{
 const theme = useTheme()
 const { t, language } = useI18n()
 const appUpdate = useAppUpdate()
+const {
+  draftAutoUpdateMode,
+  syncDraftFromSaved,
+  applyDraft: applyAutoUpdateDraft,
+} = useAppUpdatePreferences()
 const {
   autostartEnabled,
   draftAutostartEnabled,
@@ -51,12 +57,28 @@ const themeOptions = computed(() => [
   { label: t('app.settings.themeDark'), value: 'dark' as const },
 ])
 
+const autoUpdateOptions = computed(() => [
+  { label: t('app.settings.autoUpdateOff'), value: 'off' as const },
+  { label: t('app.settings.autoUpdateNotify'), value: 'notify' as const },
+  { label: t('app.settings.autoUpdateDownload'), value: 'download' as const },
+])
+
+const autoUpdateHint = computed(() => {
+  const hints: Record<AutoUpdateMode, string> = {
+    off: t('app.settings.autoUpdateHintOff'),
+    notify: t('app.settings.autoUpdateHintNotify'),
+    download: t('app.settings.autoUpdateHintDownload'),
+  }
+  return hints[draftAutoUpdateMode.value]
+})
+
 watch(
   () => props.visible,
   visible => {
     if (!visible) return
     draftLanguage.value = language.value
     draftTheme.value = theme.theme.value
+    syncDraftFromSaved()
     void refreshAutostartState().then(() => {
       draftAutostartEnabled.value = autostartEnabled.value
     })
@@ -77,6 +99,8 @@ async function handleSaveSettings() {
   if (draftTheme.value !== theme.theme.value) {
     pendingThemeOnClose.value = draftTheme.value
   }
+
+  applyAutoUpdateDraft()
 
   emit('update:visible', false)
   ElMessage.success(t('app.settings.saveSuccess'))
@@ -113,6 +137,11 @@ async function openAboutInfo() {
 }
 
 async function handleCheckForUpdates() {
+  if (appUpdate.downloaded.value && appUpdate.updateInfo.value) {
+    appUpdate.openUpdateDialog()
+    return
+  }
+
   try {
     const update = await appUpdate.checkForUpdate({
       force: true,
@@ -120,14 +149,20 @@ async function handleCheckForUpdates() {
       openDialog: true,
     })
     if (!update) {
-      ElMessage.success(t('app.update.upToDate'))
+      await ElMessageBox.alert(t('app.update.upToDate'), t('app.update.upToDateTitle'), {
+        confirmButtonText: t('common.confirm'),
+        type: 'success',
+        customClass: 'app-reset-defaults-messagebox app-info-confirm-messagebox',
+        confirmButtonClass: 'app-info-confirm-messagebox__btn-confirm',
+        showClose: false,
+      })
     }
   } catch (error) {
     if (isUpdateUnavailableError(error)) {
       ElMessage.info(t('app.update.unavailableInDev'))
       return
     }
-    ElMessage.error(t('app.update.checkFailed', { error: formatUpdateError(error) }))
+    ElMessage.error(t('app.update.checkFailed', { error: formatUpdateError(t, error) }))
   }
 }
 
@@ -198,11 +233,17 @@ async function handleReset() {
         {{ t('app.resetDefaults') }}
       </el-button>
       <div class="settings-section-title text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
-        {{ t('app.settings.about') }}
+        {{ t('app.settings.updates') }}
       </div>
-      <el-button class="settings-about-btn w-full" plain @click="openAboutInfo">
-        {{ t('app.about.openButton') }}
-      </el-button>
+      <div class="flex flex-col gap-1.5">
+        <div class="settings-drawer-inline-row flex items-center gap-2">
+          <span class="settings-item-label settings-drawer-inline-label text-sm text-gray-500 shrink-0 w-16">{{ t('app.settings.autoUpdate') }}</span>
+          <el-select v-model="draftAutoUpdateMode" class="min-w-0 flex-1" :placeholder="t('app.settings.autoUpdate')">
+            <el-option v-for="item in autoUpdateOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </div>
+        <span class="settings-note text-xs text-gray-400 leading-snug pl-0">{{ autoUpdateHint }}</span>
+      </div>
       <el-badge
         :is-dot="appUpdate.showIndicator.value"
         class="settings-update-badge"
@@ -219,6 +260,12 @@ async function handleReset() {
           {{ t('app.update.checkButton') }}
         </el-button>
       </el-badge>
+      <div class="settings-section-title text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">
+        {{ t('app.settings.about') }}
+      </div>
+      <el-button class="settings-about-btn w-full" plain @click="openAboutInfo">
+        {{ t('app.about.openButton') }}
+      </el-button>
     </div>
     <template #footer>
       <div class="flex justify-end">

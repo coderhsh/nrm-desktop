@@ -9,13 +9,14 @@
 
 ## [未发布]
 
-## [1.1.0] - 2026-05-22
+## [1.1.0] - 2026-05-25
 
 ### 新增
 
 - 应用内自动更新（Tauri updater）：启动时静默检查（最多每 24 小时一次）、设置页手动检查、更新对话框展示发行说明
 - 更新对话框支持下载进度、一键安装并重启，以及按版本暂时忽略本次更新
 - CI 发布流程生成带签名的 updater 产物，并将 `latest.json` 发布到固定 `updater` Release 供客户端拉取
+- 为应用程序版本及环境详情添加状态栏元数据显示功能
 
 ### 变更
 
@@ -65,6 +66,15 @@
 - 代理配置后端能力（界面入口可在后续版本开放）
 
 [未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.0...HEAD
+[1.1.9]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.9
+[1.1.8]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.8
+[1.1.7]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.7
+[1.1.6]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.6
+[1.1.5]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.5
+[1.1.4]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.4
+[1.1.3]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.3
+[1.1.2]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.2
+[1.1.1]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.1
 [1.1.0]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.0
 [1.0.1]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.1
 [1.0.0]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.0.0

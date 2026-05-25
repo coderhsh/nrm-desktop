@@ -1,14 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Registry } from "@/types";
 
-/** 系统 PATH 中解析到的 node / npm 版本字符串（不可用则为 null）。 */
+/** 系统 PATH 中解析到的 node / npm / pnpm 版本字符串（不可用则为 null）。 */
 export interface NodeNpmVersions {
   node: string | null;
   npm: string | null;
+  pnpm: string | null;
 }
 
 /**
- * 获取当前环境下的 Node 与 npm 版本（调用 `node -v`、`npm -v`）。
+ * 获取当前环境下的 Node、npm 与 pnpm 版本（调用 `node -v`、`npm -v`、`pnpm -v`）。
  */
 export async function getNodeNpmVersions(): Promise<NodeNpmVersions> {
   return invoke<NodeNpmVersions>("get_node_npm_versions");

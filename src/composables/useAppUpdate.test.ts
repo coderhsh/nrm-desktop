@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const UPDATE_DISMISSED_VERSION_STORAGE_KEY = 'nrm-desktop-update-dismissed-version'
+const UPDATE_AUTO_MODE_STORAGE_KEY = 'nrm-desktop-update-auto-mode'
 
 const mocks = vi.hoisted(() => ({
   check: vi.fn(),
@@ -33,8 +34,38 @@ function createFakeUpdate(version = '1.2.3') {
   }
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve
+    reject = promiseReject
+  })
+  return { promise, resolve, reject }
+}
+
 async function loadComposable() {
   return import('./useAppUpdate')
+}
+
+function createMockT(): (key: string, params?: Record<string, string | number>) => string {
+  const zh: Record<string, string> = {
+    'backend.unknownError': '未知错误',
+    'app.update.errorMissingManifest': '无法获取更新清单（latest.json）。请先完成一次非 Draft 的 Release Installers 发布，并确认 GitHub 上存在 updater Release。',
+    'app.update.errorRequestFailed': '无法请求更新地址（{url}），请检查网络连接或代理设置',
+    'app.update.errorHttpStatus': '请求更新失败（{status}）：{url}',
+    'app.update.errorTimeout': '检查更新超时，请稍后重试',
+    'app.update.errorUnknown': '更新服务异常：{detail}',
+  }
+  return (key, params) => {
+    let text = zh[key] ?? key
+    if (params) {
+      for (const [name, value] of Object.entries(params)) {
+        text = text.replace(`{${name}}`, String(value))
+      }
+    }
+    return text
+  }
 }
 
 beforeEach(() => {
@@ -137,18 +168,165 @@ describe('useAppUpdate', () => {
     mocks.check.mockRejectedValue(new Error('network unavailable'))
     const { formatUpdateError, useAppUpdate } = await loadComposable()
     const appUpdate = useAppUpdate()
+    const t = createMockT()
 
     await expect(
       appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true }),
     ).rejects.toThrow('network unavailable')
-    expect(formatUpdateError(new Error('network unavailable'))).toBe('network unavailable')
+    expect(formatUpdateError(t, new Error('network unavailable')))
+      .toBe('更新服务异常：network unavailable')
     expect(appUpdate.updateInfo.value).toBeNull()
+  })
+
+  it('shares a pending updater check across concurrent calls', async () => {
+    const update = createFakeUpdate('2.0.0')
+    const pending = createDeferred<typeof update>()
+    mocks.check.mockReturnValue(pending.promise)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    const firstCheck = appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+    const secondCheck = appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(appUpdate.checking.value).toBe(true)
+
+    pending.resolve(update)
+
+    await expect(firstCheck).resolves.toBe(update)
+    await expect(secondCheck).resolves.toBe(update)
+    expect(appUpdate.updateInfo.value).toBe(update)
+    expect(appUpdate.dialogVisible.value).toBe(true)
+    expect(appUpdate.checking.value).toBe(false)
+  })
+
+  it('lets a manual check wait for a silent startup check and open a dismissed update', async () => {
+    localStorage.setItem(UPDATE_DISMISSED_VERSION_STORAGE_KEY, '2.0.0')
+    const update = createFakeUpdate('2.0.0')
+    const pending = createDeferred<typeof update>()
+    mocks.check.mockReturnValue(pending.promise)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    const startupCheck = appUpdate.checkForUpdate({ force: true, silent: true, openDialog: true })
+    const manualCheck = appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+
+    pending.resolve(update)
+
+    await expect(startupCheck).resolves.toBe(update)
+    await expect(manualCheck).resolves.toBe(update)
+    expect(appUpdate.updateInfo.value).toBe(update)
+    expect(appUpdate.dialogVisible.value).toBe(true)
+  })
+
+  it('preserves downloaded state when rechecking the same version', async () => {
+    const update = createFakeUpdate('2.0.0')
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+    await appUpdate.downloadUpdate()
+    await appUpdate.closeUpdateDialog()
+
+    expect(appUpdate.downloaded.value).toBe(true)
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: false })
+
+    expect(appUpdate.downloaded.value).toBe(true)
+    expect(appUpdate.showIndicator.value).toBe(true)
+  })
+
+  it('clears downloaded state when a different version is available', async () => {
+    const firstUpdate = createFakeUpdate('2.0.0')
+    const secondUpdate = createFakeUpdate('2.1.0')
+    mocks.check.mockResolvedValueOnce(firstUpdate).mockResolvedValueOnce(secondUpdate)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+    await appUpdate.downloadUpdate()
+    expect(appUpdate.downloaded.value).toBe(true)
+
+    await appUpdate.checkForUpdate({ force: true, silent: false, openDialog: false })
+
+    expect(appUpdate.downloaded.value).toBe(false)
+    expect(appUpdate.updateInfo.value).toBe(secondUpdate)
   })
 
   it('maps missing updater manifest errors to a clearer message', async () => {
     const { formatUpdateError } = await loadComposable()
+    const t = createMockT()
 
-    expect(formatUpdateError(new Error('Could not fetch a valid release JSON from the remote')))
+    expect(formatUpdateError(t, new Error('Could not fetch a valid release JSON from the remote')))
       .toContain('latest.json')
+  })
+
+  it('maps network request errors to localized messages', async () => {
+    const { formatUpdateError } = await loadComposable()
+    const t = createMockT()
+    const url = 'https://github.com/coderhsh/nrm-desktop/releases/download/updater/latest.json'
+
+    expect(formatUpdateError(t, new Error(`error sending request for url (${url})`)))
+      .toBe(`无法请求更新地址（${url}），请检查网络连接或代理设置`)
+  })
+
+  it('skips startup update checks when auto update mode is off', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('off'))
+    const update = createFakeUpdate()
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).not.toHaveBeenCalled()
+    expect(appUpdate.dialogVisible.value).toBe(false)
+  })
+
+  it('opens the update dialog during notify-mode startup checks', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('notify'))
+    const update = createFakeUpdate()
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(appUpdate.dialogVisible.value).toBe(true)
+  })
+
+  it('auto-downloads during download-mode startup checks', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('download'))
+    const update = createFakeUpdate('2.0.0')
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(update.download).toHaveBeenCalledOnce()
+    expect(appUpdate.downloaded.value).toBe(true)
+    expect(appUpdate.dialogVisible.value).toBe(true)
+  })
+
+  it('does not auto-download a dismissed version during startup checks', async () => {
+    localStorage.setItem(UPDATE_AUTO_MODE_STORAGE_KEY, JSON.stringify('download'))
+    localStorage.setItem(UPDATE_DISMISSED_VERSION_STORAGE_KEY, '2.0.0')
+    const update = createFakeUpdate('2.0.0')
+    mocks.check.mockResolvedValue(update)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    await appUpdate.runStartupUpdateCheck()
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(update.download).not.toHaveBeenCalled()
+    expect(appUpdate.downloaded.value).toBe(false)
+    expect(appUpdate.dialogVisible.value).toBe(false)
   })
 })
