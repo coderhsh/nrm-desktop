@@ -58,7 +58,7 @@ async function handlePrimaryAction() {
     await appUpdate.downloadUpdate()
     ElMessage.success(t('app.update.downloadComplete'))
   } catch (error) {
-    ElMessage.error(t('app.update.operationFailed', { error: formatUpdateError(error) }))
+    ElMessage.error(t('app.update.operationFailed', { error: formatUpdateError(t, error) }))
   }
 }
 </script>

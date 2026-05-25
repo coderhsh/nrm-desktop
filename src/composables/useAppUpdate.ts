@@ -3,6 +3,7 @@ import { useLocalStorage } from '@vueuse/core'
 import { isTauri } from '@tauri-apps/api/core'
 import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater'
 import { restartApp } from '@/api/tauri'
+import type { TranslateFn } from '@/utils/invoke-error-i18n'
 
 export const UPDATE_LAST_CHECK_STORAGE_KEY = 'nrm-desktop-update-last-check-at'
 export const UPDATE_DISMISSED_VERSION_STORAGE_KEY = 'nrm-desktop-update-dismissed-version'
@@ -164,16 +165,34 @@ export function isUpdateUnavailableError(error: unknown): error is AppUpdateUnav
   return error instanceof AppUpdateUnavailableError
 }
 
-export function formatUpdateError(error: unknown): string {
-  const message = error instanceof Error && error.message
+export function formatUpdateError(t: TranslateFn, error: unknown): string {
+  const message = (error instanceof Error && error.message
     ? error.message
-    : String(error)
+    : String(error ?? '')).trim()
+  if (!message) return t('backend.unknownError')
 
   if (/could not fetch a valid release json/i.test(message)) {
-    return '无法获取更新清单（latest.json）。请先完成一次非 Draft 的 Release Installers 发布，并确认 GitHub 上存在 updater Release。'
+    return t('app.update.errorMissingManifest')
   }
 
-  return message
+  const sendRequest = /^error sending request for url \((.+)\)$/i.exec(message)
+  if (sendRequest) {
+    return t('app.update.errorRequestFailed', { url: sendRequest[1]!.trim() })
+  }
+
+  const httpStatus = /^HTTP status (?:client|server) error \(([^)]+)\) for url \((.+)\)$/i.exec(message)
+  if (httpStatus) {
+    return t('app.update.errorHttpStatus', {
+      status: httpStatus[1]!.trim(),
+      url: httpStatus[2]!.trim(),
+    })
+  }
+
+  if (/(?:operation timed out|timed out)/i.test(message)) {
+    return t('app.update.errorTimeout')
+  }
+
+  return t('app.update.errorUnknown', { detail: message })
 }
 
 export function formatBytes(bytes: number): string {

@@ -37,6 +37,26 @@ async function loadComposable() {
   return import('./useAppUpdate')
 }
 
+function createMockT(): (key: string, params?: Record<string, string | number>) => string {
+  const zh: Record<string, string> = {
+    'backend.unknownError': '未知错误',
+    'app.update.errorMissingManifest': '无法获取更新清单（latest.json）。请先完成一次非 Draft 的 Release Installers 发布，并确认 GitHub 上存在 updater Release。',
+    'app.update.errorRequestFailed': '无法请求更新地址（{url}），请检查网络连接或代理设置',
+    'app.update.errorHttpStatus': '请求更新失败（{status}）：{url}',
+    'app.update.errorTimeout': '检查更新超时，请稍后重试',
+    'app.update.errorUnknown': '更新服务异常：{detail}',
+  }
+  return (key, params) => {
+    let text = zh[key] ?? key
+    if (params) {
+      for (const [name, value] of Object.entries(params)) {
+        text = text.replace(`{${name}}`, String(value))
+      }
+    }
+    return text
+  }
+}
+
 beforeEach(() => {
   vi.resetModules()
   localStorage.clear()
@@ -137,11 +157,13 @@ describe('useAppUpdate', () => {
     mocks.check.mockRejectedValue(new Error('network unavailable'))
     const { formatUpdateError, useAppUpdate } = await loadComposable()
     const appUpdate = useAppUpdate()
+    const t = createMockT()
 
     await expect(
       appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true }),
     ).rejects.toThrow('network unavailable')
-    expect(formatUpdateError(new Error('network unavailable'))).toBe('network unavailable')
+    expect(formatUpdateError(t, new Error('network unavailable')))
+      .toBe('更新服务异常：network unavailable')
     expect(appUpdate.updateInfo.value).toBeNull()
   })
 
@@ -182,8 +204,18 @@ describe('useAppUpdate', () => {
 
   it('maps missing updater manifest errors to a clearer message', async () => {
     const { formatUpdateError } = await loadComposable()
+    const t = createMockT()
 
-    expect(formatUpdateError(new Error('Could not fetch a valid release JSON from the remote')))
+    expect(formatUpdateError(t, new Error('Could not fetch a valid release JSON from the remote')))
       .toContain('latest.json')
+  })
+
+  it('maps network request errors to localized messages', async () => {
+    const { formatUpdateError } = await loadComposable()
+    const t = createMockT()
+    const url = 'https://github.com/coderhsh/nrm-desktop/releases/download/updater/latest.json'
+
+    expect(formatUpdateError(t, new Error(`error sending request for url (${url})`)))
+      .toBe(`无法请求更新地址（${url}），请检查网络连接或代理设置`)
   })
 })

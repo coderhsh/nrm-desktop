@@ -138,7 +138,7 @@ async function handleCheckForUpdates() {
       ElMessage.info(t('app.update.unavailableInDev'))
       return
     }
-    ElMessage.error(t('app.update.checkFailed', { error: formatUpdateError(error) }))
+    ElMessage.error(t('app.update.checkFailed', { error: formatUpdateError(t, error) }))
   }
 }
 
