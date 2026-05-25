@@ -1,4 +1,5 @@
 /*  @desc 解决「端口冲突」+「保证 dev 时前后端端口一致」+「避免双托盘」，并在退出时清理临时配置。 */
+import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
@@ -14,6 +15,48 @@ const tauriConfigPath = path.join(rootDir, 'src-tauri', 'tauri.conf.json')
 const tempConfigPath = path.join(rootDir, 'src-tauri', 'tauri.dev.auto-port.json')
 const basePort = 1420
 const maxAttempts = 30
+
+/**
+ * Run a command and capture stdout/stderr.
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {Promise<{ error: NodeJS.ErrnoException | null, stdout: string, stderr: string, exitCode: number | null }>}
+ */
+function runCommandCapture(command, args) {
+  return new Promise(resolve => {
+    const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    /** @type {string} */
+    let stdout = ''
+    /** @type {string} */
+    let stderr = ''
+
+    child.stdout?.on('data', chunk => {
+      stdout += String(chunk)
+    })
+    child.stderr?.on('data', chunk => {
+      stderr += String(chunk)
+    })
+    child.on('error', error => resolve({ error, stdout, stderr, exitCode: null }))
+    child.on('close', exitCode => resolve({ error: null, stdout, stderr, exitCode: exitCode ?? 1 }))
+  })
+}
+
+/**
+ * Ensure Rust toolchain is usable before invoking tauri dev.
+ * @returns {Promise<void>}
+ */
+async function ensureRustToolchain() {
+  const rustc = await runCommandCapture('rustc', ['--version'])
+  if (rustc.error || rustc.exitCode !== 0) {
+    const detail = (rustc.stderr || rustc.stdout || rustc.error?.message || 'unknown error').trim()
+    throw new Error(
+      'Rust 工具链不可用，无法启动 Tauri dev。\n'
+      + '请先修复 Rust 安装（https://rustup.rs/），例如：\n'
+      + '  rustup toolchain install 1.88.0 --profile minimal\n'
+      + `详情: ${detail}`,
+    )
+  }
+}
 
 /**
  * Check whether a TCP port is available on localhost.
@@ -88,6 +131,7 @@ async function cleanupTempConfig() {
 }
 
 async function main() {
+  await ensureRustToolchain()
   syncAppVersionFromPackageJson()
   const port = await findAvailablePort(basePort, maxAttempts)
   await writeTempConfig(port)
