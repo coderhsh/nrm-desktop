@@ -192,11 +192,54 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+  build-frontend:
+    name: Build frontend
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout_ref != '' && inputs.checkout_ref || github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm sync:version && pnpm ui:build:ci
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
+
   build:
     name: Build ${{ matrix.label }}
-    needs: prepare
+    needs:
+      - prepare
+      - build-frontend
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
+    env:
+      NRM_SKIP_FRONTEND_BUILD: 'true'
 
     strategy:
       fail-fast: false
@@ -237,6 +280,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
 
       - name: Install Windows packaging tools
         if: runner.os == 'Windows'

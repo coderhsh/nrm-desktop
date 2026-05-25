@@ -32,6 +32,8 @@
     "build:pretty": "node ./scripts/tauri-build-with-output.mjs",
     "build:win": "node ./scripts/tauri-build-win.mjs",
     "ui:build": "vue-tsc --noEmit && vite build",
+    "ui:build:ci": "vite build",
+    "typecheck": "vue-tsc --noEmit",
     "ui:dev": "vite",
     "lint": "eslint \"src/**/*.{ts,vue}\" \"*.{ts,js}\"",
     "lint:fix": "eslint \"src/**/*.{ts,vue}\" \"*.{ts,js}\" --fix",
