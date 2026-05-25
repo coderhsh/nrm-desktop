@@ -287,10 +287,51 @@ jobs:
           name: frontend-dist
           path: dist
 
+      - name: Prepare Chocolatey download cache
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $cacheDir = Join-Path $env:LOCALAPPDATA 'choco-cache'
+          New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
+          choco config set cacheLocation $cacheDir
+
+      - name: Cache Windows packaging tools
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\choco-cache
+            C:\ProgramData\chocolatey\lib\nsis
+            C:\ProgramData\chocolatey\lib\wixtoolset
+            C:\Program Files (x86)\NSIS
+            C:\Program Files (x86)\WiX Toolset v3.11
+          key: ${{ runner.os }}-packaging-nsis-wix-v1
+          restore-keys: |
+            ${{ runner.os }}-packaging-nsis-wix-
+
       - name: Install Windows packaging tools
         if: runner.os == 'Windows'
         shell: pwsh
-        run: choco install nsis wixtoolset -y --no-progress
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $extraPaths = @(
+            'C:\Program Files (x86)\NSIS'
+            'C:\ProgramData\chocolatey\bin'
+          )
+          Get-ChildItem 'C:\Program Files (x86)\WiX Toolset v3.*\bin' -ErrorAction SilentlyContinue |
+            ForEach-Object { $extraPaths += $_.FullName }
+          $env:Path = ($extraPaths -join ';') + ';' + $env:Path
+
+          $hasNsis = [bool](Get-Command makensis -ErrorAction SilentlyContinue)
+          $hasWix = [bool](Get-Command candle -ErrorAction SilentlyContinue)
+          if ($hasNsis -and $hasWix) {
+            Write-Host 'NSIS and WiX already available (cache hit); skipping choco install.'
+            makensis -VERSION
+            exit 0
+          }
+
+          choco install nsis wixtoolset -y --no-progress
 
       - name: Read app version
         shell: bash
