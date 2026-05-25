@@ -240,6 +240,8 @@ jobs:
     timeout-minutes: 90
     env:
       NRM_SKIP_FRONTEND_BUILD: 'true'
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: 'true'
 
     strategy:
       fail-fast: false
@@ -265,7 +267,10 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Add Windows Rust target
         if: runner.os == 'Windows'
@@ -276,6 +281,7 @@ jobs:
         with:
           workspaces: src-tauri -> target
           cache-on-failure: true
+          cache-all-crates: true
           shared-key: ${{ matrix.artifact-suffix }}
 
       - name: Install dependencies
