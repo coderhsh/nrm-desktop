@@ -17,6 +17,41 @@ const basePort = 1420
 const maxAttempts = 30
 
 /**
+ * @param {number} ms
+ * @returns {string}
+ */
+function formatDuration(ms) {
+  if (ms < 0) {
+    ms = 0
+  }
+  const sec = ms / 1000
+  if (sec < 60) {
+    return `${sec.toFixed(1)}秒`
+  }
+  const minutes = Math.floor(sec / 60)
+  const seconds = sec % 60
+  return `${minutes}分${seconds.toFixed(1)}秒`
+}
+
+/**
+ * Strip ANSI escape codes from terminal output.
+ * @param {string} text
+ * @returns {string}
+ */
+function stripAnsi(text) {
+  return text.replace(/\u001b\[[0-9;]*m/g, '')
+}
+
+/**
+ * Detect when Tauri dev finished compiling and launched the app binary.
+ * @param {string} text
+ * @returns {boolean}
+ */
+function isDevStartupReady(text) {
+  return /Running `.+nrm-desktop`/.test(stripAnsi(text))
+}
+
+/**
  * Run a command and capture stdout/stderr.
  * @param {string} command
  * @param {string[]} args
@@ -131,6 +166,26 @@ async function cleanupTempConfig() {
 }
 
 async function main() {
+  const startedAt = Date.now()
+  let startupReported = false
+
+  const reportStartupReady = () => {
+    if (startupReported) {
+      return
+    }
+    startupReported = true
+    const elapsedMs = Date.now() - startedAt
+    process.stdout.write(
+      `\n[tauri-dev] 启动完成，总耗时: ${formatDuration(elapsedMs)}（${elapsedMs} ms）\n`,
+    )
+  }
+
+  const inspectStartupOutput = text => {
+    if (isDevStartupReady(text)) {
+      reportStartupReady()
+    }
+  }
+
   await ensureRustToolchain()
   syncAppVersionFromPackageJson()
   const port = await findAvailablePort(basePort, maxAttempts)
@@ -140,8 +195,18 @@ async function main() {
 
   const child = spawnPnpm(['tauri', 'dev', '--config', tempConfigPath], {
     cwd: rootDir,
-    stdio: 'inherit',
+    stdio: ['inherit', 'pipe', 'pipe'],
     env: process.env,
+  })
+
+  child.stdout?.on('data', chunk => {
+    process.stdout.write(chunk)
+    inspectStartupOutput(String(chunk))
+  })
+
+  child.stderr?.on('data', chunk => {
+    process.stderr.write(chunk)
+    inspectStartupOutput(String(chunk))
   })
 
   const handleSignal = signal => {
