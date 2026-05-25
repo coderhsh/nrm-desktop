@@ -22,6 +22,7 @@ const downloadedBytes = ref(0)
 const downloadTotalBytes = ref<number | null>(null)
 const lastCheckAt = useLocalStorage<number>(UPDATE_LAST_CHECK_STORAGE_KEY, 0)
 const dismissedVersion = useLocalStorage<string>(UPDATE_DISMISSED_VERSION_STORAGE_KEY, '')
+let pendingCheckPromise: Promise<Update | null> | null = null
 
 export class AppUpdateUnavailableError extends Error {
   constructor() {
@@ -77,6 +78,28 @@ function updateDownloadProgress(event: DownloadEvent) {
   downloadProgress.value = 100
 }
 
+function runUpdaterCheck(): Promise<Update | null> {
+  if (pendingCheckPromise) return pendingCheckPromise
+
+  checking.value = true
+  pendingCheckPromise = (async () => {
+    const previousVersion = updateInfo.value?.version
+    const wasDownloaded = downloaded.value
+    const update = await check()
+    lastCheckAt.value = Date.now()
+    updateInfo.value = update
+    if (!(update && wasDownloaded && update.version === previousVersion)) {
+      resetDownloadState()
+    }
+    return update
+  })().finally(() => {
+    checking.value = false
+    pendingCheckPromise = null
+  })
+
+  return pendingCheckPromise
+}
+
 async function checkForUpdate(options: CheckForUpdateOptions = {}): Promise<Update | null> {
   const { silent = false, force = false, openDialog = true } = options
 
@@ -89,29 +112,12 @@ async function checkForUpdate(options: CheckForUpdateOptions = {}): Promise<Upda
     return updateInfo.value
   }
 
-  if (checking.value) {
-    return updateInfo.value
+  const update = await runUpdaterCheck()
+  if (update && openDialog && (!silent || dismissedVersion.value !== update.version)) {
+    dialogVisible.value = true
   }
 
-  checking.value = true
-  try {
-    const previousVersion = updateInfo.value?.version
-    const wasDownloaded = downloaded.value
-    const update = await check()
-    lastCheckAt.value = Date.now()
-    updateInfo.value = update
-    if (!(update && wasDownloaded && update.version === previousVersion)) {
-      resetDownloadState()
-    }
-
-    if (update && openDialog && (!silent || dismissedVersion.value !== update.version)) {
-      dialogVisible.value = true
-    }
-
-    return update
-  } finally {
-    checking.value = false
-  }
+  return update
 }
 
 async function downloadUpdate(): Promise<void> {

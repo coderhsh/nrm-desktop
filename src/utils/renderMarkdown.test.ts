@@ -10,6 +10,14 @@ describe('renderMarkdown', () => {
     expect(html).toContain('href="https://example.com"')
   })
 
+  it('adds safe external navigation attributes to links', () => {
+    const html = renderMarkdown('[Release](https://example.com/release)')
+
+    expect(html).toContain('href="https://example.com/release"')
+    expect(html).toContain('target="_blank"')
+    expect(html).toContain('rel="noopener noreferrer"')
+  })
+
   it('escapes raw html in source', () => {
     const html = renderMarkdown('<script>alert(1)</script>')
 

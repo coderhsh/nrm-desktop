@@ -17,6 +17,7 @@ const rootDir = path.resolve(__dirname, '..')
 const configPath = path.join(rootDir, 'src-tauri', 'tauri.conf.json')
 const reusableWorkflowPath = path.join(rootDir, '.github', 'workflows', 'installer-build-reusable.yml')
 const releaseWorkflowPath = path.join(rootDir, '.github', 'workflows', 'release-installers.yml')
+const publishUpdaterManifestPath = path.join(rootDir, 'scripts', 'publish-updater-manifest.mjs')
 
 const REQUIRED_SECRETS = [
   'TAURI_SIGNING_PRIVATE_KEY',
@@ -46,6 +47,50 @@ function reportCheck(label, ok, detail = '') {
   return ok
 }
 
+/**
+ * @param {string} label
+ * @param {string} [detail]
+ */
+function reportWarning(label, detail = '') {
+  process.stdout.write(`[verify-updater-setup] WARN ${label}${detail ? `: ${detail}` : ''}\n`)
+}
+
+/**
+ * @param {string} releaseWorkflow
+ * @param {string} publishScript
+ * @returns {boolean}
+ */
+export function hasUpdaterManifestPublishPipeline(releaseWorkflow, publishScript) {
+  return releaseWorkflow.includes('publish-updater-manifest.mjs')
+    && /UPDATER_RELEASE_TAG\s*=\s*['"]updater['"]/.test(publishScript)
+    && /['"]release['"]\s*,\s*['"]upload['"]/.test(publishScript)
+    && publishScript.includes('--clobber')
+}
+
+/**
+ * @param {unknown} error
+ * @returns {string}
+ */
+export function formatFetchErrorDetail(error) {
+  const parts = []
+  if (error instanceof Error) {
+    parts.push(error.message)
+    const cause = error.cause
+    if (cause && typeof cause === 'object') {
+      const causeRecord = /** @type {Record<string, unknown>} */ (cause)
+      if (typeof causeRecord.code === 'string') {
+        parts.push(`code=${causeRecord.code}`)
+      }
+      if (typeof causeRecord.hostname === 'string') {
+        parts.push(`hostname=${causeRecord.hostname}`)
+      }
+    }
+  } else {
+    parts.push(String(error))
+  }
+  return parts.filter(Boolean).join('; ')
+}
+
 async function verifyTauriConfig() {
   const config = JSON.parse(await readText(configPath))
   const updater = config.plugins?.updater
@@ -63,12 +108,16 @@ async function verifyTauriConfig() {
 async function verifyWorkflowSecrets() {
   const reusable = await readText(reusableWorkflowPath)
   const release = await readText(releaseWorkflowPath)
+  const publish = await readText(publishUpdaterManifestPath)
   const checks = REQUIRED_SECRETS.map(secret =>
     reportCheck(`workflow references ${secret}`, reusable.includes(secret)),
   )
   checks.push(reportCheck('release workflow inherits secrets', release.includes('secrets: inherit')))
   checks.push(reportCheck('release workflow generates latest.json', release.includes('generate-updater-manifest.mjs')))
-  checks.push(reportCheck('release workflow uploads updater tag', release.includes('gh release upload updater')))
+  checks.push(reportCheck(
+    'release workflow publishes updater manifest',
+    hasUpdaterManifestPublishPipeline(release, publish),
+  ))
   return checks.every(Boolean)
 }
 
@@ -116,14 +165,13 @@ async function verifyRemoteManifest() {
     const response = await fetch(UPDATER_ENDPOINT, { method: 'HEAD' })
     if (response.ok) {
       reportCheck('remote latest.json', true, `HTTP ${response.status}`)
-      return true
+      return 'ready'
     }
-    reportCheck('remote latest.json', false, `HTTP ${response.status} (首次发版前预期为 404)`)
-    return false
+    reportWarning('remote latest.json', `HTTP ${response.status} (首次发版前预期为 404)`)
+    return response.status === 404 ? 'missing' : 'unreachable'
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error)
-    reportCheck('remote latest.json', false, detail)
-    return false
+    reportWarning('remote latest.json', formatFetchErrorDetail(error))
+    return 'unreachable'
   }
 }
 
@@ -157,17 +205,18 @@ async function main() {
   ok = (await verifyTauriConfig()) && ok
   ok = (await verifyWorkflowSecrets()) && ok
   ok = (await verifyManifestPipeline()) && ok
-  const remoteReady = await verifyRemoteManifest()
+  const remoteStatus = await verifyRemoteManifest()
 
   const localSecrets = REQUIRED_SECRETS.filter(name => process.env[name]?.trim())
   if (localSecrets.length > 0) {
     reportCheck('local env secrets present', localSecrets.length === REQUIRED_SECRETS.length, localSecrets.join(', '))
   } else {
     process.stdout.write('[verify-updater-setup] INFO 未检测到本地签名环境变量（CI 使用 GitHub Secrets）。\n')
+    process.stdout.write('[verify-updater-setup] INFO 正式发版走 CI；日常本地构建请使用 pnpm build，避免直接 pnpm tauri build 触发 updater 签名产物要求。\n')
   }
 
   printSecretsSetupGuide()
-  if (!remoteReady) {
+  if (remoteStatus === 'missing') {
     printPrereleaseGuide()
   }
 
@@ -178,12 +227,18 @@ async function main() {
   }
 
   process.stdout.write('[verify-updater-setup] 本地 updater 配置与 manifest 流水线校验通过。\n')
-  if (!remoteReady) {
+  if (remoteStatus === 'missing') {
     process.stdout.write('[verify-updater-setup] 远程 latest.json 尚未发布，需完成 Secrets 配置后跑一次 Release Installers。\n')
+  } else if (remoteStatus === 'unreachable') {
+    process.stdout.write('[verify-updater-setup] 远程 latest.json 当前无法确认；请在可访问网络环境用 curl 或浏览器复核。\n')
   }
 }
 
-main().catch(error => {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
-  process.exit(1)
-})
+const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)
+
+if (invokedDirectly) {
+  main().catch(error => {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+    process.exit(1)
+  })
+}

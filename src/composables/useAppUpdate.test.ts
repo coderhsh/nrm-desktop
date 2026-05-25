@@ -34,6 +34,16 @@ function createFakeUpdate(version = '1.2.3') {
   }
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve
+    reject = promiseReject
+  })
+  return { promise, resolve, reject }
+}
+
 async function loadComposable() {
   return import('./useAppUpdate')
 }
@@ -166,6 +176,49 @@ describe('useAppUpdate', () => {
     expect(formatUpdateError(t, new Error('network unavailable')))
       .toBe('更新服务异常：network unavailable')
     expect(appUpdate.updateInfo.value).toBeNull()
+  })
+
+  it('shares a pending updater check across concurrent calls', async () => {
+    const update = createFakeUpdate('2.0.0')
+    const pending = createDeferred<typeof update>()
+    mocks.check.mockReturnValue(pending.promise)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    const firstCheck = appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+    const secondCheck = appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+    expect(appUpdate.checking.value).toBe(true)
+
+    pending.resolve(update)
+
+    await expect(firstCheck).resolves.toBe(update)
+    await expect(secondCheck).resolves.toBe(update)
+    expect(appUpdate.updateInfo.value).toBe(update)
+    expect(appUpdate.dialogVisible.value).toBe(true)
+    expect(appUpdate.checking.value).toBe(false)
+  })
+
+  it('lets a manual check wait for a silent startup check and open a dismissed update', async () => {
+    localStorage.setItem(UPDATE_DISMISSED_VERSION_STORAGE_KEY, '2.0.0')
+    const update = createFakeUpdate('2.0.0')
+    const pending = createDeferred<typeof update>()
+    mocks.check.mockReturnValue(pending.promise)
+    const { useAppUpdate } = await loadComposable()
+    const appUpdate = useAppUpdate()
+
+    const startupCheck = appUpdate.checkForUpdate({ force: true, silent: true, openDialog: true })
+    const manualCheck = appUpdate.checkForUpdate({ force: true, silent: false, openDialog: true })
+
+    expect(mocks.check).toHaveBeenCalledOnce()
+
+    pending.resolve(update)
+
+    await expect(startupCheck).resolves.toBe(update)
+    await expect(manualCheck).resolves.toBe(update)
+    expect(appUpdate.updateInfo.value).toBe(update)
+    expect(appUpdate.dialogVisible.value).toBe(true)
   })
 
   it('preserves downloaded state when rechecking the same version', async () => {
