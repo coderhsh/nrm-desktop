@@ -1,7 +1,7 @@
 {
   "name": "nrm-desktop",
   "private": true,
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "nrm-desktop - A lightweight desktop GUI for npm registry management, built with Tauri + Vue.",
   "author": "coderhsh",
   "license": "Apache-2.0",
