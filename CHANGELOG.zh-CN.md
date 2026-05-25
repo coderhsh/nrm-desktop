@@ -9,6 +9,8 @@
 
 ## [未发布]
 
+## [1.1.0] - 2026-05-25
+
 ### 新增
 
 - 应用内自动更新（Tauri updater）：启动时静默检查（最多每 24 小时一次）、设置页手动检查、更新对话框展示发行说明
@@ -63,7 +65,7 @@
 - 开机自启动、关闭行为（最小化到托盘或退出）、单实例锁
 - 代理配置后端能力（界面入口可在后续版本开放）
 
-[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.9...HEAD
+[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.0...HEAD
 [1.1.9]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.9
 [1.1.8]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.8
 [1.1.7]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.7
