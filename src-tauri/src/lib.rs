@@ -35,7 +35,7 @@ const REGISTRY_MENU_ID_PREFIX: &str = "reg:";
 fn build_tray_context_menu(app: &tauri::AppHandle<Wry>) -> tauri::Result<Menu<Wry>> {
     let lang = app_settings::get_language();
     let all_regs = registries::get_all().unwrap_or_default();
-    let current_name = get_current_name();
+    let current_name = get_current_name(&all_regs);
 
     let mut menu_builder = MenuBuilder::new(app);
 
@@ -144,13 +144,21 @@ fn registry_url_key(url: &str) -> String {
 }
 
 /// Get current registry name for tray menu checkmark
-fn get_current_name() -> Option<String> {
+fn get_current_name(registries: &[models::Registry]) -> Option<String> {
     let url = npmrc::read_current_registry().ok()??;
-    let current_key = registry_url_key(&url);
-    let all = registries::get_all().ok()?;
-    all.into_iter()
+    current_name_from_registry_url(&url, registries)
+}
+
+fn current_name_from_registry_url(url: &str, registries: &[models::Registry]) -> Option<String> {
+    let current_key = registry_url_key(url);
+    current_name_from_registry_url_key(&current_key, registries)
+}
+
+fn current_name_from_registry_url_key(current_key: &str, registries: &[models::Registry]) -> Option<String> {
+    registries
+        .iter()
         .find(|r| registry_url_key(&r.url) == current_key)
-        .map(|r| r.name)
+        .map(|r| r.name.clone())
 }
 
 /// Try to acquire single instance lock.
@@ -222,6 +230,31 @@ fn cleanup_single_instance_lock() {
 /// Clear single instance lock file manually.
 pub fn clear_single_instance_lock() {
     cleanup_single_instance_lock();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Registry;
+
+    fn registry(name: &str, url: &str) -> Registry {
+        Registry {
+            name: name.to_string(),
+            url: url.to_string(),
+        }
+    }
+
+    #[test]
+    fn current_name_from_registry_url_uses_loaded_registries() {
+        let registries = vec![
+            registry("npm", "https://registry.npmjs.org/"),
+            registry("mirror", "https://mirror.example/npm/"),
+        ];
+
+        let current_name = current_name_from_registry_url(" https://mirror.example/npm ", &registries);
+
+        assert_eq!(current_name.as_deref(), Some("mirror"));
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
