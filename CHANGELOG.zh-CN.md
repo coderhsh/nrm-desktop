@@ -9,6 +9,8 @@
 
 ## [未发布]
 
+## [1.1.1] - 2026-05-26
+
 ### 新增
 
 - 为前端环境准备/构建、安装包打包、产物上传、Release 发布、updater manifest 生成等 CI 阶段添加耗时汇总
@@ -78,7 +80,7 @@
 - 开机自启动、关闭行为（最小化到托盘或退出）、单实例锁
 - 代理配置后端能力（界面入口可在后续版本开放）
 
-[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.0...HEAD
+[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.1...HEAD
 [1.1.9]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.9
 [1.1.8]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.8
 [1.1.7]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.7
