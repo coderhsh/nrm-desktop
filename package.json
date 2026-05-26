@@ -45,6 +45,7 @@
     "version": "node ./scripts/sync-app-version.mjs",
     "sync:version": "node ./scripts/sync-app-version.mjs",
     "sync:tags": "node ./scripts/sync-remote-tags.mjs",
+    "sync:pull": "node ./scripts/sync-pull.mjs",
     "changelog:context": "node ./scripts/changelog-context.mjs",
     "setup:git-hooks": "node ./scripts/install-git-hooks.mjs",
     "prepare": "node ./scripts/install-git-hooks.mjs"
