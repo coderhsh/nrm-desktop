@@ -1,3 +1,4 @@
+use crate::registry_config::{parse_registry_value, RegistryParseOptions};
 use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -27,19 +28,7 @@ pub fn read_current_registry() -> io::Result<Option<String>> {
         return Ok(None);
     }
     let content = fs::read_to_string(&path)?;
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if let Some(value) = trimmed.strip_prefix("registry=") {
-            return Ok(Some(value.trim().trim_matches('"').to_string()));
-        }
-        if let Some(rest) = trimmed.strip_prefix("registry") {
-            let rest = rest.trim_start();
-            if let Some(value) = rest.strip_prefix('=') {
-                return Ok(Some(value.trim().trim_matches('"').to_string()));
-            }
-        }
-    }
-    Ok(None)
+    Ok(parse_registry_value(&content, RegistryParseOptions::NPMRC))
 }
 
 /// Atomically write content to a file (write to tmp, rename).

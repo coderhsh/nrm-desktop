@@ -5,6 +5,7 @@ mod npmrc;
 mod paths;
 mod project_registry;
 mod proxy;
+mod registry_config;
 mod registries;
 mod speedtest;
 

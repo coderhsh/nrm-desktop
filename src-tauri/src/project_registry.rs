@@ -1,3 +1,4 @@
+use crate::registry_config::{parse_registry_value, RegistryParseOptions};
 use std::fs;
 use std::path::PathBuf;
 
@@ -28,14 +29,5 @@ pub fn find_project_nrmrc() -> Option<(PathBuf, String)> {
 /// Read registry URL from a .nrmrc file.
 fn read_nrmrc(path: &PathBuf) -> Option<String> {
     let content = fs::read_to_string(path).ok()?;
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if let Some(url) = trimmed.strip_prefix("registry=") {
-            let cleaned = url.trim().trim_matches('"').to_string();
-            if cleaned.starts_with("http://") || cleaned.starts_with("https://") {
-                return Some(cleaned);
-            }
-        }
-    }
-    None
+    parse_registry_value(&content, RegistryParseOptions::PROJECT_NRMRC)
 }
