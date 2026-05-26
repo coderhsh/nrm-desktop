@@ -1,6 +1,7 @@
 use crate::app_settings;
 use crate::models::{default_registries, Registry};
 use crate::npmrc;
+use crate::paths;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
@@ -16,26 +17,14 @@ struct CustomData {
     deleted_presets: Vec<String>,
 }
 
-/// Get the config directory for storing custom registries.
-fn config_dir() -> PathBuf {
-    let home = if let Ok(home) = std::env::var("USERPROFILE") {
-        PathBuf::from(home)
-    } else if let Ok(home) = std::env::var("HOME") {
-        PathBuf::from(home)
-    } else {
-        PathBuf::from(".")
-    };
-    home.join(".nrm-desktop")
-}
-
 /// Get the path to the custom registries file.
 fn custom_file_path() -> PathBuf {
-    config_dir().join("custom.json")
+    paths::config_dir().join("custom.json")
 }
 
 /// Ensure the config directory exists.
 fn ensure_config_dir() -> io::Result<()> {
-    let dir = config_dir();
+    let dir = paths::config_dir();
     if !dir.exists() {
         fs::create_dir_all(&dir)?;
     }

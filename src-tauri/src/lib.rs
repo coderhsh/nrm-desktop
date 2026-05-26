@@ -2,6 +2,7 @@ mod app_settings;
 mod commands;
 mod models;
 mod npmrc;
+mod paths;
 mod project_registry;
 mod proxy;
 mod registries;
