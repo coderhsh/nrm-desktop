@@ -366,7 +366,7 @@ html:not(.dark) .el-message-box.category-delete-confirm-messagebox .el-message-b
   transform: scale(0.98);
 }
 
-/* 恢复默认确认：与删除分类同系 sheet 风格；确认键为警示橙（非删除红） */
+/* 重置默认确认：与删除分类同系 sheet 风格；确认键为警示橙（非删除红） */
 .el-message-box.app-reset-defaults-messagebox {
   width: min(26rem, calc(100vw - 2rem));
   max-width: 26rem;
@@ -2325,7 +2325,7 @@ html.dark .el-message-box.category-delete-confirm-messagebox .category-delete-co
     0 4px 16px rgba(255, 69, 58, 0.35) !important;
 }
 
-/* 恢复默认确认（深色）：与删除分类同系 sheet 风格；确认键为警示橙 */
+/* 重置默认确认（深色）：与删除分类同系 sheet 风格；确认键为警示橙 */
 html.dark .el-message-box.app-reset-defaults-messagebox {
   border: 0.5px solid color-mix(in srgb, var(--el-border-color) 70%, transparent);
   background: linear-gradient(160deg, #3d3d40 0%, #2d2d30 48%, #252528 100%);
@@ -3672,7 +3672,7 @@ html.dark .settings-drawer .settings-action-btn.el-button:active {
   transform: scale(0.98);
 }
 
-/* 深色：恢复默认 — 与数据区同体积感，语义保持暖红 */
+/* 深色：重置默认 — 与数据区同体积感，语义保持暖红 */
 html.dark .settings-drawer .settings-danger-btn.el-button.is-plain,
 html.dark .settings-drawer .settings-danger-btn.el-button {
   border-radius: 0.72rem !important;
