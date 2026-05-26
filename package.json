@@ -44,7 +44,9 @@
     "update:logo": "node ./scripts/generate-icons.cjs",
     "version": "node ./scripts/sync-app-version.mjs",
     "sync:version": "node ./scripts/sync-app-version.mjs",
-    "sync:tags": "node ./scripts/sync-remote-tags.mjs"
+    "sync:tags": "node ./scripts/sync-remote-tags.mjs",
+    "setup:git-hooks": "node ./scripts/install-git-hooks.mjs",
+    "prepare": "node ./scripts/install-git-hooks.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",

@@ -1,0 +1,9 @@
+#!/bin/sh
+# 提交前同步 origin tag，避免后续 pull --tags 因 clobber 失败。
+set -e
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+node ./scripts/sync-remote-tags.mjs --allow-offline --quiet
+exit 0
