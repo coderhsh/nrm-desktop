@@ -83,6 +83,8 @@ code {
   font-family: var(--font-mono);
 }
 
+::view-transition-group(root),
+::view-transition-image-pair(root),
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -95,13 +97,11 @@ html.is-theme-transitioning *::after {
   transition: none !important;
 }
 
-:root[data-theme='dark']::view-transition-old(root),
-:root[data-theme='light']::view-transition-new(root) {
+::view-transition-old(root) {
   z-index: 1;
 }
 
-:root[data-theme='dark']::view-transition-new(root),
-:root[data-theme='light']::view-transition-old(root) {
+::view-transition-new(root) {
   z-index: 999;
 }
 

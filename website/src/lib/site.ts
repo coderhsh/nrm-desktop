@@ -151,6 +151,13 @@ const detectPlatform = (): 'macos' | 'windows' | 'other' => {
   return 'other'
 }
 
+const applyThemeDomState = (value: Theme) => {
+  document.documentElement.dataset.theme = value
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', value === 'dark' ? '#07161b' : '#f6f3ed')
+}
+
 export const t = (copy: Copy) => copy[lang.value]
 
 export const assetUrl = (baseUrl: string, path: string) => `${baseUrl}${path}`
@@ -182,7 +189,7 @@ const init = () => {
   lang.value = detectLocale()
   theme.value = detectTheme()
   userPlatform.value = detectPlatform()
-  document.documentElement.dataset.theme = theme.value
+  applyThemeDomState(theme.value)
   document.documentElement.lang = lang.value === 'zh' ? 'zh-CN' : 'en'
 
   watch(lang, (value) => {
@@ -191,10 +198,7 @@ const init = () => {
 
   watch(theme, (value) => {
     localStorage.setItem(STORAGE_THEME, value)
-    document.documentElement.dataset.theme = value
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', value === 'dark' ? '#07161b' : '#f6f3ed')
+    applyThemeDomState(value)
   })
 }
 
@@ -258,6 +262,7 @@ export const ensureReleaseLoaded = async () => {
 const runThemeTransition = async (nextTheme: Theme, event?: MouseEvent) => {
   const apply = () => {
     theme.value = nextTheme
+    applyThemeDomState(nextTheme)
   }
 
   if (!document.startViewTransition || !event) {
@@ -290,16 +295,14 @@ const runThemeTransition = async (nextTheme: Theme, event?: MouseEvent) => {
       `circle(0px at ${x}px ${y}px)`,
       `circle(${radius}px at ${x}px ${y}px)`,
     ]
+    const animatedPseudo = '::view-transition-new(root)'
 
     const animation = root.animate(
-      { clipPath: nextTheme === 'dark' ? frames : [...frames].reverse() },
+      { clipPath: frames },
       {
         duration: 720,
         easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-        pseudoElement:
-          nextTheme === 'dark'
-            ? '::view-transition-new(root)'
-            : '::view-transition-old(root)',
+        pseudoElement: animatedPseudo,
       },
     )
 
