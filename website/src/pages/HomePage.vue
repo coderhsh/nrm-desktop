@@ -111,7 +111,7 @@ import { t } from '../lib/site'
     </div>
 
     <div class="story-grid">
-      <div class="story-media" data-parallax="0.06">
+      <div class="story-media">
         <img src="/images/screenshot-light-en.png" alt="nrm desktop screenshot" data-reveal />
       </div>
       <div class="story-copy">

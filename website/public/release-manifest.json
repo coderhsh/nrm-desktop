@@ -1,0 +1,46 @@
+{
+  "tag_name": "v1.1.1",
+  "html_url": "https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.1",
+  "assets": [
+    {
+      "name": "latest.json",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/latest.json",
+      "size": 2750
+    },
+    {
+      "name": "nrm-desktop_1.1.1_macos_aarch64.app.tar.gz",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/nrm-desktop_1.1.1_macos_aarch64.app.tar.gz",
+      "size": 8424100
+    },
+    {
+      "name": "nrm-desktop_1.1.1_macos_aarch64.app.tar.gz.sig",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/nrm-desktop_1.1.1_macos_aarch64.app.tar.gz.sig",
+      "size": 412
+    },
+    {
+      "name": "nrm-desktop_1.1.1_macos_aarch64.dmg",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/nrm-desktop_1.1.1_macos_aarch64.dmg",
+      "size": 9014835
+    },
+    {
+      "name": "nrm-desktop_1.1.1_windows_x64-portable.zip",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/nrm-desktop_1.1.1_windows_x64-portable.zip",
+      "size": 5908745
+    },
+    {
+      "name": "nrm-desktop_1.1.1_windows_x64-setup.exe",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/nrm-desktop_1.1.1_windows_x64-setup.exe",
+      "size": 4245947
+    },
+    {
+      "name": "nrm-desktop_1.1.1_windows_x64-setup.exe.sig",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/nrm-desktop_1.1.1_windows_x64-setup.exe.sig",
+      "size": 424
+    },
+    {
+      "name": "nrm-desktop_1.1.1_windows_x64.msi",
+      "browser_download_url": "https://github.com/coderhsh/nrm-desktop/releases/download/v1.1.1/nrm-desktop_1.1.1_windows_x64.msi",
+      "size": 6291456
+    }
+  ]
+}

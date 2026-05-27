@@ -118,8 +118,10 @@ onMounted(() => {
       <p>{{ t(card.detail) }}</p>
       <small>{{ findAsset(card.id)?.name ?? t({ en: 'Fallback to GitHub Releases', zh: '回退到 GitHub Releases' }) }}</small>
       <a class="button primary download-button" :href="findAsset(card.id)?.browser_download_url ?? LATEST_RELEASE_URL" target="_blank" rel="noreferrer">
-        {{ t({ en: 'Download', zh: '下载' }) }}
-        <span>{{ formatSize(findAsset(card.id)?.size) }}</span>
+        <span class="download-button-label">{{ t({ en: 'Download', zh: '下载' }) }}</span>
+        <span class="download-button-size">
+          {{ formatSize(findAsset(card.id)?.size) || '--' }}
+        </span>
       </a>
     </article>
   </div>

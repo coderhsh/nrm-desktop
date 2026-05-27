@@ -49,6 +49,7 @@ const STORAGE_THEME = 'nrm-desktop.website.theme'
 export const REPO_URL = 'https://github.com/coderhsh/nrm-desktop'
 export const RELEASES_URL = `${REPO_URL}/releases`
 export const LATEST_RELEASE_URL = `${RELEASES_URL}/latest`
+const RELEASE_MANIFEST_URL = `${import.meta.env.BASE_URL}release-manifest.json`
 const RELEASE_API_URL = 'https://api.github.com/repos/coderhsh/nrm-desktop/releases/latest'
 
 const lang = ref<Locale>('en')
@@ -221,14 +222,26 @@ export const ensureReleaseLoaded = async () => {
   isLoadingRelease.value = true
   releaseError.value = ''
 
-  releasePromise = fetch(RELEASE_API_URL, {
-    headers: { Accept: 'application/vnd.github+json' },
+  releasePromise = fetch(RELEASE_MANIFEST_URL, {
+    headers: { Accept: 'application/json' },
   })
     .then(async (response) => {
       if (!response.ok) {
+        throw new Error(`Manifest ${response.status}`)
+      }
+      return (await response.json()) as GitHubRelease
+    })
+    .catch(async () => {
+      const response = await fetch(RELEASE_API_URL, {
+        headers: { Accept: 'application/vnd.github+json' },
+      })
+      if (!response.ok) {
         throw new Error(`GitHub API ${response.status}`)
       }
-      release.value = (await response.json()) as GitHubRelease
+      return (await response.json()) as GitHubRelease
+    })
+    .then((data) => {
+      release.value = data
       releaseLoaded.value = true
     })
     .catch((error: unknown) => {
@@ -266,25 +279,34 @@ const runThemeTransition = async (nextTheme: Theme, event?: MouseEvent) => {
     Math.max(y, window.innerHeight - y),
   )
 
-  const transition = document.startViewTransition(apply)
-  await transition.ready
+  const root = document.documentElement
+  root.classList.add('is-theme-transitioning')
 
-  const frames = [
-    `circle(0px at ${x}px ${y}px)`,
-    `circle(${radius}px at ${x}px ${y}px)`,
-  ]
+  try {
+    const transition = document.startViewTransition(apply)
+    await transition.ready
 
-  document.documentElement.animate(
-    { clipPath: nextTheme === 'dark' ? frames : [...frames].reverse() },
-    {
-      duration: 720,
-      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-      pseudoElement:
-        nextTheme === 'dark'
-          ? '::view-transition-new(root)'
-          : '::view-transition-old(root)',
-    },
-  )
+    const frames = [
+      `circle(0px at ${x}px ${y}px)`,
+      `circle(${radius}px at ${x}px ${y}px)`,
+    ]
+
+    const animation = root.animate(
+      { clipPath: nextTheme === 'dark' ? frames : [...frames].reverse() },
+      {
+        duration: 720,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        pseudoElement:
+          nextTheme === 'dark'
+            ? '::view-transition-new(root)'
+            : '::view-transition-old(root)',
+      },
+    )
+
+    await Promise.allSettled([animation.finished, transition.finished])
+  } finally {
+    root.classList.remove('is-theme-transitioning')
+  }
 }
 
 export const useSiteState = () => {
