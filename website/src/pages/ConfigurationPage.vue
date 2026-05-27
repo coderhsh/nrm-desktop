@@ -22,11 +22,11 @@ import { t } from '../lib/site'
   <section class="section guide-layout">
     <aside class="guide-toc" data-reveal>
       <h3>{{ t({ en: 'On this page', zh: '本页目录' }) }}</h3>
-      <a href="#paths">Paths</a>
-      <a href="#npmrc">.npmrc</a>
-      <a href="#metadata">{{ t({ en: 'Metadata', zh: '元数据' }) }}</a>
-      <a href="#ui">{{ t({ en: 'UI preferences', zh: '界面偏好' }) }}</a>
-      <a href="#workflow">{{ t({ en: 'Workflow', zh: '工作流' }) }}</a>
+      <span class="guide-toc-item">Paths</span>
+      <span class="guide-toc-item">.npmrc</span>
+      <span class="guide-toc-item">{{ t({ en: 'Metadata', zh: '元数据' }) }}</span>
+      <span class="guide-toc-item">{{ t({ en: 'UI preferences', zh: '界面偏好' }) }}</span>
+      <span class="guide-toc-item">{{ t({ en: 'Workflow', zh: '工作流' }) }}</span>
     </aside>
 
     <div class="guide-body">

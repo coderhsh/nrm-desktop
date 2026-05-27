@@ -41,6 +41,14 @@ jobs:
           cache: pnpm
           cache-dependency-path: website/pnpm-lock.yaml
 
+      - name: Refresh release manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}/releases/latest \
+            --jq '{tag_name: .tag_name, html_url: .html_url, assets: [.assets[] | {name: .name, browser_download_url: .browser_download_url, size: .size}]}' \
+            > website/public/release-manifest.json
+
       - name: Install website dependencies
         run: pnpm --dir website install --frozen-lockfile
 
