@@ -4,7 +4,7 @@
 
 `nrm-desktop` 是一个 Tauri 桌面端前后端一体项目：前端为 Vue 3 + TypeScript + Vite，后端为 Rust/Tauri 2 命令层。项目用于管理 npm registry、测速、切换源、配置导入导出、托盘菜单、自启动等桌面能力。
 
-当前不是 Monorepo，没有独立 HTTP API 服务；前后端通过 Tauri `invoke` 通信。未发现数据库、ORM、缓存、队列、鉴权、Docker、OpenAPI/Swagger 配置。
+当前不是 Monorepo，没有独立 HTTP API 服务；前后端通过 Tauri `invoke` 通信。根目录另有 `website/` 独立官网子项目，使用自己的 `package.json` 和 `pnpm-lock.yaml` 管理依赖，不与桌面应用源码混合。未发现数据库、ORM、缓存、队列、鉴权、Docker、OpenAPI/Swagger 配置。
 
 ## 技术栈
 
@@ -16,7 +16,7 @@
 | 构建工具 | Vite 7 |
 | 语言 | TypeScript |
 | 包管理器 | pnpm |
-| 路由 | 未使用 vue-router，主界面由 `src/App.vue` 组合 |
+| 路由 | 主桌面应用未使用 vue-router，主界面由 `src/App.vue` 组合 |
 | 状态管理 | Pinia |
 | 请求/通信 | `@tauri-apps/api/core` 的 `invoke` |
 | UI 组件库 | Element Plus、`@element-plus/icons-vue` |
@@ -40,6 +40,19 @@
 | 序列化 | `serde`、`serde_json` |
 | 桌面能力 | tray icon、dialog、shell、autostart 插件 |
 
+### 官网技术栈
+
+| 类型 | 技术 |
+| --- | --- |
+| 位置 | `website/` |
+| 框架 | Vue 3 |
+| 构建工具 | Vite 7 |
+| 语言 | TypeScript |
+| 包管理器 | pnpm（`website/pnpm-lock.yaml` 独立管理） |
+| 路由 | vue-router（Hash History，单 HTML 入口） |
+| 发布 | GitHub Pages，通过 `.github/workflows/deploy-website.yml` |
+| 数据来源 | 浏览器端读取 GitHub Releases latest API，失败回退到 Releases 页面 |
+
 ## 常用命令
 
 | 命令 | 说明 |
@@ -48,6 +61,10 @@
 | `pnpm dev` | Tauri 本地开发；自动从 1420 起寻找可用端口并生成临时 dev config |
 | `pnpm ui:dev` | 仅启动 Vite 前端开发服务 |
 | `pnpm ui:build` | 前端类型检查并构建：`vue-tsc --noEmit && vite build` |
+| `pnpm typecheck` | 前端 TypeScript 类型检查 |
+| `pnpm website:dev` | 启动 `website/` 官网开发服务 |
+| `pnpm website:build` | 构建 `website/` 官网 |
+| `pnpm website:preview` | 预览 `website/` 构建产物 |
 | `pnpm lint` | ESLint 检查 `src` 与根目录 `*.ts`/`*.js` 配置 |
 | `pnpm lint:fix` | ESLint 自动修复 |
 | `pnpm test` | Vitest 单元测试（`src/**/*.test.ts`） |
@@ -61,7 +78,7 @@
 | `pnpm version` | 同步版本号脚本 |
 | `pnpm changelog:context` | 收集上个版本 tag 到当前 HEAD 的 changelog 生成上下文 |
 
-当前 `package.json` 未提供 `preview`、独立 `typecheck`、格式化或数据库迁移命令。
+当前 `package.json` 未提供根应用 `preview`、格式化或数据库迁移命令。
 
 ## 目录结构
 
@@ -70,6 +87,7 @@
 ├── src/                 # Vue 前端源码
 ├── src-tauri/           # Rust/Tauri 桌面后端与打包配置
 ├── scripts/             # 开发、构建、版本同步、图标生成脚本
+├── website/             # 独立官网：Vite + Vue + TypeScript，部署到 GitHub Pages
 ├── docs/images/         # README 截图资源
 ├── index.html           # Vite HTML 入口
 ├── package.json         # pnpm scripts 与前端依赖
@@ -112,7 +130,23 @@ src-tauri/
 └── tauri.conf.json      # Tauri 构建、窗口、bundle 配置
 ```
 
-当前没有 `src/router`、`src/views`、`src/pages`、`src/assets`、数据库目录或后端 HTTP 路由目录。
+主桌面应用当前没有 `src/router`、`src/views`、`src/pages`、`src/assets`、数据库目录或后端 HTTP 路由目录；官网路由位于 `website/src/router.ts`。
+
+```txt
+website/
+├── src/                 # 官网 Vue 源码
+│   ├── pages/           # 官网路由页面
+│   ├── components/      # 官网导航、下载矩阵、页脚等组件
+│   ├── lib/             # 官网状态、文案、动效逻辑
+│   ├── router.ts        # 官网路由
+│   └── AppRoot.vue      # 官网根布局
+├── public/images/       # 官网静态图片资源
+├── package.json         # 官网独立脚本与依赖
+├── pnpm-lock.yaml       # 官网独立锁文件
+├── index.html           # 官网 HTML 入口
+├── vite.config.ts       # 官网 Vite 配置
+└── tsconfig.json        # 官网 TypeScript 配置
+```
 
 ## Agent 工作流
 

@@ -1,6 +1,6 @@
 # nrm-desktop
 
-[简体中文](./README.zh-CN.md) · [Changelog](./CHANGELOG.md)
+[Website](https://coderhsh.github.io/nrm-desktop/) · [简体中文](./README.zh-CN.md) · [Changelog](./CHANGELOG.md)
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 [![Tauri 2](https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri)](https://v2.tauri.app/)
@@ -98,6 +98,8 @@ pnpm build
 | `pnpm build:win` | Build Windows installer only |
 | `pnpm ui:dev` | Start Vite frontend dev server only |
 | `pnpm ui:build` | Type-check and build frontend only |
+| `pnpm website:dev` | Start the standalone website dev server |
+| `pnpm website:build` | Build the standalone website for GitHub Pages |
 | `pnpm lint` | ESLint check |
 | `pnpm test` | Vitest unit tests |
 | `pnpm tauri` | Pass-through Tauri CLI |
@@ -140,6 +142,10 @@ Open **Actions → Build Installers → Run workflow** and choose platforms and 
 - **Settings → Actions → General → Workflow permissions**: enable **Read and write permissions**.
 - If branch protection is enabled on **`main`** or **`dev`**, allow `github-actions[bot]` to push (or configure a PAT secret for release commits).
 
+## Website
+
+The project website lives in [`website`](./website) as an isolated Vite + Vue app. It is deployed to GitHub Pages from `main` by the **Deploy Website** workflow.
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -161,6 +167,7 @@ src-tauri/
   icons/                # App icon assets
 scripts/                # Dev/build helpers (auto-port, icon gen, version sync)
 docs/images/            # README screenshots
+website/                # Standalone GitHub Pages website
 ```
 
 ## Configuration & Data

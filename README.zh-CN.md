@@ -1,6 +1,6 @@
 # nrm-desktop
 
-[English](./README.md) · [更新日志](./CHANGELOG.zh-CN.md)
+[官网](https://coderhsh.github.io/nrm-desktop/) · [English](./README.md) · [更新日志](./CHANGELOG.zh-CN.md)
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 [![Tauri 2](https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri)](https://v2.tauri.app/)
@@ -98,6 +98,8 @@ pnpm build
 | `pnpm build:win` | 仅构建 Windows 安装包 |
 | `pnpm ui:dev` | 仅启动 Vite 前端开发服务 |
 | `pnpm ui:build` | 前端类型检查与构建 |
+| `pnpm website:dev` | 启动独立官网开发服务 |
+| `pnpm website:build` | 构建用于 GitHub Pages 的独立官网 |
 | `pnpm lint` | ESLint 检查 |
 | `pnpm test` | Vitest 单元测试 |
 | `pnpm tauri` | 透传 Tauri CLI 命令 |
@@ -140,6 +142,10 @@ pnpm build
 - **Settings → Actions → General → Workflow permissions**：开启 **Read and write permissions**。
 - 若 **`main`** 或 **`dev`** 开启了分支保护，需允许 `github-actions[bot]` 推送（或为发布 commit 配置 PAT secret）。
 
+## 官网
+
+项目官网位于 [`website`](./website)，是一个独立的 Vite + Vue 应用。合并到 `main` 后由 **Deploy Website** 工作流部署到 GitHub Pages。
+
 ## 技术栈
 
 | 层级 | 技术 |
@@ -161,6 +167,7 @@ src-tauri/
   icons/                # 应用图标资源
 scripts/                # 开发/构建辅助脚本（自动端口、图标生成、版本同步）
 docs/images/            # README 截图
+website/                # 独立 GitHub Pages 官网
 ```
 
 ## 配置与数据位置
