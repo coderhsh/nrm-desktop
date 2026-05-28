@@ -186,20 +186,14 @@ pub fn add_registry(app: tauri::AppHandle, name: &str, url: &str) -> Result<(), 
 #[tauri::command]
 pub async fn delete_registry(app: tauri::AppHandle, name: String) -> Result<(), String> {
     let current_url = npmrc::read_current_registry().map_err(|e| e.to_string())?;
-    let all_before = registries::get_all().map_err(|e| e.to_string())?;
-    let target = all_before.iter().find(|r| r.name == name);
-    let was_current = match (&current_url, target) {
-        (Some(cu), Some(reg)) => {
-            normalize_registry_url_key(cu) == normalize_registry_url_key(&reg.url)
-        }
-        _ => false,
-    };
+    let outcome = registries::delete_many_and_report(
+        std::slice::from_ref(&name),
+        current_url.as_deref(),
+    )
+    .map_err(|e| e.to_string())?;
 
-    registries::delete(&name).map_err(|e| e.to_string())?;
-
-    if was_current {
-        let all_after = registries::get_all().map_err(|e| e.to_string())?;
-        if all_after.is_empty() {
+    if outcome.deleted_current {
+        if outcome.remaining.is_empty() {
             eprintln!("[nrm-desktop] 已删除最后一个源，registry 仍指向已删除的地址");
             return Ok(());
         }
@@ -228,22 +222,11 @@ pub async fn delete_registries_bulk(app: tauri::AppHandle, names: Vec<String>) -
     };
 
     let current_url = npmrc::read_current_registry().map_err(|e| e.to_string())?;
-    let all_before = registries::get_all().map_err(|e| e.to_string())?;
-    let mut deleted_current = false;
+    let outcome = registries::delete_many_and_report(&unique_names, current_url.as_deref())
+        .map_err(|e| e.to_string())?;
 
-    for name in &unique_names {
-        if let (Some(cu), Some(reg)) = (&current_url, all_before.iter().find(|r| &r.name == name)) {
-            if normalize_registry_url_key(cu) == normalize_registry_url_key(&reg.url) {
-                deleted_current = true;
-            }
-        }
-    }
-
-    registries::delete_many(&unique_names).map_err(|e| e.to_string())?;
-
-    if deleted_current {
-        let all_after = registries::get_all().map_err(|e| e.to_string())?;
-        if all_after.is_empty() {
+    if outcome.deleted_current {
+        if outcome.remaining.is_empty() {
             eprintln!("[nrm-desktop] 批量删除后已无可用源，registry 可能仍指向已删除地址");
         } else {
             let best_name = speedtest::fastest_registry_name_with_fallback().await?;

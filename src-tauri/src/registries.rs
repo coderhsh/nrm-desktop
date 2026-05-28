@@ -18,6 +18,11 @@ struct CustomData {
     deleted_presets: Vec<String>,
 }
 
+pub struct DeleteManyOutcome {
+    pub remaining: Vec<Registry>,
+    pub deleted_current: bool,
+}
+
 /// Get the path to the custom registries file.
 fn custom_file_path() -> PathBuf {
     paths::config_dir().join("custom.json")
@@ -104,6 +109,13 @@ fn load_custom_data() -> io::Result<CustomData> {
         save_custom_data(&data)?;
     }
     Ok(data)
+}
+
+fn mutate_custom_data<T>(mutator: impl FnOnce(&mut CustomData) -> io::Result<T>) -> io::Result<T> {
+    let mut data = load_custom_data()?;
+    let result = mutator(&mut data)?;
+    save_custom_data(&data)?;
+    Ok(result)
 }
 
 /// Save full custom data to the JSON file.
@@ -226,38 +238,47 @@ pub fn add(name: &str, url: &str) -> io::Result<()> {
     save_custom_data(&data)
 }
 
-/// Delete a registry.
-pub fn delete(name: &str) -> io::Result<()> {
-    let mut data = load_custom_data()?;
-    let len_before = data.registries.len();
-    data.registries.retain(|r| r.name != name);
-
-    if data.registries.len() == len_before {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该源"));
-    }
-
-    save_custom_data(&data)
-}
-
-/// Delete multiple registries with a single read/write cycle.
-pub fn delete_many(names: &[String]) -> io::Result<()> {
+pub fn delete_many_and_report(
+    names: &[String],
+    current_url: Option<&str>,
+) -> io::Result<DeleteManyOutcome> {
     if names.is_empty() {
-        return Ok(());
+        return Ok(DeleteManyOutcome {
+            remaining: get_all()?,
+            deleted_current: false,
+        });
     }
 
-    let mut data = load_custom_data()?;
     let requested_names: HashSet<&str> = names.iter().map(String::as_str).collect();
 
-    if requested_names
-        .iter()
-        .any(|name| !data.registries.iter().any(|r| r.name == *name))
-    {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该源"));
-    }
+    mutate_custom_data(|data| {
+        let matched: Vec<&Registry> = data
+            .registries
+            .iter()
+            .filter(|r| requested_names.contains(r.name.as_str()))
+            .collect();
 
-    data.registries
-        .retain(|r| !requested_names.contains(r.name.as_str()));
-    save_custom_data(&data)
+        if matched.len() != requested_names.len() {
+            return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该源"));
+        }
+
+        let deleted_current = current_url
+            .map(normalize_registry_url_key)
+            .map(|current_key| {
+                matched
+                    .iter()
+                    .any(|r| normalize_registry_url_key(&r.url) == current_key)
+            })
+            .unwrap_or(false);
+
+        data.registries
+            .retain(|r| !requested_names.contains(r.name.as_str()));
+
+        Ok(DeleteManyOutcome {
+            remaining: data.registries.clone(),
+            deleted_current,
+        })
+    })
 }
 
 /// Update a registry.
@@ -376,7 +397,8 @@ mod tests {
             ])
             .expect("seed registries");
 
-            delete_many(&["one".to_string(), "three".to_string()]).expect("delete registries");
+            delete_many_and_report(&["one".to_string(), "three".to_string()], None)
+                .expect("delete registries");
 
             let remaining: Vec<(String, String)> = get_all()
                 .expect("load registries")
@@ -386,6 +408,34 @@ mod tests {
 
             assert_eq!(
                 remaining,
+                vec![("two".to_string(), "https://two.example/".to_string())]
+            );
+        });
+    }
+
+    #[test]
+    fn delete_many_and_report_uses_single_snapshot_for_current_detection() {
+        with_temp_home(|| {
+            import_custom(&[
+                registry("one", "https://one.example/"),
+                registry("two", "https://two.example/"),
+                registry("three", "https://three.example/"),
+            ])
+            .expect("seed registries");
+
+            let outcome = delete_many_and_report(
+                &["one".to_string(), "three".to_string()],
+                Some("https://three.example/"),
+            )
+            .expect("delete registries");
+
+            assert!(outcome.deleted_current);
+            assert_eq!(
+                outcome
+                    .remaining
+                    .into_iter()
+                    .map(|r| (r.name, r.url))
+                    .collect::<Vec<_>>(),
                 vec![("two".to_string(), "https://two.example/".to_string())]
             );
         });
