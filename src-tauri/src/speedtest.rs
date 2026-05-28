@@ -158,7 +158,6 @@ pub async fn test_url(url: &str) -> Result<LatencyResult, String> {
 async fn test_registry(client: &reqwest::Client, registry: &Registry) -> LatencyResult {
     let start = Instant::now();
 
-    // Try HEAD request first, fall back to GET
     let request_url = format!("{}", registry.url.trim_end_matches('/'));
 
     let result = try_request(client, &request_url).await;
@@ -183,14 +182,6 @@ async fn test_registry(client: &reqwest::Client, registry: &Registry) -> Latency
 }
 
 async fn try_request(client: &reqwest::Client, url: &str) -> Result<(), String> {
-    // Try HEAD first
-    match client.head(url).send().await {
-        Ok(resp) if resp.status().is_success() => return Ok(()),
-        Ok(_) => { /* fall through to GET */ }
-        Err(_) => { /* fall through to GET */ }
-    }
-
-    // Fallback to GET
     match client.get(url).send().await {
         Ok(resp) if resp.status().is_success() => Ok(()),
         Ok(resp) => Err(format!("HTTP {}", resp.status().as_u16())),
@@ -209,6 +200,8 @@ async fn try_request(client: &reqwest::Client, url: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
     use tokio::sync::Semaphore;
 
     fn registry(name: &str) -> Registry {
@@ -262,5 +255,38 @@ mod tests {
             assert_eq!(result.latency_ms, None);
             assert_eq!(result.error.as_deref(), Some("任务失败: 并发控制已关闭"));
         });
+    }
+
+    #[test]
+    fn try_request_uses_get_for_registry_probe() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        let addr = listener.local_addr().expect("read local addr");
+
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut buffer = [0_u8; 1024];
+            let read = stream.read(&mut buffer).expect("read request");
+            let request = String::from_utf8_lossy(&buffer[..read]);
+            let first_line = request.lines().next().unwrap_or_default().to_string();
+
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+                .expect("write response");
+
+            first_line
+        });
+
+        tauri::async_runtime::block_on(async {
+            let client = http_client().expect("create http client");
+            try_request(client, &format!("http://{addr}"))
+                .await
+                .expect("request should succeed");
+        });
+
+        let first_line = server.join().expect("server thread");
+        assert!(
+            first_line.starts_with("GET / HTTP/1.1"),
+            "expected GET request, got {first_line}"
+        );
     }
 }
