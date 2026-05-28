@@ -9,6 +9,21 @@
 
 ## [未发布]
 
+## [1.1.1] - 2026-05-26
+
+### 新增
+
+- 为前端环境准备/构建、安装包打包、产物上传、Release 发布、updater manifest 生成等 CI 阶段添加耗时汇总
+- 新增 `pnpm sync:tags` 辅助命令，并补充本地 release tag 冲突时的恢复说明
+
+### 变更
+
+- 状态栏元数据现在会在应用、Node、npm 信息之外展示 pnpm 版本，并改为更紧凑的单行布局
+
+### 修复
+
+- 重置默认确认弹窗的正文、确认按钮和成功提示统一使用“重置 / Reset”，避免“恢复 / Restore”造成误解
+
 ## [1.1.0] - 2026-05-25
 
 ### 新增
@@ -65,7 +80,7 @@
 - 开机自启动、关闭行为（最小化到托盘或退出）、单实例锁
 - 代理配置后端能力（界面入口可在后续版本开放）
 
-[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.0...HEAD
+[未发布]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.1...HEAD
 [1.1.9]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.9
 [1.1.8]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.8
 [1.1.7]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.7

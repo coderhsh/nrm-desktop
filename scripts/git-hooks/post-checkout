@@ -1,0 +1,3 @@
+#!/bin/sh
+# 切换分支 / clone 后对齐 tag。
+. "$(dirname "$0")/_run-sync-tags.sh"

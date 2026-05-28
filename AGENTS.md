@@ -76,6 +76,7 @@
 | `pnpm update:logo` | 生成/更新应用图标 |
 | `pnpm sync:version` | 将 `package.json` 版本同步到 Tauri/Cargo 配置 |
 | `pnpm version` | 同步版本号脚本 |
+| `pnpm changelog:context` | 收集上个版本 tag 到当前 HEAD 的 changelog 生成上下文 |
 
 当前 `package.json` 未提供根应用 `preview`、格式化或数据库迁移命令。
 
@@ -146,6 +147,20 @@ website/
 ├── vite.config.ts       # 官网 Vite 配置
 └── tsconfig.json        # 官网 TypeScript 配置
 ```
+
+## Agent 工作流
+
+### 生成版本更新日志
+
+当用户要求生成、填写、刷新或补全版本更新日志时，必须先阅读 `docs/agent-skills/changelog.md` 并按其中流程执行。
+
+标准事实收集命令是：
+
+```bash
+pnpm changelog:context
+```
+
+如果该命令因为历史最近 tag 和最高版本 tag 不一致而退出，必须询问用户选择 tag；不要自动猜测起点。生成内容只写入 `CHANGELOG.md` 的 `Unreleased` 和 `CHANGELOG.zh-CN.md` 的 `未发布`，具体版本归档仍由 `scripts/prepare-release.mjs` 负责。
 
 ## 前后端协作说明
 

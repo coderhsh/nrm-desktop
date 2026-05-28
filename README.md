@@ -116,7 +116,7 @@ Cross-platform installers are built in CI — no need to switch between Windows 
 2. Open **Actions → Release Installers → Run workflow** on **`main`**.
 3. Enter **version** (e.g. `1.0.1`), optionally enable **draft_release**, **overwrite_release**, **cleanup_release_assets**, and choose platforms/installer formats, then run.
 4. CI will bump versions, archive changelogs, commit to `main`, build installers, create a GitHub Release, and **merge the release commit back into `dev`**.
-5. Locally: `git checkout dev && git pull origin dev` to continue development. If pull fails with `would clobber existing tag`, run `pnpm sync:tags` first (this repo sets `git.fetchTags: false` in `.vscode/settings.json`, so a normal pull usually works).
+5. Locally: `git checkout dev && git pull origin dev` to continue development. After a release, if pull fails with `would clobber existing tag`, run `pnpm sync:pull` or `pnpm sync:tags`. Git hooks (`pre-commit`, `post-merge`, `post-checkout`, `post-rewrite`) and `.vscode/settings.json` (no `--tags` on pull) handle this automatically; hooks install on `pnpm install`.
 
 **Retry / overwrite the same version:**
 

@@ -116,7 +116,7 @@ pnpm build
 2. 在 **`main`** 分支打开 **Actions → Release Installers → Run workflow**。
 3. 填写 **version**（如 `1.0.1`），按需勾选 **draft_release**、**overwrite_release**、**cleanup_release_assets** 以及要发布的平台/安装包格式，然后运行。
 4. CI 会自动 bump 版本、归档 CHANGELOG、提交到 `main`、构建安装包、创建 GitHub Release，并 **将 release commit 合并回 `dev`**。
-5. 本地执行 `git checkout dev && git pull origin dev` 即可继续开发。若 Cursor/VS Code 拉取时报 `would clobber existing tag`，先运行 `pnpm sync:tags` 再 pull（本仓库已配置 `git.fetchTags: false`，通常直接 pull 即可）。
+5. 本地执行 `git checkout dev && git pull origin dev` 即可继续开发。发版后若 pull 报 `would clobber existing tag`，运行 `pnpm sync:pull` 或 `pnpm sync:tags`。仓库已通过 Git hooks（`pre-commit` / `post-merge` / `post-checkout` / `post-rewrite`）和 `.vscode/settings.json`（禁用 pull 时附带 `--tags`）自动处理；`pnpm install` 会安装 hooks。
 
 **重试 / 覆盖同一版本：**
 

@@ -11,6 +11,7 @@ import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/la
 import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
 import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
+import { getSpeedResultBarStaggerMs, getSpeedResultRowStaggerMs, sortLatencyResults } from '@/components/SpeedTest/utils'
 
 const store = useRegistryStore()
 const entranceSettled = inject(appEntranceSettledKey, Promise.resolve())
@@ -24,18 +25,6 @@ const singleTesting = ref<Record<string, boolean>>({})
 
 const hasResults = computed(() => results.value.length > 0)
 const hasRegistries = computed(() => store.registries.length > 0)
-
-/** 与后端 `test_all`、单次重测一致：成功项按延迟升序，失败置底 */
-function sortLatencyResults(items: LatencyResult[]): LatencyResult[] {
-  return [...items].sort((a, b) => {
-    if (a.latency_ms !== null && b.latency_ms !== null) {
-      return a.latency_ms - b.latency_ms
-    }
-    if (a.latency_ms !== null) return -1
-    if (b.latency_ms !== null) return 1
-    return a.name.localeCompare(b.name)
-  })
-}
 
 const fastestResult = computed(() => {
   let best: LatencyResult | null = null
@@ -64,8 +53,6 @@ function syncSingleLatencyResult(item: LatencyResult) {
   store.setSingleLatencyResult(item)
 }
 
-const speedRevealStepMs = 76
-
 async function runAllTests() {
   if (!hasRegistries.value) {
     results.value = []
@@ -80,20 +67,9 @@ async function runAllTests() {
   results.value = []
   try {
     const items = await testAllSpeed()
-    syncAllLatencyResults(items)
-
-    const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-
-    if (reduceMotion || items.length === 0) {
-      results.value = sortLatencyResults(items)
-    } else {
-      for (let i = 0; i < items.length; i++) {
-        results.value.push(items[i])
-        if (i < items.length - 1) {
-          await new Promise(r => setTimeout(r, speedRevealStepMs))
-        }
-      }
-    }
+    const sortedItems = sortLatencyResults(items)
+    syncAllLatencyResults(sortedItems)
+    results.value = sortedItems
   } catch (e) {
     ElMessage.error(
       t('speedTest.runError', {
@@ -261,9 +237,9 @@ watch(
             :key="result.name"
             class="speed-result-row flex items-center gap-3 py-1.5 px-2"
             :style="{
-              '--speed-stagger': String(index * 18),
+              '--speed-stagger': String(getSpeedResultRowStaggerMs(index)),
               /* 全部测速逐条入场时，行已错开时间轴，柱条仅用短阶梯即可 */
-              '--bar-stagger-ms': String(32 + index * 14),
+              '--bar-stagger-ms': String(getSpeedResultBarStaggerMs(index)),
             }"
           >
             <!-- Name -->

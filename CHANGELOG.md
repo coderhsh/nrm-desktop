@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-05-26
+
+### Added
+
+- CI timing summaries for frontend setup/build, installer packaging, artifact upload, release publishing, and updater manifest generation
+- `pnpm sync:tags` helper and documentation for recovering from local release tag conflicts during pull
+
+### Changed
+
+- Status bar metadata now includes the pnpm version alongside app, Node, and npm details, with a more compact inline layout
+
+### Fixed
+
+- Reset defaults confirmation copy now consistently says "Reset" instead of "Restore" in the dialog message, confirm button, and success notification
+
 ## [1.1.0] - 2026-05-25
 
 ### Added
@@ -65,7 +80,7 @@ First stable release.
 - Autostart, close behavior (minimize to tray or quit), and single-instance lock
 - Proxy settings backend (UI entry optional in later releases)
 
-[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/coderhsh/nrm-desktop/compare/v1.1.1...HEAD
 [1.1.9]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.9
 [1.1.8]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.8
 [1.1.7]: https://github.com/coderhsh/nrm-desktop/releases/tag/v1.1.7

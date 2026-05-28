@@ -1,0 +1,3 @@
+#!/bin/sh
+# 提交前强制对齐 origin tag。
+. "$(dirname "$0")/_run-sync-tags.sh"

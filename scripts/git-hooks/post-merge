@@ -1,0 +1,3 @@
+#!/bin/sh
+# pull 合并成功后对齐 tag（配合 pull 不带 --tags 的流程）。
+. "$(dirname "$0")/_run-sync-tags.sh"

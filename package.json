@@ -1,7 +1,7 @@
 {
   "name": "nrm-desktop",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "nrm-desktop - A lightweight desktop GUI for npm registry management, built with Tauri + Vue.",
   "author": "coderhsh",
   "license": "Apache-2.0",
@@ -47,7 +47,11 @@
     "update:logo": "node ./scripts/generate-icons.cjs",
     "version": "node ./scripts/sync-app-version.mjs",
     "sync:version": "node ./scripts/sync-app-version.mjs",
-    "sync:tags": "node ./scripts/sync-remote-tags.mjs"
+    "sync:tags": "node ./scripts/sync-remote-tags.mjs",
+    "sync:pull": "node ./scripts/sync-pull.mjs",
+    "changelog:context": "node ./scripts/changelog-context.mjs",
+    "setup:git-hooks": "node ./scripts/install-git-hooks.mjs",
+    "prepare": "node ./scripts/install-git-hooks.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",

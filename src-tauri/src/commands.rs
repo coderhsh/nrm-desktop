@@ -239,8 +239,9 @@ pub async fn delete_registries_bulk(app: tauri::AppHandle, names: Vec<String>) -
                 deleted_current = true;
             }
         }
-        registries::delete(name).map_err(|e| e.to_string())?;
     }
+
+    registries::delete_many(&unique_names).map_err(|e| e.to_string())?;
 
     if deleted_current {
         let all_after = registries::get_all().map_err(|e| e.to_string())?;

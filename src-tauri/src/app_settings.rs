@@ -1,3 +1,4 @@
+use crate::paths;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
@@ -13,19 +14,8 @@ fn default_language() -> String {
     "zh-CN".to_string()
 }
 
-fn config_dir() -> PathBuf {
-    let home = if let Ok(home) = std::env::var("USERPROFILE") {
-        PathBuf::from(home)
-    } else if let Ok(home) = std::env::var("HOME") {
-        PathBuf::from(home)
-    } else {
-        PathBuf::from(".")
-    };
-    home.join(".nrm-desktop")
-}
-
 fn settings_file_path() -> PathBuf {
-    config_dir().join("app-settings.json")
+    paths::config_dir().join("app-settings.json")
 }
 
 fn load_settings() -> io::Result<AppSettings> {
@@ -39,7 +29,7 @@ fn load_settings() -> io::Result<AppSettings> {
 }
 
 fn save_settings(settings: &AppSettings) -> io::Result<()> {
-    let dir = config_dir();
+    let dir = paths::config_dir();
     if !dir.exists() {
         fs::create_dir_all(&dir)?;
     }

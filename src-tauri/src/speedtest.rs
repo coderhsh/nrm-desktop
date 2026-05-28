@@ -1,8 +1,8 @@
 use crate::models::Registry;
 use crate::registries;
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
-use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,6 +16,22 @@ pub struct LatencyResult {
 const TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_CONCURRENT: usize = 6;
 
+static HTTP_CLIENT: LazyLock<Result<reqwest::Client, String>> = LazyLock::new(build_http_client);
+
+fn build_http_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .timeout(TIMEOUT)
+        .build()
+        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))
+}
+
+fn http_client() -> Result<&'static reqwest::Client, String> {
+    match &*HTTP_CLIENT {
+        Ok(client) => Ok(client),
+        Err(e) => Err(e.clone()),
+    }
+}
+
 pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
     let registries = registries::get_all().map_err(|e| e.to_string())?;
     if registries.is_empty() {
@@ -23,19 +39,15 @@ pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
     }
 
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT));
-    let client = reqwest::Client::builder()
-        .timeout(TIMEOUT)
-        .build()
-        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
+    let client = http_client()?;
 
     let mut handles = Vec::new();
     for reg in registries {
-        let client = client.clone();
         let permit = semaphore.clone().acquire_owned().await.unwrap();
 
         handles.push(tokio::spawn(async move {
             let _permit = permit;
-            let result = test_registry(&client, &reg).await;
+            let result = test_registry(client, &reg).await;
             result
         }));
     }
@@ -89,12 +101,8 @@ pub async fn test_single(name: &str) -> Result<LatencyResult, String> {
         .ok_or_else(|| format!("未找到源: {}", name))?
         .clone();
 
-    let client = reqwest::Client::builder()
-        .timeout(TIMEOUT)
-        .build()
-        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
-
-    let result = test_registry(&client, &registry).await;
+    let client = http_client()?;
+    let result = test_registry(client, &registry).await;
     Ok(result)
 }
 
@@ -105,15 +113,11 @@ pub async fn test_url(url: &str) -> Result<LatencyResult, String> {
         return Err("URL 不能为空".to_string());
     }
 
-    let client = reqwest::Client::builder()
-        .timeout(TIMEOUT)
-        .build()
-        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))?;
-
+    let client = http_client()?;
     let start = Instant::now();
     let request_url = trimmed.trim_end_matches('/');
 
-    let result = try_request(&client, request_url).await;
+    let result = try_request(client, request_url).await;
     match result {
         Ok(()) => {
             let elapsed = start.elapsed().as_millis() as u64;
@@ -181,5 +185,18 @@ async fn try_request(client: &reqwest::Client, url: &str) -> Result<(), String> 
                 Err(format!("请求错误: {}", e))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn http_client_reuses_global_instance() {
+        let first = http_client().expect("create http client");
+        let second = http_client().expect("reuse http client");
+
+        assert!(std::ptr::eq(first, second));
     }
 }

@@ -1,7 +1,9 @@
 use crate::app_settings;
 use crate::models::{default_registries, Registry};
 use crate::npmrc;
+use crate::paths;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -15,26 +17,14 @@ struct CustomData {
     deleted_presets: Vec<String>,
 }
 
-/// Get the config directory for storing custom registries.
-fn config_dir() -> PathBuf {
-    let home = if let Ok(home) = std::env::var("USERPROFILE") {
-        PathBuf::from(home)
-    } else if let Ok(home) = std::env::var("HOME") {
-        PathBuf::from(home)
-    } else {
-        PathBuf::from(".")
-    };
-    home.join(".nrm-desktop")
-}
-
 /// Get the path to the custom registries file.
 fn custom_file_path() -> PathBuf {
-    config_dir().join("custom.json")
+    paths::config_dir().join("custom.json")
 }
 
 /// Ensure the config directory exists.
 fn ensure_config_dir() -> io::Result<()> {
-    let dir = config_dir();
+    let dir = paths::config_dir();
     if !dir.exists() {
         fs::create_dir_all(&dir)?;
     }
@@ -122,18 +112,6 @@ fn load_custom_data() -> io::Result<CustomData> {
         save_custom_data(&data)?;
     }
     Ok(data)
-}
-
-/// Load custom registries from the JSON file.
-fn load_custom() -> io::Result<Vec<Registry>> {
-    Ok(load_custom_data()?.registries)
-}
-
-/// Save custom registries to the JSON file.
-fn save_custom(registries: &[Registry]) -> io::Result<()> {
-    let mut data = load_custom_data()?;
-    data.registries = registries.to_vec();
-    save_custom_data(&data)
 }
 
 /// Save full custom data to the JSON file.
@@ -243,22 +221,22 @@ pub fn get_all() -> io::Result<Vec<Registry>> {
 
 /// Add a registry.
 pub fn add(name: &str, url: &str) -> io::Result<()> {
-    let mut custom = load_custom()?;
+    let mut data = load_custom_data()?;
 
-    if custom.iter().any(|r| r.name == name) {
+    if data.registries.iter().any(|r| r.name == name) {
         return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该名称已存在"));
     }
 
-    if custom.iter().any(|r| r.url == url) {
+    if data.registries.iter().any(|r| r.url == url) {
         return Err(io::Error::new(io::ErrorKind::AlreadyExists, "该 URL 已存在"));
     }
 
-    custom.push(Registry {
+    data.registries.push(Registry {
         name: name.to_string(),
         url: url.to_string(),
     });
 
-    save_custom(&custom)
+    save_custom_data(&data)
 }
 
 /// Delete a registry.
@@ -271,6 +249,27 @@ pub fn delete(name: &str) -> io::Result<()> {
         return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该源"));
     }
 
+    save_custom_data(&data)
+}
+
+/// Delete multiple registries with a single read/write cycle.
+pub fn delete_many(names: &[String]) -> io::Result<()> {
+    if names.is_empty() {
+        return Ok(());
+    }
+
+    let mut data = load_custom_data()?;
+    let requested_names: HashSet<&str> = names.iter().map(String::as_str).collect();
+
+    if requested_names
+        .iter()
+        .any(|name| !data.registries.iter().any(|r| r.name == *name))
+    {
+        return Err(io::Error::new(io::ErrorKind::NotFound, "未找到该源"));
+    }
+
+    data.registries
+        .retain(|r| !requested_names.contains(r.name.as_str()));
     save_custom_data(&data)
 }
 
@@ -326,3 +325,82 @@ pub fn reset_to_defaults() -> io::Result<()> {
     save_custom_data(&data)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::OsString;
+    use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
+    use std::sync::Mutex;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn registry(name: &str, url: &str) -> Registry {
+        Registry {
+            name: name.to_string(),
+            url: url.to_string(),
+        }
+    }
+
+    fn with_temp_home<T>(test: impl FnOnce() -> T) -> T {
+        let _guard = ENV_LOCK.lock().expect("env test lock poisoned");
+        let old_home = std::env::var_os("HOME");
+        let old_userprofile = std::env::var_os("USERPROFILE");
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock before unix epoch")
+            .as_nanos();
+        let temp_home = std::env::temp_dir().join(format!(
+            "nrm-desktop-registries-test-{}-{unique}",
+            std::process::id()
+        ));
+
+        fs::create_dir_all(&temp_home).expect("create temp home");
+        std::env::set_var("HOME", &temp_home);
+        std::env::remove_var("USERPROFILE");
+
+        let result = catch_unwind(AssertUnwindSafe(test));
+
+        restore_env_var("HOME", old_home);
+        restore_env_var("USERPROFILE", old_userprofile);
+        fs::remove_dir_all(&temp_home).expect("remove temp home");
+
+        match result {
+            Ok(value) => value,
+            Err(panic) => resume_unwind(panic),
+        }
+    }
+
+    fn restore_env_var(key: &str, value: Option<OsString>) {
+        if let Some(value) = value {
+            std::env::set_var(key, value);
+        } else {
+            std::env::remove_var(key);
+        }
+    }
+
+    #[test]
+    fn delete_many_removes_all_requested_registries() {
+        with_temp_home(|| {
+            import_custom(&[
+                registry("one", "https://one.example/"),
+                registry("two", "https://two.example/"),
+                registry("three", "https://three.example/"),
+            ])
+            .expect("seed registries");
+
+            delete_many(&["one".to_string(), "three".to_string()]).expect("delete registries");
+
+            let remaining: Vec<(String, String)> = get_all()
+                .expect("load registries")
+                .into_iter()
+                .map(|r| (r.name, r.url))
+                .collect();
+
+            assert_eq!(
+                remaining,
+                vec![("two".to_string(), "https://two.example/".to_string())]
+            );
+        });
+    }
+}
