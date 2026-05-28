@@ -40,17 +40,7 @@ pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
 
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT));
     let client = http_client()?;
-
-    let mut handles = Vec::new();
-    for reg in registries {
-        let permit = semaphore.clone().acquire_owned().await.unwrap();
-
-        handles.push(tokio::spawn(async move {
-            let _permit = permit;
-            let result = test_registry(client, &reg).await;
-            result
-        }));
-    }
+    let handles = spawn_registry_tests(client, registries, semaphore);
 
     let mut results = Vec::new();
     for handle in handles {
@@ -78,6 +68,24 @@ pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
     });
 
     Ok(results)
+}
+
+fn spawn_registry_tests(
+    client: &'static reqwest::Client,
+    registries: Vec<Registry>,
+    semaphore: Arc<Semaphore>,
+) -> Vec<tokio::task::JoinHandle<LatencyResult>> {
+    let mut handles = Vec::new();
+
+    for reg in registries {
+        let semaphore = semaphore.clone();
+        handles.push(tokio::spawn(async move {
+            let _permit = semaphore.acquire_owned().await.unwrap();
+            test_registry(client, &reg).await
+        }));
+    }
+
+    handles
 }
 
 /// 测速后返回延迟最低且测通的一个源名称；全部失败时退回列表中的第一个源。
@@ -191,6 +199,14 @@ async fn try_request(client: &reqwest::Client, url: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::sync::Semaphore;
+
+    fn registry(name: &str) -> Registry {
+        Registry {
+            name: name.to_string(),
+            url: format!("https://{name}.example/"),
+        }
+    }
 
     #[test]
     fn http_client_reuses_global_instance() {
@@ -198,5 +214,21 @@ mod tests {
         let second = http_client().expect("reuse http client");
 
         assert!(std::ptr::eq(first, second));
+    }
+
+    #[test]
+    fn spawn_registry_tests_does_not_wait_for_permits_before_spawning() {
+        tauri::async_runtime::block_on(async {
+            let semaphore = Arc::new(Semaphore::new(0));
+            let client = http_client().expect("create http client");
+            let registries = vec![registry("one"), registry("two"), registry("three")];
+
+            let handles = spawn_registry_tests(client, registries, semaphore);
+
+            assert_eq!(handles.len(), 3);
+            for handle in handles {
+                handle.abort();
+            }
+        });
     }
 }
