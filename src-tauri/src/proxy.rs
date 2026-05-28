@@ -76,8 +76,10 @@ pub fn set_npmrc_proxy(config: &ProxyConfig) -> Result<(), String> {
             || trimmed.starts_with("#proxy=")
             || trimmed.starts_with("#proxy =")
         {
-            if config.enabled && config.http_proxy.is_some() {
-                new_lines.push(format!("proxy={}", config.http_proxy.as_ref().unwrap()));
+            if config.enabled {
+                if let Some(proxy) = config.http_proxy.as_ref() {
+                    new_lines.push(format!("proxy={}", proxy));
+                }
             }
             proxy_set = true;
         } else if trimmed.starts_with("https-proxy=")
@@ -85,11 +87,10 @@ pub fn set_npmrc_proxy(config: &ProxyConfig) -> Result<(), String> {
             || trimmed.starts_with("#https-proxy=")
             || trimmed.starts_with("#https-proxy =")
         {
-            if config.enabled && config.https_proxy.is_some() {
-                new_lines.push(format!(
-                    "https-proxy={}",
-                    config.https_proxy.as_ref().unwrap()
-                ));
+            if config.enabled {
+                if let Some(proxy) = config.https_proxy.as_ref() {
+                    new_lines.push(format!("https-proxy={}", proxy));
+                }
             }
             https_proxy_set = true;
         } else {

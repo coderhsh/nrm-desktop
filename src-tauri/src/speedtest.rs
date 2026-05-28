@@ -80,7 +80,17 @@ fn spawn_registry_tests(
     for reg in registries {
         let semaphore = semaphore.clone();
         handles.push(tokio::spawn(async move {
-            let _permit = semaphore.acquire_owned().await.unwrap();
+            let _permit = match semaphore.acquire_owned().await {
+                Ok(permit) => permit,
+                Err(_) => {
+                    return LatencyResult {
+                        name: reg.name.clone(),
+                        url: reg.url.clone(),
+                        latency_ms: None,
+                        error: Some("任务失败: 并发控制已关闭".to_string()),
+                    };
+                }
+            };
             test_registry(client, &reg).await
         }));
     }
@@ -229,6 +239,28 @@ mod tests {
             for handle in handles {
                 handle.abort();
             }
+        });
+    }
+
+    #[test]
+    fn spawn_registry_tests_returns_error_when_semaphore_is_closed() {
+        tauri::async_runtime::block_on(async {
+            let semaphore = Arc::new(Semaphore::new(1));
+            semaphore.close();
+            let client = http_client().expect("create http client");
+            let registries = vec![registry("one")];
+
+            let handles = spawn_registry_tests(client, registries, semaphore);
+            let result = handles
+                .into_iter()
+                .next()
+                .expect("spawned handle")
+                .await
+                .expect("task completed");
+
+            assert_eq!(result.name, "one");
+            assert_eq!(result.latency_ms, None);
+            assert_eq!(result.error.as_deref(), Some("任务失败: 并发控制已关闭"));
         });
     }
 }

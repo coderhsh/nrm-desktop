@@ -67,9 +67,13 @@ fn build_managed_tray(app: &tauri::AppHandle<Wry>) -> tauri::Result<()> {
     let _ = app.remove_tray_by_id("main-tray");
 
     let menu = build_tray_context_menu(app)?;
+    let icon = app
+        .default_window_icon()
+        .cloned()
+        .ok_or_else(|| std::io::Error::other("缺少默认窗口图标"))?;
 
     let _tray = TrayIconBuilder::with_id("main-tray")
-        .icon(app.default_window_icon().unwrap().clone())
+        .icon(icon)
         .menu(&menu)
         // 左键仅由 `on_tray_icon_event` 唤起主窗口；右键仍弹出上下文菜单（切换源、退出等）。
         .show_menu_on_left_click(false)
