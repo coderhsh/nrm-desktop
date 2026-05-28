@@ -1,0 +1,212 @@
+/* 公共表面卡片：纯色底、描边、阴影 — 当前源 / 测速 / 源列表三块共用；
+   用 to bottom 极浅渐变替代斜向渐变，避免不同宽高比卡片视觉差异 */
+.app-surface-card {
+  position: relative;
+  isolation: isolate;
+  background-color: #f1f5f9;
+  border: 1px solid color-mix(in srgb, #c8d1dd 68%, #ffffff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12);
+  transition:
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.app-surface-card::before,
+.app-surface-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.app-surface-card::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.74) 0%,
+    rgba(255, 255, 255, 0.36) 48%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  opacity: 1;
+}
+
+.app-surface-card::after {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.05) 52%, rgba(0, 0, 0, 0) 100%);
+  opacity: 0;
+}
+
+.app-surface-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-surface-card:hover {
+  border-color: color-mix(in srgb, var(--el-color-primary) 22%, #c8d1dd);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    0 0 0 0.5px rgba(140, 156, 178, 0.42),
+    0 3px 8px rgba(26, 38, 60, 0.1),
+    0 14px 30px rgba(24, 36, 56, 0.15);
+}
+
+html.dark .app-surface-card {
+  background-color: #303438;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .app-surface-card::before {
+  opacity: 0;
+}
+
+html.dark .app-surface-card::after {
+  opacity: 1;
+}
+
+html.dark .app-surface-card:hover {
+  border-color: rgba(126, 197, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 0.5px rgba(142, 201, 255, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.38),
+    0 16px 30px rgba(0, 0, 0, 0.24);
+}
+
+/* Current source card: 在 .app-surface-card 基础上叠加悬浮位移与 overflow 裁切 */
+.current-source-card {
+  overflow: hidden;
+  transition:
+    transform 220ms var(--app-ease-out),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+  animation: current-source-card-in var(--app-duration-slow) var(--app-ease-out) both;
+}
+
+.current-source-card:hover {
+  transform: translateY(-1px);
+}
+
+.current-source-card:active {
+  transform: translateY(0) scale(0.995);
+}
+
+.current-source-kicker {
+  color: #6e7480;
+  opacity: 1;
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.current-source-name {
+  color: #1f232b;
+  letter-spacing: -0.012em;
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.current-source-url {
+  color: #626a78;
+  text-decoration: underline;
+  text-decoration-color: rgba(98, 106, 120, 0.38);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    text-decoration-color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.current-source-url:hover {
+  color: #3f4756;
+  text-decoration-color: rgba(63, 71, 86, 0.56);
+}
+
+.current-source-copy-btn.el-button,
+.speed-test-card .speed-test-header-action.el-button.is-text {
+  color: #2f3746 !important;
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(173, 184, 201, 0.45) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 1px 2px rgba(20, 30, 46, 0.06) !important;
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    transform 0.12s var(--app-ease-spring) !important;
+}
+
+.current-source-copy-btn.el-button:hover,
+.current-source-copy-btn.el-button:focus,
+.speed-test-card .speed-test-header-action.el-button.is-text:hover,
+.speed-test-card .speed-test-header-action.el-button.is-text:focus {
+  color: #1f2734 !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(150, 166, 188, 0.6) !important;
+}
+
+.current-source-copy-btn.el-button:active,
+.speed-test-card .speed-test-header-action.el-button.is-text:active {
+  background: rgba(250, 252, 255, 0.88) !important;
+}
+
+@keyframes current-source-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Dark mode current source card */
+/* html.dark .current-source-card — 视觉样式（bg/border/shadow/::after）已由 html.dark .app-surface-card 提供 */
+
+html.dark .current-source-kicker {
+  color: rgba(235, 235, 245, 0.52);
+}
+
+html.dark .current-source-name {
+  color: #f5f5f7;
+}
+
+html.dark .current-source-url {
+  color: rgba(235, 235, 245, 0.72);
+  text-decoration-color: rgba(235, 235, 245, 0.26);
+}
+
+html.dark .current-source-url:hover {
+  color: rgba(235, 235, 245, 0.9);
+  text-decoration-color: rgba(235, 235, 245, 0.44);
+}
+
+html.dark .current-source-copy-btn.el-button,
+html.dark .speed-test-card .speed-test-header-action.el-button.is-text {
+  color: #e9efff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.dark .current-source-copy-btn.el-button:hover,
+html.dark .current-source-copy-btn.el-button:focus,
+html.dark .speed-test-card .speed-test-header-action.el-button.is-text:hover,
+html.dark .speed-test-card .speed-test-header-action.el-button.is-text:focus {
+  color: #f4f8ff !important;
+  background: rgba(126, 197, 255, 0.2) !important;
+  border-color: rgba(126, 197, 255, 0.42) !important;
+}
+

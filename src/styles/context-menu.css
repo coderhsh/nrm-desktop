@@ -1,0 +1,157 @@
+/* 右键菜单（源列表） */
+.registry-context-menu {
+  border-radius: 0.625rem;
+  background: var(--app-surface);
+  border: 1px solid color-mix(in srgb, var(--app-separator) 90%, transparent);
+  color: var(--app-text);
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.12),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.registry-context-menu-divider {
+  height: 1px;
+  margin: 0.25rem 0.5rem;
+  background: color-mix(in srgb, var(--app-separator) 88%, transparent);
+}
+
+.context-menu-item {
+  transition:
+    background-color var(--app-duration) var(--app-ease),
+    color var(--app-duration) var(--app-ease);
+}
+
+.context-menu-item:hover {
+  background-color: #f2f2f7;
+}
+
+.context-menu-item--danger {
+  color: #ef4444;
+}
+
+.context-menu-item--danger:hover {
+  background-color: #fee2e2;
+}
+
+html.dark .registry-context-menu {
+  background: linear-gradient(160deg, #2a2f3a 0%, #323845 100%);
+  border: 1px solid rgba(108, 124, 150, 0.34);
+  color: #e3e9f4;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.42),
+    0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+html.dark .registry-context-menu-divider {
+  background: rgba(108, 124, 150, 0.28);
+}
+
+html.dark .context-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .context-menu-item--danger {
+  color: #ff6961;
+}
+
+html.dark .context-menu-item--danger:hover {
+  background-color: rgba(255, 59, 48, 0.14) !important;
+  color: #ff6961 !important;
+}
+
+html.dark .context-menu-submenu-chevron {
+  color: rgba(227, 233, 244, 0.62);
+}
+
+/* close confirm dialog: targeted dark-only control colors */
+html.dark .el-overlay .close-confirm-dialog .el-radio__input:not(.is-checked) .el-radio__inner {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color-light) !important;
+}
+
+html.dark .el-overlay .close-confirm-dialog .el-checkbox__input:not(.is-checked):not(.is-indeterminate) .el-checkbox__inner {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color-light) !important;
+}
+
+html.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button {
+  background-color: var(--el-fill-color-light) !important;
+  border-color: var(--el-border-color) !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+html.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:hover,
+html.dark .el-overlay .close-confirm-dialog .close-confirm-cancel-btn.el-button:focus {
+  background-color: var(--el-fill-color) !important;
+  border-color: var(--el-border-color-light) !important;
+  color: var(--el-text-color-primary) !important;
+}
+
+/*
+ * Close confirm: keep transition disabled — a short opacity fade was causing
+ * a visible linger/flicker with this dialog on tray-restore paths; instant hide is safer.
+ */
+.close-confirm-dialog.dialog-fade-enter-active,
+.close-confirm-dialog.dialog-fade-leave-active {
+  transition: none !important;
+}
+
+.close-confirm-dialog.dialog-fade-enter-from,
+.close-confirm-dialog.dialog-fade-leave-to {
+  opacity: 0 !important;
+  transform: none !important;
+}
+
+/* Dark mode: remove Element Plus loading mask black background globally */
+html.dark .el-button.is-loading::before {
+  background-color: transparent !important;
+}
+
+/* Dark mode: tooltip / popover visual polish（高优先级兜底） */
+html.dark .el-popper.is-dark,
+html.dark .el-tooltip__popper.el-popper,
+html.dark .el-popover.el-popper {
+  background: linear-gradient(160deg, #222733, #2a3040) !important;
+  border: 1px solid rgba(108, 124, 150, 0.34) !important;
+  color: #e3e9f4 !important;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.42),
+    0 2px 6px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .el-popper.is-dark:not(.registry-fold-tooltip) > .el-popper__arrow:before,
+html.dark .el-popper.is-dark:not(.registry-fold-tooltip) > .el-popper__arrow::before,
+html.dark .el-tooltip__popper.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow:before,
+html.dark .el-tooltip__popper.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow::before,
+html.dark .el-popover.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow:before,
+html.dark .el-popover.el-popper:not(.registry-fold-tooltip) > .el-popper__arrow::before {
+  background: #252b3a !important;
+  border: 1px solid rgba(108, 124, 150, 0.34) !important;
+}
+
+/* registry-fold tooltip：去掉小三角描边，避免深色模式下出现双层边框感 */
+html.dark .registry-fold-tooltip.el-popper {
+  --el-tooltip-bg-color: #31384a !important;
+  --el-tooltip-text-color: #f5f7fa !important;
+  --el-tooltip-border-color: transparent !important;
+}
+
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow:before,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::before,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow:after,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::after {
+  background: #31384a !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow:before,
+html.dark .registry-fold-tooltip.el-popper > .el-popper__arrow::before {
+  background: #252b3a !important;
+  border: 1px solid rgba(108, 124, 150, 0.34) !important;
+  border-left: 1px solid transparent !important;
+  border-top: 1px solid transparent !important;
+}
+

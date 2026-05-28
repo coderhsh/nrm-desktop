@@ -1,0 +1,388 @@
+/* 设置抽屉页脚「保存」— 与分类管理弹窗页脚同一套近白胶囊 */
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  min-width: 5.5rem !important;
+  padding: 0 1.15rem !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-top) 0%, var(--app-category-save-light-mid) 52%, var(--app-category-save-light-bot) 100%) !important;
+  border: 1px solid var(--app-category-save-light-border) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    var(--app-category-save-light-shadow) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:hover,
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__footer .el-button--primary:active {
+  transform: scale(0.98);
+}
+/* 设置抽屉页脚「保存」— 与分类管理弹窗深色页脚胶囊一致 */
+html.dark .settings-drawer .el-drawer__footer .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  min-width: 5.5rem;
+  padding: 0 1.15rem !important;
+  background: linear-gradient(180deg, #76767a 0%, #5c5c60 52%, #515155 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fafafa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:hover,
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #838387 0%, #68686d 52%, #5a5a5e 100%) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 14px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.dark .settings-drawer .el-drawer__footer .el-button--primary:active {
+  transform: scale(0.98);
+}
+/* 设置抽屉：宽度（深浅色共用，小屏用 vw 上限避免占半屏） */
+.settings-drawer.el-drawer {
+  width: min(360px, 90vw) !important;
+}
+
+/* 设置抽屉：浅色 — 与分类管理 category-manage-dialog 同系 sheet（从右侧滑入，左缘为视觉主边） */
+html:not(.dark) .settings-drawer.el-drawer {
+  background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
+  border-left: 1px solid rgba(193, 203, 218, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    -12px 0 36px rgba(30, 42, 60, 0.16);
+  overflow: hidden;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding: 1rem 1rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+}
+
+html:not(.dark) .settings-drawer .el-drawer__title {
+  color: #1f2632;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__close-btn {
+  color: rgba(60, 60, 67, 0.5);
+}
+
+html:not(.dark) .settings-drawer .el-drawer__close-btn:hover {
+  color: var(--app-text);
+}
+
+html:not(.dark) .settings-drawer .el-drawer__body {
+  padding: 0.85rem 1rem 0.75rem;
+}
+
+html:not(.dark) .settings-drawer .settings-section-title {
+  color: #667083 !important;
+}
+
+html:not(.dark) .settings-drawer .settings-drawer-inline-label,
+html:not(.dark) .settings-drawer .settings-item-label {
+  color: #4a5568 !important;
+}
+
+html:not(.dark) .settings-drawer .settings-note {
+  color: rgba(60, 60, 67, 0.55) !important;
+}
+
+html:not(.dark) .settings-drawer .el-select__wrapper,
+html:not(.dark) .settings-drawer .el-input__wrapper {
+  border-radius: 0.75rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fd 100%) !important;
+  box-shadow: 0 0 0 1px rgba(188, 198, 214, 0.76) inset !important;
+}
+
+html:not(.dark) .settings-drawer .el-select__wrapper:hover,
+html:not(.dark) .settings-drawer .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(167, 180, 201, 0.9) inset !important;
+}
+
+html:not(.dark) .settings-drawer .el-select__wrapper.is-focused,
+html:not(.dark) .settings-drawer .el-input__wrapper.is-focus {
+  box-shadow:
+    0 0 0 1px rgba(10, 132, 255, 0.6) inset,
+    0 0 0 3px rgba(10, 132, 255, 0.14) !important;
+}
+
+/* 设置抽屉 · 浅色：数据区导入/导出 */
+html:not(.dark) .settings-drawer .settings-action-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 1px 2px rgba(15, 23, 42, 0.05) !important;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
+}
+
+html:not(.dark) .settings-drawer .settings-action-btn.el-button:hover,
+html:not(.dark) .settings-drawer .settings-action-btn.el-button:focus {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.11) !important;
+  color: #000000 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+html:not(.dark) .settings-drawer .settings-action-btn.el-button:active {
+  transform: scale(0.98);
+}
+
+html:not(.dark) .settings-drawer .settings-danger-btn,
+html:not(.dark) .settings-drawer .settings-about-btn {
+  border-radius: 0.72rem !important;
+}
+
+html:not(.dark) .settings-drawer .el-drawer__footer {
+  border-top: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+  padding: 0.85rem 1rem 1rem;
+  background: transparent;
+}
+
+/* 设置抽屉：深色 — 与分类管理弹窗同外壳 */
+html.dark .settings-drawer.el-drawer {
+  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+  border-left: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
+  color: var(--el-text-color-regular);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    -14px 0 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+html.dark .settings-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding: 1rem 1rem 0.85rem;
+  border-bottom: 1px solid var(--app-separator);
+}
+
+html.dark .settings-drawer .el-drawer__title {
+  color: var(--el-text-color-primary);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+}
+
+html.dark .settings-drawer .el-drawer__close-btn {
+  color: var(--app-text-muted);
+}
+
+html.dark .settings-drawer .el-drawer__close-btn:hover {
+  color: var(--el-text-color-primary);
+}
+
+html.dark .settings-drawer .el-drawer__body {
+  padding: 0.9rem 1rem 0.85rem;
+}
+
+html.dark .settings-drawer .settings-panel {
+  gap: 0.85rem !important;
+}
+
+html.dark .settings-drawer .settings-section-title {
+  color: var(--app-text-muted) !important;
+}
+
+html.dark .settings-drawer .settings-item-label {
+  color: var(--el-text-color-primary) !important;
+}
+
+html.dark .settings-drawer .settings-note {
+  color: var(--app-text-muted) !important;
+}
+
+html.dark .settings-drawer .el-select__wrapper,
+html.dark .settings-drawer .el-input__wrapper {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+}
+
+html.dark .settings-drawer .el-select__wrapper:hover,
+html.dark .settings-drawer .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
+}
+
+html.dark .settings-drawer .el-select__wrapper.is-focused,
+html.dark .settings-drawer .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset !important;
+}
+
+/* 设置抽屉 · 深色：导入/导出 — 锌灰微渐变 + 顶缘高光，hover 略抬亮与弱主色环 */
+html.dark .settings-drawer .settings-action-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: linear-gradient(180deg, rgba(76, 76, 80, 0.98) 0%, rgba(52, 52, 56, 0.97) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(245, 245, 247, 0.95) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 12px rgba(0, 0, 0, 0.38) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
+}
+
+html.dark .settings-drawer .settings-action-btn.el-button:hover,
+html.dark .settings-drawer .settings-action-btn.el-button:focus {
+  background: linear-gradient(180deg, rgba(88, 88, 94, 0.99) 0%, rgba(64, 64, 70, 0.98) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.14) !important;
+}
+
+html.dark .settings-drawer .settings-action-btn.el-button:focus-visible {
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(10, 132, 255, 0.38) !important;
+}
+
+html.dark .settings-drawer .settings-action-btn.el-button:active {
+  transform: scale(0.98);
+}
+
+/* 深色：重置默认 — 与数据区同体积感，语义保持暖红 */
+html.dark .settings-drawer .settings-danger-btn.el-button.is-plain,
+html.dark .settings-drawer .settings-danger-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: linear-gradient(180deg, rgba(72, 44, 42, 0.75) 0%, rgba(48, 30, 30, 0.88) 100%) !important;
+  border: 1px solid rgba(255, 110, 100, 0.42) !important;
+  color: #ffb4ad !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 195, 0.07),
+    0 2px 12px rgba(0, 0, 0, 0.36) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
+}
+
+html.dark .settings-drawer .settings-danger-btn.el-button.is-plain:hover,
+html.dark .settings-drawer .settings-danger-btn.el-button.is-plain:focus,
+html.dark .settings-drawer .settings-danger-btn.el-button:hover,
+html.dark .settings-drawer .settings-danger-btn.el-button:focus {
+  background: linear-gradient(180deg, rgba(88, 52, 48, 0.88) 0%, rgba(56, 34, 32, 0.94) 100%) !important;
+  border-color: rgba(255, 140, 128, 0.55) !important;
+  color: #ffe4e1 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 215, 0.09),
+    0 4px 18px rgba(255, 69, 58, 0.18) !important;
+}
+
+html.dark .settings-drawer .settings-danger-btn.el-button:focus-visible {
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 210, 205, 0.08),
+    0 0 0 2px rgba(255, 100, 90, 0.35) !important;
+}
+
+html.dark .settings-drawer .settings-danger-btn.el-button:active {
+  transform: scale(0.98);
+}
+
+/* 深色：关于入口 — 与导入/导出同一套中性面，全宽时更整 */
+html.dark .settings-drawer .settings-about-btn.el-button.is-plain,
+html.dark .settings-drawer .settings-about-btn.el-button {
+  border-radius: 0.72rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.012em !important;
+  background: linear-gradient(180deg, rgba(76, 76, 80, 0.98) 0%, rgba(52, 52, 56, 0.97) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(245, 245, 247, 0.95) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 12px rgba(0, 0, 0, 0.38) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    color 0.18s var(--app-ease-out),
+    transform 0.14s var(--app-ease-spring) !important;
+}
+
+html.dark .settings-drawer .settings-about-btn.el-button.is-plain:hover,
+html.dark .settings-drawer .settings-about-btn.el-button.is-plain:focus,
+html.dark .settings-drawer .settings-about-btn.el-button:hover,
+html.dark .settings-drawer .settings-about-btn.el-button:focus {
+  background: linear-gradient(180deg, rgba(88, 88, 94, 0.99) 0%, rgba(64, 64, 70, 0.98) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.14) !important;
+}
+
+html.dark .settings-drawer .settings-about-btn.el-button:focus-visible {
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(10, 132, 255, 0.38) !important;
+}
+
+html.dark .settings-drawer .settings-about-btn.el-button:active {
+  transform: scale(0.98);
+}
+
+html.dark .settings-drawer .el-drawer__footer {
+  border-top: 1px solid var(--app-separator);
+  padding: 0.85rem 1rem 1rem;
+  background: transparent;
+}
+
+/* 设置抽屉页脚「保存」见上方 html.dark .settings-drawer .el-drawer__footer .el-button--primary */
+

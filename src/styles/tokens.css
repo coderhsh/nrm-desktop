@@ -1,0 +1,219 @@
+/* nrm-desktop global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Apple-style shell tokens + Element Plus light overrides (content below native title bar only) */
+:root {
+  color-scheme: light;
+  /* Standard UI motion + slightly “springy” ease for enter/hover */
+  --app-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --app-ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --app-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --app-duration: 0.22s;
+  --app-duration-mid: 0.28s;
+  --app-duration-slow: 0.36s;
+  --app-theme-transition-duration: 0.58s;
+  --app-theme-transition-ease: var(--app-ease);
+  --app-theme-view-duration: var(--app-theme-transition-duration);
+  --app-theme-surface-duration: var(--app-theme-transition-duration);
+  --app-theme-content-duration: var(--app-theme-transition-duration);
+  --app-theme-control-duration: var(--app-theme-transition-duration);
+  /* 明暗主题切换：View Transitions 交叉淡化时长；无 API 时回退到 surface 过渡 */
+  /* 源列表分类折叠：外壳与箭头共用时长，曲线分开（高度 ease-out、旋转略弹） */
+  --app-category-fold-duration: 0.38s;
+  --app-category-fold-ease: var(--app-ease-out);
+  --app-category-chevron-ease: var(--app-ease-spring);
+  --app-radius-sm: 8px;
+  --app-radius-md: 12px;
+  --app-radius-lg: 14px;
+  /* 明显偏冷蓝灰，与系统标题栏常见浅中性灰拉开色差，避免「一整块同色」 */
+  --app-bg: #dfe8f4;
+  --app-bg-elevated: #edf2fa;
+  --app-surface: #ffffff;
+  /* 主列（测速 + 当前源背后）专用，比侧栏略深半阶 */
+  --app-main-bg-base: #d4e0ef;
+  --app-main-bg-image: linear-gradient(168deg, #e8eef8 0%, #dde6f2 42%, #d5e0ec 100%);
+  --app-surface-elevated: #ffffff;
+  --app-separator: rgba(60, 60, 67, 0.1);
+  --app-text: #1d1d1f;
+  --app-text-muted: rgba(60, 60, 67, 0.58);
+  --app-bar-track: #e8e8ed;
+
+  --el-color-primary: #007aff;
+  --el-color-primary-rgb: 0, 122, 255;
+  --el-color-primary-light-3: #4d9dff;
+  --el-color-primary-light-5: #7ab8ff;
+  --el-color-primary-light-7: #a8d0ff;
+  --el-color-primary-light-8: #c5e0ff;
+  --el-color-primary-light-9: #e8f2ff;
+  --el-color-primary-dark-2: #0062d6;
+  /* 页脚「保存」等确认操作：石墨蓝灰，与全局主色蓝、输入 focus 环区分 */
+  --app-commit-btn-light-top: #5a6270;
+  --app-commit-btn-light-mid: #464d5c;
+  --app-commit-btn-light-bot: #3a414f;
+  --app-commit-btn-light-border: color-mix(in srgb, #ffffff 20%, rgba(32, 38, 50, 0.55));
+  --app-commit-btn-light-hover-top: #656e7e;
+  --app-commit-btn-light-hover-mid: #515a6a;
+  --app-commit-btn-light-hover-bot: #444c5c;
+  --app-commit-btn-light-shadow: 0 2px 10px rgba(22, 28, 40, 0.18);
+  --app-commit-btn-light-shadow-hover: 0 4px 14px rgba(22, 28, 40, 0.22);
+  /* 仅分类管理弹窗·浅色「保存」— 近白填充、细线、深字（macOS sheet 式；满意后再同步其它页脚） */
+  --app-category-save-light-top: #ffffff;
+  --app-category-save-light-mid: #fafafa;
+  --app-category-save-light-bot: #f2f2f4;
+  --app-category-save-light-border: rgba(0, 0, 0, 0.1);
+  --app-category-save-light-hover-top: #fafafa;
+  --app-category-save-light-hover-mid: #f2f2f4;
+  --app-category-save-light-hover-bot: #ebebed;
+  --app-category-save-light-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --app-category-save-light-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.07), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  --el-border-radius-base: 10px;
+  --el-border-radius-small: 8px;
+  --el-transition-duration-fast: 0.22s;
+  --el-transition-duration: 0.3s;
+  --el-transition-function-ease-in-out-bezier: var(--app-ease-spring);
+  --el-transition-function-fast-bezier: var(--app-ease-spring);
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Helvetica Neue', sans-serif;
+  /* Softer “sheet” shadows (Element popovers / overlays use --el-box-shadow*) */
+  --el-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03), 0 16px 48px rgba(0, 0, 0, 0.09), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --el-box-shadow-light: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --el-box-shadow-lighter: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  background-color: var(--app-bg);
+  background-image: linear-gradient(165deg, var(--app-bg) 0%, color-mix(in srgb, var(--app-bg) 82%, #b8c8e0 18%) 52%, var(--app-bg-elevated) 100%);
+  background-attachment: fixed;
+  transition: background-color var(--app-theme-surface-duration) var(--app-ease);
+}
+
+html {
+  background-color: var(--app-bg);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+/* Dark mode: Uno utilities + Element (html.dark beats element-plus html.dark var specificity when later in cascade) */
+html.dark {
+  color-scheme: dark;
+  --app-bg-elevated: #242428;
+  --app-bg: #161618;
+  /* 侧栏略偏冷灰紫，与主区拉开层次 */
+  --app-surface: #26262c;
+  /* 主列：略浅于 #app 底，带极弱冷调，托住灰卡 + 当前源块 */
+  --app-main-bg-base: #1a1b20;
+  --app-main-bg-image: linear-gradient(172deg, #202126 0%, #1a1b20 48%, #17181c 100%);
+  --app-surface-elevated: #36363e;
+  --app-separator: rgba(84, 84, 88, 0.48);
+  --app-text: #f5f5f7;
+  --app-text-muted: rgba(235, 235, 245, 0.55);
+  --app-bar-track: rgba(118, 118, 128, 0.24);
+
+  --el-color-primary: #0a84ff;
+  --el-color-primary-rgb: 10, 132, 255;
+  --el-color-primary-light-3: #3388d4;
+  --el-color-primary-light-5: #2a6aa3;
+  --el-color-primary-light-7: #214d73;
+  --el-color-primary-light-8: #1c3f5d;
+  --el-color-primary-light-9: #18324a;
+  --el-color-primary-dark-2: #3d9eff;
+
+  --el-bg-color: #26262c;
+  --el-bg-color-page: #161618;
+  --el-bg-color-overlay: #38383f;
+  --el-text-color-primary: #f5f5f7;
+  --el-text-color-regular: #ebebf5;
+  --el-text-color-secondary: rgba(235, 235, 245, 0.55);
+  --el-border-color: #424245;
+  --el-border-color-light: #38383a;
+  --el-fill-color: #38383f;
+  --el-fill-color-light: #4a4a52;
+  --el-fill-color-lighter: #38383f;
+  --el-fill-color-blank: #26262c;
+  --el-fill-color-dark: #48484a;
+  --el-fill-color-darker: #545458;
+  --el-fill-color-extra-light: #252526;
+  --el-mask-color: rgba(0, 0, 0, 0.45);
+  --el-box-shadow: 0 24px 56px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.4);
+  --el-box-shadow-light: 0 12px 28px rgba(0, 0, 0, 0.35);
+  --el-box-shadow-lighter: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --el-text-color-placeholder: rgba(235, 235, 245, 0.32);
+  --el-text-color-disabled: rgba(235, 235, 245, 0.28);
+  --el-border-color-darker: #545458;
+  --el-border-color-dark: #4d4d50;
+  --el-border-color-extra-light: #2e2e30;
+  /* System semantic colors (dark) */
+  --el-color-success: #32d74b;
+  --el-color-success-light-3: #2bad45;
+  --el-color-success-light-5: #248a38;
+  --el-color-success-light-7: #1c662a;
+  --el-color-success-light-8: #185424;
+  --el-color-success-light-9: #143f1d;
+  --el-color-success-dark-2: #5cdf6f;
+  --el-color-warning: #ffd60a;
+  --el-color-warning-dark-2: #ffe066;
+  --el-color-danger: #ff453a;
+  --el-color-danger-light-3: #cf3a31;
+  --el-color-danger-light-5: #a32f28;
+  --el-color-danger-light-7: #77241f;
+  --el-color-danger-light-8: #611f1b;
+  --el-color-danger-light-9: #4a1815;
+  --el-color-danger-dark-2: #ff6961;
+}
+
+html.dark body {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
+html.dark #app {
+  background-color: var(--app-bg);
+  background-image: linear-gradient(168deg, var(--app-bg) 0%, color-mix(in srgb, var(--app-bg) 78%, #2a2d38 22%) 52%, color-mix(in srgb, var(--app-bg) 88%, #000000 12%) 100%);
+  background-attachment: fixed;
+}
+
+html.dark .bg-white {
+  background-color: var(--app-surface);
+}
+html.dark .border-gray-200 {
+  border-color: var(--app-separator);
+}
+html.dark .border-gray-100 {
+  border-color: var(--app-separator);
+}
+html.dark .bg-gray-100 {
+  background-color: var(--app-surface-elevated);
+}
+html.dark .bg-gray-50 {
+  background-color: var(--el-fill-color-blank);
+}
+html.dark .text-gray-700 {
+  color: var(--app-text);
+}
+html.dark .text-gray-400 {
+  color: var(--app-text-muted);
+}
+html.dark .text-gray-500 {
+  color: var(--app-text-muted);
+}
+html.dark .from-gray-100 {
+  --un-gradient-from: #3a3a3c;
+}
+html.dark .via-gray-50 {
+  --un-gradient-via: #2c2c2e;
+}
+html.dark .to-gray-100 {
+  --un-gradient-to: #3a3a3c;
+}
+

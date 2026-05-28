@@ -316,7 +316,7 @@ watch(
   -webkit-user-select: none;
 }
 
-/* 顶栏按钮：与当前源「复制 URL」同款（见 style.css .speed-test-header-action）；此处仅布局 */
+/* 顶栏按钮：与当前源「复制 URL」同款（见 styles/speed-test.css .speed-test-header-action）；此处仅布局 */
 .speed-test-main-btn.el-button--small,
 .speed-fastest-btn.el-button--small {
   justify-content: center;

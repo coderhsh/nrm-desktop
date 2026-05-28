@@ -1,0 +1,131 @@
+/*
+ * 三大板块入场首帧：与 useAppBlocksEntrance 的 GSAP 终点一致，刷新时先保持外侧+透明，再 to 收拢，避免先闪终态。
+ * 动画结束后脚本会移除 data-entrance。
+ */
+.app-entrance-pane[data-entrance='left'] {
+  opacity: 0;
+  transform: translate3d(-72px, 0, 0) scale(0.94);
+  pointer-events: none;
+}
+
+.app-entrance-pane[data-entrance='top'] {
+  opacity: 0;
+  transform: translate3d(0, -48px, 0) scale(0.96);
+  pointer-events: none;
+}
+
+.app-entrance-pane[data-entrance='bottom'] {
+  opacity: 0;
+  transform: translate3d(0, 56px, 0) scale(0.96);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-entrance-pane[data-entrance] {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* First launch: shell + main stage (classes toggled from App.vue) */
+.app-shell.app-shell-intro-prep .app-sidebar {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+
+.app-shell.app-shell-intro-prep .app-main-stage {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.app-shell.app-shell-intro-run .app-sidebar {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.48s var(--app-ease-spring),
+    transform 0.52s var(--app-ease-spring);
+}
+
+.app-shell.app-shell-intro-run .app-main-stage {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.5s var(--app-ease-spring),
+    transform 0.55s var(--app-ease-spring);
+  transition-delay: 0.06s;
+}
+
+/* Dialog overlay fade (close-confirm overrides with higher specificity) */
+.dialog-fade-enter-active,
+.dialog-fade-leave-active {
+  transition-duration: var(--app-duration-mid) !important;
+  transition-timing-function: var(--app-ease-spring) !important;
+}
+
+/* Overlay backdrop-filter transition: prevent residual blur on close */
+.el-overlay {
+  transition:
+    opacity var(--app-duration-mid) var(--app-ease),
+    backdrop-filter var(--app-duration-mid) var(--app-ease) !important;
+  -webkit-transition:
+    opacity var(--app-duration-mid) var(--app-ease),
+    -webkit-backdrop-filter var(--app-duration-mid) var(--app-ease) !important;
+}
+
+/* Element Plus 滚动条统一样式：左侧源列表与测速柱状图共用（高度由使用处 h-full / flex-1+h-0 决定，避免全局 100% 压过 flex 收起） */
+.app-scrollbar.el-scrollbar {
+  width: 100%;
+  min-height: 0;
+}
+.app-scrollbar .el-scrollbar__wrap {
+  overflow-x: hidden;
+}
+.app-scrollbar .el-scrollbar__bar.is-vertical {
+  width: 6px;
+  right: 2px;
+}
+.app-scrollbar .el-scrollbar__thumb {
+  background-color: rgba(60, 60, 67, 0.28);
+  border-radius: 5px;
+}
+.app-scrollbar .el-scrollbar__thumb:hover {
+  background-color: rgba(60, 60, 67, 0.45);
+}
+
+html.dark .app-scrollbar .el-scrollbar__thumb {
+  background-color: rgba(235, 235, 245, 0.22);
+}
+html.dark .app-scrollbar .el-scrollbar__thumb:hover {
+  background-color: rgba(235, 235, 245, 0.38);
+}
+
+/* @deprecated 命名保留，与同上类一致 */
+.sidebar-scrollbar {
+  height: 100%;
+}
+.sidebar-scrollbar .el-scrollbar__view {
+  height: 100%;
+}
+
+@keyframes app-skeleton-shimmer-move {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.registry-list-skeleton-shimmer {
+  background: linear-gradient(90deg, #e5e5ea 22%, #f8f8fa 50%, #e5e5ea 78%);
+  background-size: 200% 100%;
+  animation: app-skeleton-shimmer-move 1.35s ease-in-out infinite;
+}
+
+html.dark .registry-list-skeleton-shimmer {
+  background: linear-gradient(90deg, #34343a 22%, #4c4c56 50%, #34343a 78%);
+  background-size: 200% 100%;
+  animation: app-skeleton-shimmer-move 1.35s ease-in-out infinite;
+}
+
