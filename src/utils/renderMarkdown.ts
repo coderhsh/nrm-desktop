@@ -1,21 +1,31 @@
-import MarkdownIt from 'markdown-it'
+import type MarkdownIt from 'markdown-it'
 
-const markdown = new MarkdownIt({
-  html: false,
-  linkify: true,
-  breaks: true,
-})
+let instance: MarkdownIt | null = null
 
-const defaultLinkOpen = markdown.renderer.rules.link_open
-  ?? ((tokens, index, options, _env, self) => self.renderToken(tokens, index, options))
+async function getMarkdownIt(): Promise<MarkdownIt> {
+  if (instance) return instance
+  const mod = await import('markdown-it')
+  const md = new mod.default({
+    html: false,
+    linkify: true,
+    breaks: true,
+  })
 
-markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
-  const token = tokens[index]
-  token.attrSet('target', '_blank')
-  token.attrSet('rel', 'noopener noreferrer')
-  return defaultLinkOpen(tokens, index, options, env, self)
+  const defaultLinkOpen = md.renderer.rules.link_open
+    ?? ((tokens, index, options, _env, self) => self.renderToken(tokens, index, options))
+
+  md.renderer.rules.link_open = (tokens, index, options, env, self) => {
+    const token = tokens[index]
+    token.attrSet('target', '_blank')
+    token.attrSet('rel', 'noopener noreferrer')
+    return defaultLinkOpen(tokens, index, options, env, self)
+  }
+
+  instance = md
+  return md
 }
 
-export function renderMarkdown(source: string): string {
-  return markdown.render(source)
+export async function renderMarkdown(source: string): Promise<string> {
+  const md = await getMarkdownIt()
+  return md.render(source)
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   formatUpdateError,
   useAppUpdate,
@@ -14,7 +14,10 @@ const appUpdate = useAppUpdate()
 const update = computed(() => appUpdate.updateInfo.value)
 const releaseNotesBody = computed(() => update.value?.body?.trim() ?? '')
 const hasReleaseNotes = computed(() => releaseNotesBody.value.length > 0)
-const releaseNotesHtml = computed(() => renderMarkdown(releaseNotesBody.value))
+const releaseNotesHtml = ref('')
+watch(releaseNotesBody, async (body) => {
+  releaseNotesHtml.value = body ? await renderMarkdown(body) : ''
+}, { immediate: true })
 const currentVersion = computed(() => update.value?.currentVersion ?? '-')
 const newVersion = computed(() => update.value?.version ?? '-')
 const updateDate = computed(() => formatUpdatePublishDate(update.value?.date, language.value))
