@@ -16,6 +16,7 @@ use tauri::{
     Emitter, Manager, Wry,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+use crate::registry_config::normalize_registry_url_key;
 
 fn i18n(lang: &str, zh: &str, en: &str) -> String {
     if lang == "en" {
@@ -140,11 +141,6 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle<Wry>) -> Result<(), String> {
     }
 }
 
-/// 与列表里的 URL 比较时忽略首尾空白与末尾 `/`。
-fn registry_url_key(url: &str) -> String {
-    url.trim().trim_end_matches('/').to_string()
-}
-
 /// Get current registry name for tray menu checkmark
 fn get_current_name(registries: &[models::Registry]) -> Option<String> {
     let url = npmrc::read_current_registry().ok()??;
@@ -152,14 +148,14 @@ fn get_current_name(registries: &[models::Registry]) -> Option<String> {
 }
 
 fn current_name_from_registry_url(url: &str, registries: &[models::Registry]) -> Option<String> {
-    let current_key = registry_url_key(url);
+    let current_key = normalize_registry_url_key(url);
     current_name_from_registry_url_key(&current_key, registries)
 }
 
 fn current_name_from_registry_url_key(current_key: &str, registries: &[models::Registry]) -> Option<String> {
     registries
         .iter()
-        .find(|r| registry_url_key(&r.url) == current_key)
+        .find(|r| normalize_registry_url_key(&r.url) == current_key)
         .map(|r| r.name.clone())
 }
 
@@ -216,9 +212,7 @@ pub fn activate_existing_window() -> bool {
 }
 
 fn lock_file_path() -> PathBuf {
-    let home =
-        std::env::var("USERPROFILE").unwrap_or_else(|_| std::env::var("HOME").unwrap_or_else(|_| ".".to_string()));
-    PathBuf::from(home).join(".nrm-desktop").join(".instance.lock")
+    paths::config_dir().join(".instance.lock")
 }
 
 /// Remove single instance lock file when app exits.

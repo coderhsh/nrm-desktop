@@ -1,4 +1,5 @@
 use crate::models::Registry;
+use crate::registry_config::normalize_registry_url_key;
 use crate::{app_settings, npmrc, project_registry, proxy, registries, speedtest};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -85,11 +86,6 @@ pub fn get_node_npm_versions() -> NodeNpmVersions {
     }
 }
 
-/// 与列表比较用的 registry URL 规范化。
-fn registry_url_key(url: &str) -> String {
-    url.trim().trim_end_matches('/').to_string()
-}
-
 /// 仅写入 `.npmrc` 的 registry（备份 + 设置 URL）。不刷新托盘菜单。
 /// 托盘 `on_menu_event` 内必须调用本函数而非带刷新的 `set_registry`，否则同步 `set_menu` 可能死锁。
 pub(crate) fn set_registry_npmrc_only(name: &str) -> Result<(), String> {
@@ -154,11 +150,11 @@ pub fn get_current_registry() -> Result<Option<Registry>, String> {
 
     match url {
         Some(current_url) => {
-            let key = current_url.trim().trim_end_matches('/').to_string();
+            let key = normalize_registry_url_key(&current_url);
             let all = registries::get_all().map_err(|e| e.to_string())?;
-            let found = all.into_iter().find(|r| {
-                registry_url_key(&r.url) == key
-            });
+            let found = all
+                .into_iter()
+                .find(|r| normalize_registry_url_key(&r.url) == key);
             Ok(found.or_else(|| {
                 Some(Registry {
                     name: app_settings::i18n_merged_current_registry_name(),
@@ -193,7 +189,9 @@ pub async fn delete_registry(app: tauri::AppHandle, name: String) -> Result<(), 
     let all_before = registries::get_all().map_err(|e| e.to_string())?;
     let target = all_before.iter().find(|r| r.name == name);
     let was_current = match (&current_url, target) {
-        (Some(cu), Some(reg)) => registry_url_key(cu) == registry_url_key(&reg.url),
+        (Some(cu), Some(reg)) => {
+            normalize_registry_url_key(cu) == normalize_registry_url_key(&reg.url)
+        }
         _ => false,
     };
 
@@ -235,7 +233,7 @@ pub async fn delete_registries_bulk(app: tauri::AppHandle, names: Vec<String>) -
 
     for name in &unique_names {
         if let (Some(cu), Some(reg)) = (&current_url, all_before.iter().find(|r| &r.name == name)) {
-            if registry_url_key(cu) == registry_url_key(&reg.url) {
+            if normalize_registry_url_key(cu) == normalize_registry_url_key(&reg.url) {
                 deleted_current = true;
             }
         }

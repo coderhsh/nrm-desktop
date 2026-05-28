@@ -29,10 +29,7 @@ fn load_settings() -> io::Result<AppSettings> {
 }
 
 fn save_settings(settings: &AppSettings) -> io::Result<()> {
-    let dir = paths::config_dir();
-    if !dir.exists() {
-        fs::create_dir_all(&dir)?;
-    }
+    paths::ensure_config_dir()?;
     let content = serde_json::to_string_pretty(settings)?;
     fs::write(settings_file_path(), content)
 }

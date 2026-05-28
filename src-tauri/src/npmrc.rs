@@ -1,3 +1,4 @@
+use crate::paths;
 use crate::registry_config::{parse_registry_value, RegistryParseOptions};
 use std::fs;
 use std::io::{self, Write};
@@ -5,19 +6,7 @@ use std::path::PathBuf;
 
 /// Get the user-level .npmrc file path.
 pub fn get_npmrc_path() -> PathBuf {
-    let home = dirs_fallback();
-    home.join(".npmrc")
-}
-
-/// Fallback to get the user's home directory.
-fn dirs_fallback() -> PathBuf {
-    if let Ok(home) = std::env::var("USERPROFILE") {
-        PathBuf::from(home)
-    } else if let Ok(home) = std::env::var("HOME") {
-        PathBuf::from(home)
-    } else {
-        PathBuf::from(".")
-    }
+    paths::home_dir().join(".npmrc")
 }
 
 /// Read the current registry value from .npmrc.
@@ -70,7 +59,11 @@ pub fn set_registry(url: &str) -> io::Result<()> {
         copy_with_overwrite(&path, &backup)?;
     }
 
-    // Build new content: update or add registry= line
+    let new_content = update_registry_content(&existing, url);
+    atomic_write(&path, &new_content)
+}
+
+fn update_registry_content(existing: &str, url: &str) -> String {
     let mut has_registry = false;
     let mut new_lines = Vec::new();
 
@@ -84,29 +77,13 @@ pub fn set_registry(url: &str) -> io::Result<()> {
     }
 
     if !has_registry {
-        if !new_lines.is_empty() && !new_lines.last().map_or(true, |s| s.is_empty()) {
+        if !new_lines.is_empty() && !new_lines.last().is_none_or(|s| s.is_empty()) {
             new_lines.push(String::new());
         }
         new_lines.push(format!("registry={}", url));
     }
 
-    let new_content = new_lines.join("\n") + "\n";
-
-    // Atomic write: write to a temp file, then rename
-    let temp_path = path.with_extension("npmrc.tmp");
-    let mut temp_file = fs::File::create(&temp_path)?;
-    temp_file.write_all(new_content.as_bytes())?;
-    temp_file.sync_all()?;
-    drop(temp_file);
-
-    // On Windows, rename cannot replace an existing file directly.
-    if path.exists() {
-        clear_readonly_if_needed(&path)?;
-        fs::remove_file(&path)?;
-    }
-    fs::rename(&temp_path, &path)?;
-
-    Ok(())
+    new_lines.join("\n") + "\n"
 }
 
 /// Copy source file to destination and safely overwrite existing destination.
@@ -137,4 +114,17 @@ fn clear_readonly_if_needed(path: &PathBuf) -> io::Result<()> {
         fs::set_permissions(path, permissions)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn update_registry_content_replaces_spaced_registry_assignment() {
+        let existing = "foo=bar\nregistry = https://old.example/\n";
+        let next = update_registry_content(existing, "https://new.example/");
+
+        assert_eq!(next, "foo=bar\nregistry=https://new.example/\n");
+    }
 }

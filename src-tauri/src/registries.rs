@@ -2,6 +2,7 @@ use crate::app_settings;
 use crate::models::{default_registries, Registry};
 use crate::npmrc;
 use crate::paths;
+use crate::registry_config::normalize_registry_url_key;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
@@ -20,15 +21,6 @@ struct CustomData {
 /// Get the path to the custom registries file.
 fn custom_file_path() -> PathBuf {
     paths::config_dir().join("custom.json")
-}
-
-/// Ensure the config directory exists.
-fn ensure_config_dir() -> io::Result<()> {
-    let dir = paths::config_dir();
-    if !dir.exists() {
-        fs::create_dir_all(&dir)?;
-    }
-    Ok(())
 }
 
 fn uses_legacy_preset_model(data: &CustomData) -> bool {
@@ -116,15 +108,10 @@ fn load_custom_data() -> io::Result<CustomData> {
 
 /// Save full custom data to the JSON file.
 fn save_custom_data(data: &CustomData) -> io::Result<()> {
-    ensure_config_dir()?;
+    paths::ensure_config_dir()?;
     let content = serde_json::to_string_pretty(&data)?;
     fs::write(custom_file_path(), content)?;
     Ok(())
-}
-
-/// 与列表/托盘比较 registry URL 时统一规范化（忽略首尾空白与末尾 `/`）。
-fn normalize_registry_url_key(url: &str) -> String {
-    url.trim().trim_end_matches('/').to_string()
 }
 
 /// 从 registry URL 推断用于展示的主机名片段（用于名称冲突时的备选名）。
