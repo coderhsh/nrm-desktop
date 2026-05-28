@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount, onMounted, provide } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted, provide, defineAsyncComponent } from 'vue'
 import { useAppBlocksEntrance, appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 import { Setting } from '@element-plus/icons-vue'
 import { open as openExternal } from '@tauri-apps/plugin-shell'
@@ -11,9 +11,9 @@ import CurrentSource from '@/components/CurrentSource.vue'
 import SpeedTest from '@/components/SpeedTest.vue'
 // TODO: 代理功能暂时关闭，待后续重新启用时移除注释
 import ProxySettings from '@/components/ProxySettings.vue'
-import SettingsDrawer from '@/components/SettingsDrawer.vue'
-import AppUpdateDialog from '@/components/AppUpdateDialog.vue'
-import CloseConfirmDialog from '@/components/CloseConfirmDialog.vue'
+const SettingsDrawer = defineAsyncComponent(() => import('@/components/SettingsDrawer.vue'))
+const AppUpdateDialog = defineAsyncComponent(() => import('@/components/AppUpdateDialog.vue'))
+const CloseConfirmDialog = defineAsyncComponent(() => import('@/components/CloseConfirmDialog.vue'))
 import * as api from '@/api/tauri'
 import type { NodeNpmVersions } from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
