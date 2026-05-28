@@ -554,9 +554,10 @@ export function coerceAppLanguage(value: string): AppLanguage {
   return value === 'en' || value === 'zh-CN' ? value : 'zh-CN'
 }
 
-export function useI18n() {
-  const language = useLocalStorage<AppLanguage>(LANGUAGE_STORAGE_KEY, 'zh-CN')
+// 模块级单例，避免每次调用 useI18n() 都创建新的 useLocalStorage ref + watcher
+const language = useLocalStorage<AppLanguage>(LANGUAGE_STORAGE_KEY, 'zh-CN')
 
+export function useI18n() {
   function t(key: string, params?: Record<string, string | number>): string {
     const bundle = messages[coerceAppLanguage(language.value)] ?? messages['zh-CN']
     const template = bundle[key] ?? messages['zh-CN'][key] ?? key
