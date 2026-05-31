@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount, onMounted, provide } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted, provide, defineAsyncComponent } from 'vue'
 import { useAppBlocksEntrance, appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 import { Setting } from '@element-plus/icons-vue'
 import { open as openExternal } from '@tauri-apps/plugin-shell'
@@ -9,10 +9,11 @@ import { useRegistryStore } from '@/stores/registry'
 import RegistryList from '@/components/RegistryList/index.vue'
 import CurrentSource from '@/components/CurrentSource.vue'
 import SpeedTest from '@/components/SpeedTest.vue'
+// TODO: 代理功能暂时关闭，待后续重新启用时移除注释
 import ProxySettings from '@/components/ProxySettings.vue'
-import SettingsDrawer from '@/components/SettingsDrawer.vue'
-import AppUpdateDialog from '@/components/AppUpdateDialog.vue'
-import CloseConfirmDialog from '@/components/CloseConfirmDialog.vue'
+const SettingsDrawer = defineAsyncComponent(() => import('@/components/SettingsDrawer.vue'))
+const AppUpdateDialog = defineAsyncComponent(() => import('@/components/AppUpdateDialog.vue'))
+const CloseConfirmDialog = defineAsyncComponent(() => import('@/components/CloseConfirmDialog.vue'))
 import * as api from '@/api/tauri'
 import type { NodeNpmVersions } from '@/api/tauri'
 import { useTheme } from '@/composables/useTheme'
@@ -49,6 +50,7 @@ const shellIntroClass = computed(() => ({
 }))
 const { t, language } = useI18n()
 const appUpdate = useAppUpdate()
+// TODO: 代理功能暂时关闭，待后续重新启用时恢复为 ref(false)
 const showProxySettings = ref(false)
 const showSettingsDialog = ref(false)
 const nodeNpmVersions = ref<NodeNpmVersions | null>(null)
@@ -68,6 +70,7 @@ const statusBarAppVisible = computed(
   () => !!(statusBarMeta.value.appName && statusBarMeta.value.appVersion),
 )
 const statusBarRuntimeItems = computed(() => listStatusBarRuntimeItems(statusBarMeta.value))
+// TODO: 代理功能暂时关闭，启用时改为 true 即可恢复入口
 const isProxyFeatureVisible = false
 
 const {
@@ -284,7 +287,7 @@ async function openGithubHome() {
         </el-button>
       </div>
 
-      <!-- Proxy Settings Dialog -->
+      <!-- TODO: 代理功能暂时关闭，由 isProxyFeatureVisible 控制，启用时移除注释 -->
       <ProxySettings v-if="isProxyFeatureVisible" v-model:visible="showProxySettings" @close="showProxySettings = false" />
 
       <!-- Settings Drawer -->

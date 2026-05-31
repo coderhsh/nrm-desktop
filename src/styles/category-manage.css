@@ -1,0 +1,841 @@
+/* 分类管理弹窗：浅色 sheet + 标题栏 */
+html:not(.dark) .category-manage-dialog .el-dialog {
+  background: linear-gradient(180deg, #fbfcff 0%, #f4f7fb 100%);
+  border: 1px solid rgba(193, 203, 218, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 40px rgba(30, 42, 60, 0.18);
+  overflow: hidden;
+}
+
+html:not(.dark) .category-manage-dialog .el-dialog__header {
+  border-bottom: 1px solid color-mix(in srgb, #cfd7e4 70%, transparent);
+  padding-bottom: 0.85rem;
+  margin-right: 0;
+}
+
+html:not(.dark) .category-manage-dialog .el-dialog__title {
+  color: #1f2632;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+}
+
+html:not(.dark) .category-manage-dialog .el-dialog__body {
+  padding-top: 0.35rem;
+}
+
+/* 软件信息：与分类管理同壳，正文为键值列表 */
+.app-about-dialog .el-dialog__body {
+  padding-top: 0.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.app-about-dialog-inner {
+  min-height: 4.5rem;
+}
+
+.app-about-loading {
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--app-text-muted);
+  padding: 1.75rem 0.5rem;
+}
+
+.app-about-dl {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+.app-about-dl__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-separator) 72%, transparent);
+}
+
+.app-about-dl__row:last-child {
+  border-bottom: none;
+  padding-bottom: 0.1rem;
+}
+
+.app-about-dl__row dt {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.9375rem;
+  color: var(--app-text-muted);
+  font-weight: 500;
+}
+
+.app-about-dl__row dd {
+  margin: 0;
+  text-align: right;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--app-text);
+  word-break: break-word;
+}
+
+.app-about-dl__dd--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .app-about-dl__row {
+  border-bottom-color: var(--app-separator);
+}
+
+html.dark .app-about-dl__row dd {
+  color: var(--el-text-color-primary);
+}
+
+/* 分类管理 / 添加源：正文区与「新增分类」条（全局，供 RegistryDialog 与 RegistryList 共用） */
+.category-manage-dialog .category-manage-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.125rem;
+  font-family: var(--el-font-family);
+  letter-spacing: -0.01em;
+}
+
+/* 分类列表滚动区：内容少时随内容高度，多时限制最大高度并出现滚动条 */
+.category-manage-dialog .category-list-scroll-host.el-scrollbar {
+  height: auto !important;
+  max-height: 19rem;
+  overflow: auto !important;
+}
+.category-manage-dialog .category-list-scroll-host .el-scrollbar__wrap {
+  height: auto !important;
+  max-height: 19rem;
+}
+
+.category-manage-dialog .category-create-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(0, 0, 0, 0.055);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 1px 4px rgba(15, 23, 42, 0.035);
+  transition:
+    border-color var(--app-duration-mid) var(--app-ease-spring),
+    box-shadow var(--app-duration-mid) var(--app-ease-out),
+    background-color 0.22s var(--app-ease-out);
+}
+
+.category-manage-dialog .category-create-btn {
+  min-width: 5.25rem;
+  border-radius: 980px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.category-manage-dialog .category-create-row .category-create-btn--add.el-button {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  color: #1d1d1f;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring),
+    color 0.2s var(--app-ease-out);
+}
+
+.category-manage-dialog .category-create-row .category-create-btn--add.el-button:hover {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #000000;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
+}
+
+.category-manage-dialog .category-create-row .category-create-btn--add.el-button:active {
+  transform: scale(0.98);
+}
+
+html:not(.dark) .category-manage-dialog .category-create-row .el-input__wrapper,
+html:not(.dark) .category-manage-dialog .category-input .el-input__wrapper,
+html:not(.dark) .category-manage-dialog .category-input .el-select__wrapper {
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fd 100%) !important;
+  box-shadow: 0 0 0 1px rgba(188, 198, 214, 0.76) inset !important;
+  transition:
+    box-shadow 0.2s var(--app-ease-out),
+    background-color 0.2s var(--app-ease-out);
+}
+
+html:not(.dark) .category-manage-dialog .category-create-row .el-input__wrapper:hover,
+html:not(.dark) .category-manage-dialog .category-input .el-input__wrapper:hover,
+html:not(.dark) .category-manage-dialog .category-input .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(167, 180, 201, 0.9) inset !important;
+}
+
+html:not(.dark) .category-manage-dialog .category-create-row .el-input__wrapper.is-focus,
+html:not(.dark) .category-manage-dialog .category-input .el-input__wrapper.is-focus,
+html:not(.dark) .category-manage-dialog .category-input .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px rgba(10, 132, 255, 0.6) inset,
+    0 0 0 3px rgba(10, 132, 255, 0.14) !important;
+}
+
+/* 浅色：仅带 app-dialog 的页脚（如代理）；设置抽屉保存见下方 .settings-drawer；分类管理弹窗保存见 --app-category-save-light-* */
+html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary {
+  border-radius: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  min-width: 5.5rem;
+  background: linear-gradient(180deg, var(--app-commit-btn-light-top) 0%, var(--app-commit-btn-light-mid) 52%, var(--app-commit-btn-light-bot) 100%) !important;
+  border: 1px solid var(--app-commit-btn-light-border) !important;
+  color: #fafafa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    var(--app-commit-btn-light-shadow) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring);
+}
+
+html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:hover,
+html:not(.dark) .app-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, var(--app-commit-btn-light-hover-top) 0%, var(--app-commit-btn-light-hover-mid) 52%, var(--app-commit-btn-light-hover-bot) 100%) !important;
+  border-color: color-mix(in srgb, #ffffff 28%, rgba(36, 42, 54, 0.62)) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    var(--app-commit-btn-light-shadow-hover) !important;
+}
+
+/* 需 !important：该弹窗同时带 .app-dialog，通用页脚规则已用 commit 色板 !important */
+html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  min-width: 5.5rem !important;
+  padding: 0 1.15rem !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-top) 0%, var(--app-category-save-light-mid) 52%, var(--app-category-save-light-bot) 100%) !important;
+  border: 1px solid var(--app-category-save-light-border) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    var(--app-category-save-light-shadow) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
+html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
+}
+
+html:not(.dark) .category-manage-dialog .el-dialog__footer .el-button--primary:active {
+  transform: scale(0.98);
+}
+
+
+/* 浅色：分类列表行内「确定」（重命名后）— 与页脚「保存」同一套近白样式 */
+html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  font-size: 0.8125rem !important;
+  padding: 0.32rem 0.72rem !important;
+  background: linear-gradient(180deg, var(--app-category-save-light-top) 0%, var(--app-category-save-light-mid) 52%, var(--app-category-save-light-bot) 100%) !important;
+  border: 1px solid var(--app-category-save-light-border) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    var(--app-category-save-light-shadow) !important;
+}
+
+html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary:hover,
+html:not(.dark) .category-manage-dialog .category-row-actions .el-button--primary:focus {
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
+}
+
+/* 分类管理弹窗底部：关闭在左、保存在右（与 macOS sheet 底部动作区一致） */
+.category-manage-dialog-footer {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+html:not(.dark) .category-manage-dialog .category-manage-dialog-footer__close.el-button {
+  border-radius: 980px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  min-width: 5rem;
+  padding: 0 1.05rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045);
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring),
+    color 0.2s var(--app-ease-out);
+}
+
+html:not(.dark) .category-manage-dialog .category-manage-dialog-footer__close.el-button:hover,
+html:not(.dark) .category-manage-dialog .category-manage-dialog-footer__close.el-button:focus {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.11);
+  color: #000000;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.07);
+}
+
+html:not(.dark) .category-manage-dialog .category-manage-dialog-footer__close.el-button:active {
+  transform: scale(0.98);
+}
+
+html.dark .category-manage-dialog .category-manage-dialog-footer__close.el-button {
+  border-radius: 980px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  min-width: 5rem;
+  padding: 0 1.05rem;
+  background: rgba(72, 72, 74, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(242, 244, 248, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28);
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring),
+    color 0.2s var(--app-ease-out);
+}
+
+html.dark .category-manage-dialog .category-manage-dialog-footer__close.el-button:hover,
+html.dark .category-manage-dialog .category-manage-dialog-footer__close.el-button:focus {
+  background: rgba(82, 82, 84, 0.98);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 12px rgba(0, 0, 0, 0.32);
+}
+
+html.dark .category-manage-dialog .category-manage-dialog-footer__close.el-button:active {
+  transform: scale(0.98);
+}
+
+/* 分类管理弹窗遮罩：略加强雾化（与通用 modal 叠加） */
+.category-manage-modal.el-overlay {
+  backdrop-filter: saturate(1.12) blur(14px) !important;
+  -webkit-backdrop-filter: saturate(1.12) blur(14px) !important;
+}
+
+html.dark .category-manage-modal.el-overlay {
+  backdrop-filter: blur(14px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.08) !important;
+}
+
+@keyframes category-manage-dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 与 Element Plus dialog-fade 同期：sheet 轻微缩放弹出 */
+.dialog-fade-enter-active .category-manage-dialog.el-dialog {
+  animation: category-manage-dialog-enter 0.42s var(--app-ease-spring) both;
+}
+
+/* 分类管理弹窗（Teleport）：深色 sheet + 列表区覆写浅色 scoped 样式 */
+html.dark .category-manage-dialog .el-dialog {
+  background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+  border-color: var(--el-border-color);
+  overflow: hidden;
+}
+
+html.dark .category-manage-dialog .el-dialog__header {
+  border-bottom: 1px solid var(--app-separator);
+  padding-bottom: 0.85rem;
+}
+
+html.dark .category-manage-dialog .el-dialog__title {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.0625rem;
+}
+
+html.dark .category-manage-dialog .el-dialog__body {
+  padding-top: 0.35rem;
+}
+
+html.dark .category-manage-dialog .category-create-row {
+  border-radius: 0.875rem !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  background: rgba(44, 44, 46, 0.72) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 4px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .category-manage-dialog .category-empty-state {
+  color: var(--app-text-muted) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(44, 44, 46, 0.65) !important;
+}
+
+html.dark .category-manage-dialog .category-list-row {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: linear-gradient(180deg, rgba(56, 56, 58, 0.95) 0%, rgba(44, 44, 46, 0.92) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .category-manage-dialog .category-list-row:hover {
+  border-color: rgba(10, 132, 255, 0.42) !important;
+  background: linear-gradient(180deg, rgba(58, 62, 68, 0.96) 0%, rgba(48, 50, 54, 0.94) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 6px 18px rgba(0, 0, 0, 0.38) !important;
+}
+
+/*
+ * 分类排序拖拽分身 teleported 到 body，不依赖 Vue scoped 属性即可命中。
+ * 与 .category-manage-dialog .category-list-row 深色表面一致。
+ */
+html.dark .category-manage-drag-ghost-inner {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(56, 56, 58, 0.95) 0%, rgba(44, 44, 46, 0.92) 100%);
+  color: var(--app-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .category-manage-drag-ghost-icon {
+  color: var(--app-text-muted);
+}
+
+/*
+ * 分类排序拖拽（body.category-manage-sort-dragging）
+ * 弹窗 teleport 到 body，须禁止选中：否则会拖出系统文本选中（蓝色），不同于 hover。
+ */
+body.category-manage-sort-dragging,
+body.category-manage-sort-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.category-manage-sort-dragging ::selection {
+  background: transparent !important;
+}
+
+body.category-manage-sort-dragging ::-moz-selection {
+  background: transparent !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .category-list-row {
+  outline: none !important;
+}
+
+/*
+ * 压制 hover（指针掠过时的描边/按钮变亮）
+ */
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-list-row:hover:not(.category-list-row--drag-preview) {
+  border-color: color-mix(in srgb, var(--app-separator) 82%, transparent) !important;
+  background: color-mix(in srgb, #ffffff 94%, #f2f2f7 6%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-list-row:hover:not(.category-list-row--drag-preview) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: linear-gradient(180deg, rgba(56, 56, 58, 0.95) 0%, rgba(44, 44, 46, 0.92) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .category-drag-handle:hover {
+  color: var(--app-text-muted) !important;
+  background: transparent !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-create-row .el-input__wrapper:hover:not(.is-focus),
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-input .el-input__wrapper:hover:not(.is-focus),
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-input .el-select__wrapper:hover:not(.is-focused) {
+  box-shadow: 0 0 0 1px rgba(188, 198, 214, 0.76) inset !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-create-row .el-input__wrapper:hover:not(.is-focus),
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-input .el-input__wrapper:hover:not(.is-focus),
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-input .el-select__wrapper:hover:not(.is-focused) {
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-create-row .category-create-btn--add.el-button:hover {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(0, 0, 0, 0.07) !important;
+  color: #1d1d1f !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-create-btn--add.el-button:hover {
+  background: rgba(72, 72, 74, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--primary:hover {
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--primary:hover {
+  background: linear-gradient(180deg, #6e6e73 0%, #545458 100%) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #1d1d1f !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.045) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: rgba(72, 72, 74, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+}
+
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--danger:hover {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(255, 59, 48, 0.3) !important;
+  color: #ff3b30 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .category-row-actions .el-button--danger:hover {
+  background: rgba(58, 58, 60, 0.95) !important;
+  border-color: rgba(255, 100, 90, 0.32) !important;
+  color: #ff6961 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.26) !important;
+}
+
+/* 底部「保存」、关闭钮、输入框后缀/字数 hover（拖拽排序时强制覆盖默认态） */
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
+html:not(.dark) body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, var(--app-category-save-light-hover-top) 0%, var(--app-category-save-light-hover-mid) 52%, var(--app-category-save-light-hover-bot) 100%) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  color: var(--app-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    var(--app-category-save-light-shadow-hover) !important;
+}
+
+html.dark body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
+html.dark body.category-manage-sort-dragging .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #78787d 0%, #5e5e63 100%) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 3px 12px rgba(0, 0, 0, 0.32) !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .el-dialog__headerbtn:hover,
+body.category-manage-sort-dragging .category-manage-dialog .el-dialog__headerbtn:focus {
+  color: var(--el-text-color-secondary) !important;
+}
+
+body.category-manage-sort-dragging .category-manage-dialog .el-input__suffix-inner .el-icon:hover,
+body.category-manage-sort-dragging .category-manage-dialog .el-input__suffix-inner .el-input__icon:hover {
+  color: var(--el-text-color-placeholder) !important;
+}
+
+/* 拖拽排序时统一冻结所有 .app-surface-card 的 hover 增强 */
+body.category-manage-sort-dragging .app-surface-card:hover {
+  border-color: color-mix(in srgb, #c8d1dd 68%, #ffffff) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 0 0 0.5px rgba(156, 170, 188, 0.34),
+    0 2px 6px rgba(33, 44, 62, 0.08),
+    0 10px 26px rgba(28, 40, 60, 0.12) !important;
+}
+
+html.dark body.category-manage-sort-dragging .app-surface-card:hover {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 3px 10px rgba(0, 0, 0, 0.35),
+    0 12px 28px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.category-manage-sort-dragging .current-source-card:hover {
+  transform: none !important;
+}
+
+html.dark .category-manage-dialog .category-create-row .el-input__wrapper,
+html.dark .category-manage-dialog .category-input .el-input__wrapper,
+html.dark .category-manage-dialog .category-input .el-select__wrapper {
+  background-color: var(--el-fill-color-blank) !important;
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+  border-radius: 0.72rem !important;
+}
+
+html.dark .category-manage-dialog .category-create-row .el-input__wrapper:hover,
+html.dark .category-manage-dialog .category-input .el-input__wrapper:hover,
+html.dark .category-manage-dialog .category-input .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-light) inset !important;
+}
+
+html.dark .category-manage-dialog .category-create-row .el-input__wrapper.is-focus,
+html.dark .category-manage-dialog .category-input .el-input__wrapper.is-focus,
+html.dark .category-manage-dialog .category-input .el-select__wrapper.is-focused {
+  box-shadow:
+    0 0 0 1px rgba(10, 132, 255, 0.65) inset,
+    0 0 0 3px rgba(10, 132, 255, 0.18) !important;
+}
+
+/* 深色：新增分类 — 胶囊 + 轻高光，减轻「一块死灰」 */
+html.dark .category-manage-dialog .category-create-btn--add.el-button {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  background: rgba(72, 72, 74, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html.dark .category-manage-dialog .category-create-btn--add.el-button:hover {
+  background: rgba(82, 82, 84, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 12px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.dark .category-manage-dialog .category-create-btn--add.el-button:active {
+  transform: scale(0.98);
+}
+
+/* 深色：行内「确定」与页脚保存一致 — 锌灰胶囊，避免再叠一层系统蓝 */
+html.dark .category-manage-dialog .category-row-actions .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  font-size: 0.8125rem !important;
+  padding: 0.32rem 0.72rem !important;
+  background: linear-gradient(180deg, #626266 0%, #4a4a4e 52%, #424246 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #fafafa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button--primary:hover {
+  background: linear-gradient(180deg, #6e6e73 0%, #56565a 52%, #4c4c50 100%) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 14px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger) {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  font-size: 0.8125rem !important;
+  padding: 0.32rem 0.72rem !important;
+  background: rgba(72, 72, 74, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(242, 244, 248, 0.94) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.28) !important;
+  transition:
+    background-color 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    color 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button:not(.el-button--primary):not(.el-button--danger):hover {
+  background: rgba(82, 82, 84, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 12px rgba(0, 0, 0, 0.32) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button--danger {
+  border-radius: 980px !important;
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  padding: 0.32rem 0.72rem !important;
+  background: rgba(58, 58, 60, 0.95) !important;
+  border: 1px solid rgba(255, 100, 90, 0.35) !important;
+  color: #ff6961 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.26) !important;
+}
+
+html.dark .category-manage-dialog .category-row-actions .el-button--danger:hover {
+  background: rgba(72, 48, 46, 0.55) !important;
+  border-color: rgba(255, 120, 110, 0.48) !important;
+  color: #ff857d !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 195, 0.06),
+    0 2px 10px rgba(255, 69, 58, 0.15) !important;
+}
+
+/*
+ * 深色：表单/对话框页脚主按钮 — 中性锌灰填充（设置抽屉见下方 .settings-drawer；分类管理见更下）
+ */
+html.dark .registry-dialog .el-button--primary,
+html.dark .app-dialog .el-dialog__footer .el-button--primary {
+  border-radius: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  min-width: 5.5rem;
+  background: linear-gradient(180deg, #6a6a6e 0%, #525256 100%) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #fafafa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark .registry-dialog .el-button--primary:hover,
+html.dark .registry-dialog .el-button--primary:focus,
+html.dark .app-dialog .el-dialog__footer .el-button--primary:hover,
+html.dark .app-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #78787d 0%, #5e5e63 100%) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 深色：分类管理页脚「保存」— 与其它对话框区分，胶囊 + 更轻阴影 */
+html.dark .category-manage-dialog .el-dialog__footer .el-button--primary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  min-width: 5.5rem;
+  padding: 0 1.15rem !important;
+  background: linear-gradient(180deg, #76767a 0%, #5c5c60 52%, #515155 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fafafa !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 2px 10px rgba(0, 0, 0, 0.3) !important;
+  transition:
+    background 0.2s var(--app-ease-out),
+    box-shadow 0.2s var(--app-ease-out),
+    border-color 0.2s var(--app-ease-out),
+    transform 0.15s var(--app-ease-spring) !important;
+}
+
+html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:hover,
+html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:focus {
+  background: linear-gradient(180deg, #838387 0%, #68686d 52%, #5a5a5e 100%) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 14px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.dark .category-manage-dialog .el-dialog__footer .el-button--primary:active {
+  transform: scale(0.98);
+}
+
+
+/* 全局：深色模式下输入框字数统计去掉黑色背景块 */
+html.dark .el-input__count,
+html.dark .el-input__count-inner {
+  background-color: transparent !important;
+  color: var(--app-text-muted) !important;
+}
+
+html.dark .el-textarea__count {
+  background-color: transparent !important;
+  color: var(--app-text-muted) !important;
+}
+
+html.dark .el-input .el-input__count,
+html.dark .el-input .el-input__count-inner,
+html.dark .el-input__wrapper .el-input__count,
+html.dark .el-input__wrapper .el-input__count-inner,
+html.dark .el-input__inner + .el-input__count,
+html.dark .el-input__inner + .el-input__count .el-input__count-inner,
+html.dark .el-textarea .el-textarea__count,
+html.dark .el-textarea__inner + .el-textarea__count {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+

@@ -1,0 +1,51 @@
+/* 整页主题切换：Chromium / Safari 18+ 用 root 交叉淡化，观感比瞬间换 class 更柔和 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--app-theme-view-duration);
+  animation-timing-function: var(--app-theme-transition-ease);
+}
+
+::view-transition-group(root) {
+  animation-duration: var(--app-theme-view-duration);
+  animation-timing-function: var(--app-theme-transition-ease);
+}
+
+/* Safari < 18 lacks startViewTransition, so briefly enable normal CSS interpolation while toggling html.dark. */
+html.app-theme-fallback-transition,
+html.app-theme-fallback-transition *,
+html.app-theme-fallback-transition *::before,
+html.app-theme-fallback-transition *::after {
+  transition-property:
+    background-color,
+    border-color,
+    color,
+    outline-color,
+    fill,
+    stroke,
+    box-shadow,
+    text-shadow,
+    opacity,
+    filter,
+    backdrop-filter,
+    -webkit-backdrop-filter !important;
+  transition-duration: var(--app-theme-surface-duration) !important;
+  transition-timing-function: var(--app-theme-transition-ease) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(root) {
+    animation-duration: 0.01ms !important;
+  }
+
+  html,
+  body,
+  #app,
+  html.app-theme-fallback-transition,
+  html.app-theme-fallback-transition *,
+  html.app-theme-fallback-transition *::before,
+  html.app-theme-fallback-transition *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

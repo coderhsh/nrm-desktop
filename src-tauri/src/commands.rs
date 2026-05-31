@@ -1,4 +1,5 @@
 use crate::models::Registry;
+use crate::registry_config::normalize_registry_url_key;
 use crate::{app_settings, npmrc, project_registry, proxy, registries, speedtest};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -85,11 +86,6 @@ pub fn get_node_npm_versions() -> NodeNpmVersions {
     }
 }
 
-/// 与列表比较用的 registry URL 规范化。
-fn registry_url_key(url: &str) -> String {
-    url.trim().trim_end_matches('/').to_string()
-}
-
 /// 仅写入 `.npmrc` 的 registry（备份 + 设置 URL）。不刷新托盘菜单。
 /// 托盘 `on_menu_event` 内必须调用本函数而非带刷新的 `set_registry`，否则同步 `set_menu` 可能死锁。
 pub(crate) fn set_registry_npmrc_only(name: &str) -> Result<(), String> {
@@ -154,11 +150,11 @@ pub fn get_current_registry() -> Result<Option<Registry>, String> {
 
     match url {
         Some(current_url) => {
-            let key = current_url.trim().trim_end_matches('/').to_string();
+            let key = normalize_registry_url_key(&current_url);
             let all = registries::get_all().map_err(|e| e.to_string())?;
-            let found = all.into_iter().find(|r| {
-                registry_url_key(&r.url) == key
-            });
+            let found = all
+                .into_iter()
+                .find(|r| normalize_registry_url_key(&r.url) == key);
             Ok(found.or_else(|| {
                 Some(Registry {
                     name: app_settings::i18n_merged_current_registry_name(),
@@ -190,18 +186,14 @@ pub fn add_registry(app: tauri::AppHandle, name: &str, url: &str) -> Result<(), 
 #[tauri::command]
 pub async fn delete_registry(app: tauri::AppHandle, name: String) -> Result<(), String> {
     let current_url = npmrc::read_current_registry().map_err(|e| e.to_string())?;
-    let all_before = registries::get_all().map_err(|e| e.to_string())?;
-    let target = all_before.iter().find(|r| r.name == name);
-    let was_current = match (&current_url, target) {
-        (Some(cu), Some(reg)) => registry_url_key(cu) == registry_url_key(&reg.url),
-        _ => false,
-    };
+    let outcome = registries::delete_many_and_report(
+        std::slice::from_ref(&name),
+        current_url.as_deref(),
+    )
+    .map_err(|e| e.to_string())?;
 
-    registries::delete(&name).map_err(|e| e.to_string())?;
-
-    if was_current {
-        let all_after = registries::get_all().map_err(|e| e.to_string())?;
-        if all_after.is_empty() {
+    if outcome.deleted_current {
+        if outcome.remaining.is_empty() {
             eprintln!("[nrm-desktop] 已删除最后一个源，registry 仍指向已删除的地址");
             return Ok(());
         }
@@ -230,22 +222,11 @@ pub async fn delete_registries_bulk(app: tauri::AppHandle, names: Vec<String>) -
     };
 
     let current_url = npmrc::read_current_registry().map_err(|e| e.to_string())?;
-    let all_before = registries::get_all().map_err(|e| e.to_string())?;
-    let mut deleted_current = false;
+    let outcome = registries::delete_many_and_report(&unique_names, current_url.as_deref())
+        .map_err(|e| e.to_string())?;
 
-    for name in &unique_names {
-        if let (Some(cu), Some(reg)) = (&current_url, all_before.iter().find(|r| &r.name == name)) {
-            if registry_url_key(cu) == registry_url_key(&reg.url) {
-                deleted_current = true;
-            }
-        }
-    }
-
-    registries::delete_many(&unique_names).map_err(|e| e.to_string())?;
-
-    if deleted_current {
-        let all_after = registries::get_all().map_err(|e| e.to_string())?;
-        if all_after.is_empty() {
+    if outcome.deleted_current {
+        if outcome.remaining.is_empty() {
             eprintln!("[nrm-desktop] 批量删除后已无可用源，registry 可能仍指向已删除地址");
         } else {
             let best_name = speedtest::fastest_registry_name_with_fallback().await?;

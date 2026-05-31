@@ -1,0 +1,602 @@
+/* First launch: left column header / search / list (RegistryList) */
+.registry-list-root.registry-list-intro-prep .rl-intro-header,
+.registry-list-root.registry-list-intro-prep .rl-intro-search,
+.registry-list-root.registry-list-intro-prep .rl-intro-body {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.registry-list-root.registry-list-intro-run .rl-intro-header {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.4s var(--app-ease-spring),
+    transform 0.46s var(--app-ease-spring);
+}
+
+.registry-list-root.registry-list-intro-run .rl-intro-search {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.4s var(--app-ease-spring),
+    transform 0.46s var(--app-ease-spring);
+  transition-delay: 0.07s;
+}
+
+.registry-list-root.registry-list-intro-run .rl-intro-body {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.44s var(--app-ease-spring),
+    transform 0.5s var(--app-ease-spring);
+  transition-delay: 0.12s;
+}
+
+/* Category: 折叠用 grid 行高过渡，布局高度随动画变化，避免结束时整块「顶上去」 */
+.reg-category-fold-shell {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--app-category-fold-duration) var(--app-category-fold-ease);
+  /* flex 子项默认 min-height:auto 会按内容卡住高度；0fr 时须允许收到 0，否则会「漏」出下面的源 */
+  min-height: 0;
+  overflow: hidden;
+}
+
+.reg-category-fold-shell--open {
+  grid-template-rows: 1fr;
+}
+
+.reg-category-fold-inner {
+  min-height: 0;
+  overflow: hidden;
+  /* 仅左右留白；上下 padding 在 0fr 时仍会占位，导致折叠后漏出条目（见列表区 el-scrollbar__view 的上下 padding） */
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+/* 分类内首末行上下呼吸（TransitionGroup 插入一层 wrapper 后不用直接子选择器） */
+.reg-category-fold-inner .registry-item:first-child {
+  margin-top: 6px;
+}
+.reg-category-fold-inner .registry-item:last-child {
+  margin-bottom: 6px;
+}
+
+/* 源列表滚动区：内边距让阴影落在 padding 内，不被 el-scrollbar__wrap 裁切 */
+.registry-list-root .app-scrollbar .el-scrollbar__view {
+  padding: 6px 6px 8px;
+  box-sizing: border-box;
+}
+
+/* 搜索时禁用折叠动画，瞬间展开/收起 */
+.is-search-active .reg-category-fold-shell {
+  transition: none !important;
+}
+
+.is-search-active .category-row-chevron {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-category-fold-shell {
+    transition-duration: 0.01s;
+  }
+
+  .category-row-chevron {
+    transition-duration: 0.01s;
+  }
+}
+
+.category-row-chevron {
+  display: inline-block;
+  width: 0.8rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  text-align: center;
+  color: var(--app-text-muted);
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    transform var(--app-category-fold-duration) var(--app-category-chevron-ease);
+  transform: rotate(0deg);
+}
+
+.category-row-chevron.is-expanded {
+  transform: rotate(90deg);
+}
+
+.registry-list-title {
+  color: var(--app-text);
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-list-empty {
+  color: var(--app-text-muted);
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-category-host {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.registry-category-host--drop-target {
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 90%, transparent);
+  border-color: color-mix(in srgb, var(--el-color-primary) 60%, transparent);
+  box-shadow: 0 1px 3px rgba(20, 30, 46, 0.08);
+}
+
+.registry-list-count,
+.registry-category-heading {
+  color: var(--app-text-muted);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-list-count {
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 78%, transparent);
+}
+
+.registry-category-heading--drop-target {
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 78%, transparent);
+}
+
+.category-drop-overlay {
+  background-color: rgba(255, 255, 255, 0.55);
+  border-color: rgba(0, 122, 255, 0.25);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+.category-drop-hint {
+  color: var(--el-color-primary);
+  background-color: rgba(255, 255, 255, 0.88);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 3px rgba(20, 30, 46, 0.1);
+  transition:
+    background-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-surface-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-surface-duration) var(--app-theme-transition-ease);
+}
+
+/* Registry list item hover & active — 切换源时与左侧条、底色同频过渡，避免条「瞬切」 */
+.registry-item {
+  outline: 1px solid transparent;
+  outline-offset: 0;
+  transition:
+    background-color 0.28s var(--app-ease-out),
+    border-left-color 0.38s var(--app-ease-out),
+    border-color 0.38s var(--app-ease-out),
+    outline-color 0.28s var(--app-ease-out),
+    box-shadow 0.28s var(--app-ease-out),
+    opacity 0.28s var(--app-ease-out);
+}
+
+.registry-item-name {
+  color: var(--app-text);
+  transition: color var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-item.is-active .registry-item-name {
+  color: #007aff;
+}
+
+html.dark .registry-item.is-active .registry-item-name {
+  color: #7ec5ff;
+}
+
+.registry-item-url,
+.registry-item .text-xs.font-mono.font-medium,
+.registry-item .registry-speed-btn.el-button.is-link,
+.registry-item .registry-speed-btn.el-button.is-link .el-icon {
+  transition:
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    opacity var(--app-theme-content-duration) var(--app-theme-transition-ease);
+}
+
+.registry-item-url,
+.registry-item .registry-speed-btn.el-button.is-link {
+  color: var(--app-text-muted);
+}
+
+.registry-item .registry-speed-btn.el-button.is-link {
+  --el-button-text-color: var(--app-text-muted);
+  --el-button-hover-link-text-color: var(--app-text);
+  --el-button-disabled-text-color: var(--app-text-muted);
+  --el-button-loading-icon-color: var(--app-text-muted);
+  color: var(--app-text-muted) !important;
+}
+
+.registry-item:hover .registry-speed-btn.el-button.is-link,
+.registry-item.is-active .registry-speed-btn.el-button.is-link {
+  --el-button-hover-link-text-color: var(--app-text);
+  color: var(--app-text);
+}
+
+.registry-item .registry-speed-btn.el-button.is-link .el-icon,
+.registry-item .registry-speed-btn.el-button.is-link svg {
+  color: currentColor !important;
+  fill: currentColor;
+}
+
+/* hover：外阴影略收扩散 + 内高光，配合列表区 padding，减少裁切感 */
+.registry-item:hover {
+  background-color: color-mix(in srgb, var(--el-fill-color-light) 90%, var(--el-color-primary) 10%);
+  outline-color: color-mix(in srgb, var(--el-color-primary) 22%, #c8d1dd);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--el-color-primary) 10%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 3px 10px rgba(0, 0, 0, 0.055);
+}
+
+.registry-item.is-active:hover {
+  background-color: color-mix(in srgb, var(--el-color-primary) 19%, #ffffff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 32%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--el-color-primary) 12%, transparent),
+    0 1px 3px color-mix(in srgb, var(--el-color-primary) 12%, transparent),
+    0 3px 10px color-mix(in srgb, var(--el-color-primary) 8%, transparent);
+}
+
+.registry-item.is-active {
+  background-color: color-mix(in srgb, var(--el-color-primary) 14%, #ffffff);
+  border-left-color: var(--el-color-primary);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 28%, transparent),
+    0 1px 5px color-mix(in srgb, var(--el-color-primary) 18%, transparent);
+}
+
+.registry-item.is-idle {
+  background-color: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 3px rgba(28, 40, 60, 0.07),
+    0 0 0 0.5px rgba(60, 80, 110, 0.1);
+}
+
+html.dark .registry-item:hover {
+  background-color: rgba(255, 255, 255, 0.092);
+  outline-color: rgba(126, 197, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 0.5px rgba(142, 201, 255, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    0 3px 11px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .registry-item.is-active {
+  background-color: rgba(10, 132, 255, 0.3);
+  border-left-color: #7ec5ff;
+  box-shadow:
+    inset 0 0 0 1px rgba(10, 132, 255, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.22),
+    0 2px 10px rgba(0, 0, 0, 0.28);
+}
+
+html.dark .registry-item.is-active:hover {
+  background-color: rgba(10, 132, 255, 0.38);
+  border-left-color: #a8d4ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(10, 132, 255, 0.48),
+    0 0 0 1px rgba(10, 132, 255, 0.22),
+    0 1px 4px rgba(0, 0, 0, 0.28),
+    0 3px 12px rgba(0, 0, 0, 0.16);
+}
+
+html.dark .registry-item.is-idle {
+  background-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    0 0 0 0.5px rgba(255, 255, 255, 0.09);
+}
+
+/* 拖拽源列表项时禁用 hover 描边/底色（指针掠过其它项不出现「伪 hover」） */
+.registry-list-root--pointer-dragging .registry-item.is-idle:hover {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  outline-color: transparent !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 3px rgba(28, 40, 60, 0.07),
+    0 0 0 0.5px rgba(60, 80, 110, 0.1) !important;
+}
+
+.registry-list-root--pointer-dragging .registry-item.is-active:hover {
+  background-color: color-mix(in srgb, var(--el-color-primary) 14%, #ffffff) !important;
+  border-left-color: var(--el-color-primary) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--el-color-primary) 28%, transparent),
+    0 1px 5px color-mix(in srgb, var(--el-color-primary) 18%, transparent) !important;
+  outline-color: transparent !important;
+}
+
+html.dark .registry-list-root--pointer-dragging .registry-item.is-idle:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  outline-color: transparent !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    0 0 0 0.5px rgba(255, 255, 255, 0.09) !important;
+}
+
+html.dark .registry-list-root--pointer-dragging .registry-item.is-active:hover {
+  background-color: rgba(10, 132, 255, 0.3) !important;
+  border-left-color: #7ec5ff !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(10, 132, 255, 0.45),
+    0 0 0 1px rgba(10, 132, 255, 0.22),
+    0 2px 10px rgba(0, 0, 0, 0.28) !important;
+  outline-color: transparent !important;
+}
+
+/* 深色跨分类拖拽：暂时去掉分类块/标题的白色底色高亮（保留 overlay 与 dropHint） */
+html.dark .registry-category-host--drop-target {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.dark .registry-category-heading--drop-target {
+  background-color: transparent !important;
+}
+
+html.dark .category-drop-overlay {
+  background-color: rgba(28, 28, 30, 0.45);
+  border-color: rgba(10, 132, 255, 0.35);
+}
+
+html.dark .category-drop-hint {
+  color: var(--el-color-primary);
+  background-color: rgba(58, 58, 60, 0.94);
+  border-color: rgba(10, 132, 255, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* 浅色：添加源按钮（苹果风） */
+.registry-add-btn.el-button--primary {
+  --registry-add-light-bg: linear-gradient(180deg, #f5f8fb 0%, #edf2f7 100%);
+  --registry-add-light-hover-bg: linear-gradient(180deg, #f9fbff 0%, #f1f5fb 100%);
+  --registry-add-light-active-bg: linear-gradient(180deg, #e9eff6 0%, #e2e9f2 100%);
+  --registry-add-dark-bg: #424448;
+  --registry-add-dark-hover-bg: #3c4d5c;
+  --registry-add-dark-active-bg: rgba(10, 132, 255, 0.22);
+  --el-button-bg-color: #edf2f7;
+  --el-button-border-color: rgba(173, 184, 201, 0.72);
+  --el-button-text-color: #475468;
+  --el-button-hover-bg-color: #f1f5fb;
+  --el-button-hover-border-color: rgba(157, 171, 192, 0.82);
+  --el-button-active-bg-color: #e2e9f2;
+  --el-button-active-border-color: rgba(150, 164, 186, 0.82);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #edf2f7 !important;
+  border-color: var(--el-button-border-color) !important;
+  color: var(--el-button-text-color) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 1px 2px rgba(29, 41, 60, 0.08),
+    0 8px 18px rgba(29, 41, 60, 0.08);
+  transition:
+    background-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    border-color var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    color var(--app-theme-content-duration) var(--app-theme-transition-ease),
+    box-shadow var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    transform 0.16s var(--app-ease-spring);
+}
+
+.registry-add-btn.el-button--primary::before,
+.registry-add-btn.el-button--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition:
+    opacity var(--app-theme-control-duration) var(--app-theme-transition-ease),
+    background-color var(--app-theme-control-duration) var(--app-theme-transition-ease);
+}
+
+.registry-add-btn.el-button--primary::before {
+  background: var(--registry-add-light-bg);
+  opacity: 1;
+}
+
+.registry-add-btn.el-button--primary::after {
+  background: var(--registry-add-dark-bg);
+  opacity: 0;
+}
+
+.registry-add-btn.el-button--primary > * {
+  position: relative;
+  z-index: 1;
+}
+
+.registry-add-btn.el-button--primary:hover,
+.registry-add-btn.el-button--primary:focus {
+  background-color: #f1f5fb !important;
+  border-color: var(--el-button-hover-border-color) !important;
+  color: #3e4b5f !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 2px 5px rgba(29, 41, 60, 0.1),
+    0 10px 22px rgba(29, 41, 60, 0.1);
+}
+
+.registry-add-btn.el-button--primary:hover::before,
+.registry-add-btn.el-button--primary:focus::before {
+  background: var(--registry-add-light-hover-bg);
+}
+
+.registry-add-btn.el-button--primary:active {
+  background-color: #e2e9f2 !important;
+  border-color: var(--el-button-active-border-color) !important;
+  transform: scale(0.985);
+}
+
+.registry-add-btn.el-button--primary:active::before {
+  background: var(--registry-add-light-active-bg);
+}
+
+/* 深色：添加源 — 半透明主色底 + 描边，与侧栏表面更一体 */
+html.dark .registry-add-btn.el-button--primary {
+  --el-button-bg-color: var(--registry-add-dark-bg);
+  --el-button-border-color: #595a5e;
+  --el-button-text-color: #e8f2ff;
+  --el-button-hover-bg-color: var(--registry-add-dark-hover-bg);
+  --el-button-hover-border-color: rgba(10, 132, 255, 0.55);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: rgba(10, 132, 255, 0.22);
+  --el-button-active-border-color: rgba(10, 132, 255, 0.5);
+  --el-button-active-text-color: #ffffff;
+  background-color: var(--el-button-bg-color) !important;
+  border-color: var(--el-button-border-color) !important;
+  color: var(--el-button-text-color) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html.dark .registry-add-btn.el-button--primary::before {
+  opacity: 0;
+}
+
+html.dark .registry-add-btn.el-button--primary::after {
+  opacity: 1;
+}
+
+html.dark .registry-add-btn.el-button--primary:hover,
+html.dark .registry-add-btn.el-button--primary:focus {
+  background-color: var(--el-button-hover-bg-color) !important;
+  border-color: var(--el-button-hover-border-color) !important;
+  color: var(--el-button-hover-text-color) !important;
+}
+
+html.dark .registry-add-btn.el-button--primary:hover::after,
+html.dark .registry-add-btn.el-button--primary:focus::after {
+  background: var(--registry-add-dark-hover-bg);
+}
+
+html.dark .registry-add-btn.el-button--primary:active::after {
+  background: var(--registry-add-dark-active-bg);
+}
+
+html.dark .el-input__wrapper,
+html.dark .el-textarea__inner {
+  background-color: var(--el-fill-color-blank);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+
+html.dark .el-input__wrapper.is-focus,
+html.dark .el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+html.dark .el-dialog {
+  border-radius: var(--app-radius-lg);
+  background: linear-gradient(185deg, #3d3d40 0%, #2c2c2e 48%, #252528 100%);
+  border: 0.5px solid color-mix(in srgb, var(--el-border-color) 85%, transparent);
+  box-shadow: var(--el-box-shadow);
+}
+
+html.dark .el-dialog__header {
+  border-bottom: 1px solid var(--app-separator);
+  padding-bottom: 0.75rem;
+}
+
+html.dark .el-dialog__title {
+  color: var(--el-text-color-primary);
+  font-weight: 600;
+}
+
+html.dark .el-dialog__body {
+  color: var(--el-text-color-regular);
+}
+
+html.dark .el-popper,
+html.dark .el-select__popper.el-popper {
+  background-color: var(--el-bg-color-overlay);
+  border-color: var(--el-border-color);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .el-select-dropdown__item {
+  color: var(--el-text-color-regular);
+}
+
+html.dark .el-select-dropdown__item.hover,
+html.dark .el-select-dropdown__item:hover {
+  background-color: var(--el-fill-color-light);
+}
+html.dark .el-select-dropdown__item.is-hovering {
+  background-color: var(--el-fill-color-light);
+}
+html.dark .el-popper.is-light > .el-popper__arrow:before {
+  background: var(--el-bg-color-overlay);
+}
+html.dark .el-button.is-text:not(.is-disabled) {
+  color: var(--app-text-muted);
+}
+html.dark .el-button.is-text:not(.is-disabled):hover {
+  background-color: rgba(235, 235, 245, 0.08);
+  color: var(--app-text);
+}
+
+html.dark .el-switch__core {
+  background-color: #39393a;
+  border-color: #48484a;
+}
+
+html.dark .el-switch.is-checked .el-switch__core {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
+
+html.dark .el-button--primary {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: #ffffff;
+}
+
+html.dark .el-button--primary:hover,
+html.dark .el-button--primary:focus {
+  background-color: var(--el-color-primary-dark-2);
+  border-color: var(--el-color-primary-dark-2);
+  color: #ffffff;
+}
+
+html.dark .el-button--danger.is-plain {
+  background-color: rgba(255, 69, 58, 0.12);
+  border-color: rgba(255, 69, 58, 0.38);
+  color: #ff6961;
+}
+
+html.dark .el-button--danger.is-plain:hover,
+html.dark .el-button--danger.is-plain:focus {
+  background-color: rgba(255, 69, 58, 0.2);
+  border-color: rgba(255, 69, 58, 0.5);
+  color: #ff8a82;
+}
+
+/* RegistryList 深色模式样式 */
+html.dark .registry-fold-toolbar {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color-blank);
+  box-shadow: 0 1px 0 var(--app-separator);
+}
+
+html.dark .registry-fold-split {
+  background: var(--app-separator);
+}
+
+html.dark .registry-fold-btn.el-button.is-text:not(.is-disabled):hover {
+  background: color-mix(in srgb, var(--el-color-primary) 14%, var(--el-fill-color-blank));
+}

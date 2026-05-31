@@ -42,6 +42,7 @@
     "lint:fix": "eslint \"src/**/*.{ts,vue}\" \"*.{ts,js}\" --fix",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "verify:updater": "node ./scripts/verify-updater-setup.mjs",
     "tauri": "tauri",
     "update:logo": "node ./scripts/generate-icons.cjs",

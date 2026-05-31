@@ -4,7 +4,7 @@ import { gsap } from 'gsap'
 /** 供 SpeedTest 等子组件在入场结束后再开始重逻辑（如全量测速） */
 export const appEntranceSettledKey: InjectionKey<Promise<void>> = Symbol('appEntranceSettled')
 
-/** 与 src/style.css 中 .app-entrance-pane[data-entrance] 初始位姿保持一致 */
+/** 与 src/styles/app-shell.css 中 .app-entrance-pane[data-entrance] 初始位姿保持一致 */
 const ENTRANCE_DURATION = 0.5
 const ENTRANCE_EASE = 'power3.out' as const
 const TO_SETTLED = { x: 0, y: 0, scale: 1, autoAlpha: 1 }

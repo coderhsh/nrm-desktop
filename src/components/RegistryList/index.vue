@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, inject, nextTick, onMounted, ref, watch } from 'vue'
 import { useShellIntro } from '@/composables/useShellIntro'
 import { onClickOutside } from '@vueuse/core'
 import type { InputInstance } from 'element-plus'
@@ -12,7 +12,7 @@ import { testSingleSpeed } from '@/api/speedtest'
 import { formatLatencyErrorMessage, truncateSpeedTestRunError } from '@/utils/latency-error-i18n'
 import { formatInvokeErrorMessage } from '@/utils/invoke-error-i18n'
 import { latencyBarColor } from '@/utils/latency-bar-color'
-import RegistryDialog from './RegistryDialog.vue'
+const RegistryDialog = defineAsyncComponent(() => import('./RegistryDialog.vue'))
 import SearchHighlightText from './SearchHighlightText.vue'
 import { appEntranceSettledKey } from '@/composables/useAppBlocksEntrance'
 import { CATEGORY_LABEL_MAX_LENGTH } from './constants'

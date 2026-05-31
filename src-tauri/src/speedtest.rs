@@ -40,17 +40,7 @@ pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
 
     let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT));
     let client = http_client()?;
-
-    let mut handles = Vec::new();
-    for reg in registries {
-        let permit = semaphore.clone().acquire_owned().await.unwrap();
-
-        handles.push(tokio::spawn(async move {
-            let _permit = permit;
-            let result = test_registry(client, &reg).await;
-            result
-        }));
-    }
+    let handles = spawn_registry_tests(client, registries, semaphore);
 
     let mut results = Vec::new();
     for handle in handles {
@@ -78,6 +68,34 @@ pub async fn test_all() -> Result<Vec<LatencyResult>, String> {
     });
 
     Ok(results)
+}
+
+fn spawn_registry_tests(
+    client: &'static reqwest::Client,
+    registries: Vec<Registry>,
+    semaphore: Arc<Semaphore>,
+) -> Vec<tokio::task::JoinHandle<LatencyResult>> {
+    let mut handles = Vec::new();
+
+    for reg in registries {
+        let semaphore = semaphore.clone();
+        handles.push(tokio::spawn(async move {
+            let _permit = match semaphore.acquire_owned().await {
+                Ok(permit) => permit,
+                Err(_) => {
+                    return LatencyResult {
+                        name: reg.name.clone(),
+                        url: reg.url.clone(),
+                        latency_ms: None,
+                        error: Some("任务失败: 并发控制已关闭".to_string()),
+                    };
+                }
+            };
+            test_registry(client, &reg).await
+        }));
+    }
+
+    handles
 }
 
 /// 测速后返回延迟最低且测通的一个源名称；全部失败时退回列表中的第一个源。
@@ -140,7 +158,6 @@ pub async fn test_url(url: &str) -> Result<LatencyResult, String> {
 async fn test_registry(client: &reqwest::Client, registry: &Registry) -> LatencyResult {
     let start = Instant::now();
 
-    // Try HEAD request first, fall back to GET
     let request_url = format!("{}", registry.url.trim_end_matches('/'));
 
     let result = try_request(client, &request_url).await;
@@ -165,14 +182,6 @@ async fn test_registry(client: &reqwest::Client, registry: &Registry) -> Latency
 }
 
 async fn try_request(client: &reqwest::Client, url: &str) -> Result<(), String> {
-    // Try HEAD first
-    match client.head(url).send().await {
-        Ok(resp) if resp.status().is_success() => return Ok(()),
-        Ok(_) => { /* fall through to GET */ }
-        Err(_) => { /* fall through to GET */ }
-    }
-
-    // Fallback to GET
     match client.get(url).send().await {
         Ok(resp) if resp.status().is_success() => Ok(()),
         Ok(resp) => Err(format!("HTTP {}", resp.status().as_u16())),
@@ -191,6 +200,16 @@ async fn try_request(client: &reqwest::Client, url: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use tokio::sync::Semaphore;
+
+    fn registry(name: &str) -> Registry {
+        Registry {
+            name: name.to_string(),
+            url: format!("https://{name}.example/"),
+        }
+    }
 
     #[test]
     fn http_client_reuses_global_instance() {
@@ -198,5 +217,76 @@ mod tests {
         let second = http_client().expect("reuse http client");
 
         assert!(std::ptr::eq(first, second));
+    }
+
+    #[test]
+    fn spawn_registry_tests_does_not_wait_for_permits_before_spawning() {
+        tauri::async_runtime::block_on(async {
+            let semaphore = Arc::new(Semaphore::new(0));
+            let client = http_client().expect("create http client");
+            let registries = vec![registry("one"), registry("two"), registry("three")];
+
+            let handles = spawn_registry_tests(client, registries, semaphore);
+
+            assert_eq!(handles.len(), 3);
+            for handle in handles {
+                handle.abort();
+            }
+        });
+    }
+
+    #[test]
+    fn spawn_registry_tests_returns_error_when_semaphore_is_closed() {
+        tauri::async_runtime::block_on(async {
+            let semaphore = Arc::new(Semaphore::new(1));
+            semaphore.close();
+            let client = http_client().expect("create http client");
+            let registries = vec![registry("one")];
+
+            let handles = spawn_registry_tests(client, registries, semaphore);
+            let result = handles
+                .into_iter()
+                .next()
+                .expect("spawned handle")
+                .await
+                .expect("task completed");
+
+            assert_eq!(result.name, "one");
+            assert_eq!(result.latency_ms, None);
+            assert_eq!(result.error.as_deref(), Some("任务失败: 并发控制已关闭"));
+        });
+    }
+
+    #[test]
+    fn try_request_uses_get_for_registry_probe() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test server");
+        let addr = listener.local_addr().expect("read local addr");
+
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept request");
+            let mut buffer = [0_u8; 1024];
+            let read = stream.read(&mut buffer).expect("read request");
+            let request = String::from_utf8_lossy(&buffer[..read]);
+            let first_line = request.lines().next().unwrap_or_default().to_string();
+
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+                .expect("write response");
+
+            first_line
+        });
+
+        tauri::async_runtime::block_on(async {
+            let client = http_client().expect("create http client");
+            try_request(client, &format!("http://{addr}"))
+                .await
+                .expect("request should succeed");
+        });
+
+        let first_line = server.join().expect("server thread");
+        assert!(
+            first_line.starts_with("GET / HTTP/1.1"),
+            "expected GET request, got {first_line}"
+        );
     }
 }

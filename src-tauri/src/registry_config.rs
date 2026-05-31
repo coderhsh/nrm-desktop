@@ -16,6 +16,10 @@ impl RegistryParseOptions {
     };
 }
 
+pub(crate) fn normalize_registry_url_key(url: &str) -> String {
+    url.trim().trim_end_matches('/').to_string()
+}
+
 pub(crate) fn parse_registry_value(content: &str, options: RegistryParseOptions) -> Option<String> {
     for line in content.lines() {
         if let Some(value) = parse_registry_line(line, options) {
@@ -83,5 +87,13 @@ registry="https://project.example/"
         let parsed = parse_registry_value(content, RegistryParseOptions::PROJECT_NRMRC);
 
         assert_eq!(parsed.as_deref(), Some("https://project.example/"));
+    }
+
+    #[test]
+    fn normalizes_registry_url_key_by_trimming_and_dropping_trailing_slash() {
+        assert_eq!(
+            normalize_registry_url_key(" https://registry.example.com/path/ "),
+            "https://registry.example.com/path"
+        );
     }
 }

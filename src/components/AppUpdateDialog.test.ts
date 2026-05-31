@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 
 vi.stubGlobal('ElMessage', {
   success: vi.fn(),
@@ -29,6 +29,11 @@ const appUpdateState = vi.hoisted(() => ({
   dismissCurrentUpdate: vi.fn(),
   closeUpdateDialog: vi.fn(),
   openUpdateDialog: vi.fn(),
+}))
+
+vi.mock('@/utils/renderMarkdown', () => ({
+  renderMarkdown: async (source: string) =>
+    `<p>${source.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</p>`,
 }))
 
 vi.mock('@/composables/useAppUpdate', () => ({
@@ -82,7 +87,7 @@ describe('AppUpdateDialog', () => {
     appUpdateState.showIndicator.value = true
   })
 
-  it('renders markdown release notes as read-only content', () => {
+  it('renders markdown release notes as read-only content', async () => {
     appUpdateState.updateInfo.value = {
       currentVersion: '1.0.1',
       version: '1.0.2',
@@ -104,12 +109,14 @@ describe('AppUpdateDialog', () => {
       },
     })
 
+    await flushPromises()
+
     expect(wrapper.find('.app-update-notes-content').exists()).toBe(true)
     expect(wrapper.find('.app-update-notes-content pre').exists()).toBe(false)
     expect(wrapper.find('.app-update-notes-content').html()).toContain('<strong>Bold item</strong>')
   })
 
-  it('renders version info and download action when an update is available', () => {
+  it('renders version info and download action when an update is available', async () => {
     const wrapper = mount(AppUpdateDialog, {
       global: {
         stubs: {
@@ -123,6 +130,8 @@ describe('AppUpdateDialog', () => {
         },
       },
     })
+
+    await flushPromises()
 
     expect(wrapper.text()).toContain('1.0.1')
     expect(wrapper.text()).toContain('1.0.2')
