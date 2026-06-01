@@ -91,7 +91,7 @@ const scrollToDownload = () => {
       <span>{{ t({ en: 'Release packages', zh: '发布安装包' }) }}</span>
     </div>
     <div class="section-head">
-      <h2 data-reveal>{{ t({ en: 'Download without guessing which asset matters.', zh: '不用猜哪个发布资产才是你真正需要的。' }) }}</h2>
+      <h2 data-reveal>{{ t({ en: 'The right build for your platform.', zh: '为你的平台匹配合适的版本。' }) }}</h2>
       <p data-reveal>
         {{
           t({
