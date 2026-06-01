@@ -141,7 +141,7 @@ const detectLocale = (): Locale => {
 const detectTheme = (): Theme => {
   const stored = localStorage.getItem(STORAGE_THEME)
   if (stored === 'light' || stored === 'dark') return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return 'dark'
 }
 
 const detectPlatform = (): 'macos' | 'windows' | 'other' => {
