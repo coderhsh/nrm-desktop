@@ -1,3 +1,5 @@
+import { siteConfig } from '../site.config'
+
 let cleanup: Array<() => void> = []
 
 export const cleanupMotion = () => {
@@ -7,6 +9,8 @@ export const cleanupMotion = () => {
 
 export const initMotion = () => {
   cleanupMotion()
+
+  const { threshold, rootMargin, staggerDelay, maxStagger } = siteConfig.animation
 
   const reveals = [...document.querySelectorAll<HTMLElement>('[data-reveal]')]
   if (reveals.length > 0) {
@@ -23,12 +27,12 @@ export const initMotion = () => {
           }
         })
       },
-      { threshold: 0.18, rootMargin: '0px 0px -8% 0px' },
+      { threshold, rootMargin },
     )
 
     reveals.forEach((element, index) => {
       if (!element.style.getPropertyValue('--reveal-delay')) {
-        element.style.setProperty('--reveal-delay', `${Math.min(index * 45, 360)}ms`)
+        element.style.setProperty('--reveal-delay', `${Math.min(index * staggerDelay, maxStagger)}ms`)
       }
       observer.observe(element)
 

@@ -49,6 +49,12 @@ export type SiteConfig = {
   releasesUrl: string
   releaseManifestPath: string
   releaseApiUrl: string
+  animation: {
+    threshold: number
+    rootMargin: string
+    staggerDelay: number
+    maxStagger: number
+  }
   assets: {
     logo: string
     ogImage: string
