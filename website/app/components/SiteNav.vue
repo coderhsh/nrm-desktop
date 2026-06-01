@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Locale, PageKey } from '../site.config'
+import type { Locale, PageKey } from '../types/site'
 
 const { assetPath, linkTo, primaryNav, siteConfig, t } = useSiteState()
 
@@ -28,7 +28,7 @@ defineEmits<{
       <nav class="nav-links" aria-label="Primary">
         <NuxtLink
           v-for="link in primaryNav"
-          :key="link.path"
+          :key="link.page"
           :to="linkTo(link.page, lang)"
           :class="{ active: link.page === currentPage }"
         >
