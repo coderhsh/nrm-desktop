@@ -2,10 +2,25 @@
 import { onMounted } from 'vue'
 
 const { linkTo, siteConfig } = useSiteState()
+const redirectScript = `
+(() => {
+  const stored = localStorage.getItem('nrm-desktop.website.lang')
+  const locale = stored === 'zh' || (!stored && navigator.language.toLowerCase().startsWith('zh')) ? 'zh' : 'en'
+  location.replace('${siteConfig.baseUrl}' + locale + '/')
+})()
+`
 
 useSeoMeta({
   title: siteConfig.pageMeta.home.title[siteConfig.defaultLocale],
   description: siteConfig.pageMeta.home.description[siteConfig.defaultLocale],
+})
+
+useHead({
+  script: [
+    {
+      innerHTML: redirectScript,
+    },
+  ],
 })
 
 onMounted(() => {
@@ -21,11 +36,7 @@ onMounted(() => {
     </div>
     <h1 data-reveal>nrm desktop</h1>
     <p data-reveal>
-      Choose a language to open the static website.
+      Redirecting to your language...
     </p>
-    <div class="hero-actions" data-reveal>
-      <NuxtLink class="button primary" :to="linkTo('home', 'en')">English</NuxtLink>
-      <NuxtLink class="button secondary" :to="linkTo('home', 'zh')">中文</NuxtLink>
-    </div>
   </section>
 </template>

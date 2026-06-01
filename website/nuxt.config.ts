@@ -1,5 +1,6 @@
 import { defineNuxtConfig } from 'nuxt/config'
-import { prerenderRoutes, siteConfig } from './app/site.config'
+import { prerenderRoutes } from './app/lib/site-runtime'
+import { siteConfig } from './app/site.config'
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-06-01',
