@@ -53,9 +53,7 @@ const scrollToDownload = () => {
 
     <div class="hero-device" data-parallax="0.09" data-reveal>
       <div class="device-window">
-        <div class="device-bar">
-          <span></span><span></span><span></span>
-        </div>
+        <div class="device-bar"><span></span><span></span><span></span></div>
         <div class="device-body">
           <aside>
             <h3>{{ t({ en: 'Groups', zh: '分类' }) }}</h3>
