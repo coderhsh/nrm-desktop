@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
-import { RouterView, useRoute } from 'vue-router'
-import SiteNav from './components/SiteNav.vue'
+import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import SiteFooter from './components/SiteFooter.vue'
+import SiteNav from './components/SiteNav.vue'
 import { cleanupMotion, initMotion } from './lib/motion'
-import { useSiteState, type PageKey } from './lib/site'
 
 const route = useRoute()
-const { applyMeta, lang, switchLanguage, switchTheme } = useSiteState()
+const { currentPage, initClientState, lang, switchLanguage, switchTheme } = useSiteState()
 let refreshTimer = 0
 
-const currentPage = computed<PageKey>(() => {
-  return (route.meta.page as PageKey | undefined) ?? 'home'
-})
+useSiteHead()
 
 const refreshMotion = async () => {
   await nextTick()
@@ -29,17 +25,14 @@ const refreshMotion = async () => {
 watch(
   () => route.fullPath,
   async () => {
-    applyMeta(currentPage.value)
-    await refreshMotion()
+    if (import.meta.client) {
+      await refreshMotion()
+    }
   },
 )
 
-watch(lang, () => {
-  applyMeta(currentPage.value)
-})
-
 onMounted(async () => {
-  applyMeta(currentPage.value)
+  initClientState()
   await refreshMotion()
 })
 
@@ -60,7 +53,7 @@ onBeforeUnmount(() => {
       @switch-theme="switchTheme"
     />
     <main class="main-shell">
-      <RouterView />
+      <NuxtPage />
     </main>
     <SiteFooter />
   </div>

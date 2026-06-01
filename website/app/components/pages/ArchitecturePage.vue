@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { t } from '../lib/site'
+const { t } = useSiteState()
 </script>
 
 <template>

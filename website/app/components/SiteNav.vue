@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import type { PageKey } from '../lib/site'
-import { REPO_URL, primaryNav, t, type Locale } from '../lib/site'
+import type { Locale, PageKey } from '../site.config'
+
+const { assetPath, linkTo, primaryNav, siteConfig, t } = useSiteState()
 
 defineProps<{
   currentPage: PageKey
@@ -17,27 +17,27 @@ defineEmits<{
 <template>
   <header class="nav-shell">
     <div class="nav">
-      <RouterLink class="brand" to="/" aria-label="nrm desktop">
-        <img src="/images/logo.png" alt="" />
+      <NuxtLink class="brand" :to="linkTo('home', lang)" aria-label="nrm desktop">
+        <img :src="assetPath(siteConfig.assets.logo)" alt="" />
         <span>
           <strong>nrm desktop</strong>
           <small>registry control</small>
         </span>
-      </RouterLink>
+      </NuxtLink>
 
       <nav class="nav-links" aria-label="Primary">
-        <RouterLink
+        <NuxtLink
           v-for="link in primaryNav"
-          :key="link.to"
-          :to="link.to"
+          :key="link.path"
+          :to="linkTo(link.page, lang)"
           :class="{ active: link.page === currentPage }"
         >
           {{ t(link.label) }}
-        </RouterLink>
+        </NuxtLink>
       </nav>
 
       <div class="nav-actions">
-        <a class="nav-chip nav-chip-link" :href="REPO_URL" target="_blank" rel="noreferrer">
+        <a class="nav-chip nav-chip-link" :href="siteConfig.repoUrl" target="_blank" rel="noreferrer">
           GitHub
         </a>
         <button class="nav-chip" type="button" @click="$emit('switchLanguage')">

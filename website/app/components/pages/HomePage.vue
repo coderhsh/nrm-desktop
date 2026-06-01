@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import DownloadMatrix from '../components/DownloadMatrix.vue'
-import { t } from '../lib/site'
+const { assetPath, linkTo, siteConfig, t } = useSiteState()
 </script>
 
 <template>
@@ -25,12 +23,12 @@ import { t } from '../lib/site'
       </p>
 
       <div class="hero-actions" data-reveal>
-        <RouterLink class="button primary" to="/download">
+        <NuxtLink class="button primary" :to="linkTo('download')">
           {{ t({ en: 'Download desktop', zh: '下载桌面端' }) }}
-        </RouterLink>
-        <RouterLink class="button secondary" to="/configuration">
+        </NuxtLink>
+        <NuxtLink class="button secondary" :to="linkTo('configuration')">
           {{ t({ en: 'Read configuration guide', zh: '查看配置指南' }) }}
-        </RouterLink>
+        </NuxtLink>
       </div>
 
       <dl class="hero-stats" data-reveal>
@@ -112,7 +110,7 @@ import { t } from '../lib/site'
 
     <div class="story-grid">
       <div class="story-media">
-        <img src="/images/screenshot-light-en.png" alt="nrm desktop screenshot" data-reveal />
+        <img :src="assetPath(siteConfig.assets.screenshotLightEn)" alt="nrm desktop screenshot" data-reveal />
       </div>
       <div class="story-copy">
         <article class="story-step" data-reveal>
