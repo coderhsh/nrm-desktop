@@ -1,4 +1,4 @@
-<!-- last-updated: 2026-05-23T00:00 | generated-by: create-agents-md | version: 1 -->
+<!-- 最后更新: 2026年06月02日 | 生成工具: create-agents-md | 版本: 1 -->
 
 # AGENTS.md
 
@@ -108,6 +108,7 @@
 ├── scripts/             # 开发、构建、版本同步、图标、changelog、git hooks 脚本
 ├── website/             # 独立官网：Nuxt + Vue + TypeScript，静态生成后部署到 GitHub Pages
 ├── docs/                # 发布指南、agent skills 等文档
+├── .codegraph/          # CodeGraph 代码知识图谱索引（主库 *.db 纳入版本控制）
 ├── docs/images/         # README 截图资源
 ├── index.html           # Vite HTML 入口
 ├── package.json         # pnpm scripts 与前端依赖
@@ -202,6 +203,16 @@ pnpm changelog:context
 
 ## 文件阅读策略
 
+### CodeGraph 代码智能
+
+项目已启用 CodeGraph（`.codegraph/`）。进行代码探索、符号查找、调用链追踪或影响分析时：
+
+1. **优先**使用 CodeGraph MCP 工具：`codegraph_explore`、`codegraph_query`、`codegraph_callers`、`codegraph_callees`、`codegraph_impact`、`codegraph_context`。
+2. 仅在 CodeGraph 未覆盖目标时（如配置文件、静态资源、非代码文件）再回退到 `rg`/Glob/Read。
+3. 回答架构问题前，可用 `codegraph context <任务描述>` 获取预构建上下文。
+4. 修改函数/类/模块前，用 `codegraph impact <符号>` 评估下游影响。
+5. 较大范围代码变更完成后，在项目根目录运行 `codegraph sync` 保持索引同步。
+
 ### 修改前端页面
 
 优先阅读：
@@ -286,7 +297,7 @@ pnpm changelog:context
 ## Token 节省规则
 
 1. 先阅读 `AGENTS.md`，再决定是否继续读文件。
-2. 不要一开始全项目扫描，优先用 `rg` 搜索组件名、函数名、command 名、本地存储 key 或报错信息。
+2. 代码探索优先 CodeGraph MCP（见上文「CodeGraph 代码智能」），其次用 `rg` 搜索组件名、函数名、command 名、本地存储 key 或报错信息。
 3. 只读取与任务直接相关的文件，已确认无关的文件不要重复读取。
 4. 不输出完整文件内容，除非用户明确要求。
 5. 简单问题直接给结论；复杂问题只展示关键修改点、关键 diff 或必要代码片段。
@@ -323,6 +334,52 @@ pnpm changelog:context
 - **状态管理**：Pinia setup store；组件内用 `storeToRefs`；持久化偏好用 VueUse `useLocalStorage`。
 - **API 调用**：统一经 `src/api/tauri.ts` / `speedtest.ts`，不散落 `invoke`。
 - **命名**：TS/Vue 用 camelCase；文件用 kebab-case 或 PascalCase（组件 `.vue`）；Rust 用 snake_case。
+
+## 专项功能规则
+
+### i18n（国际化）
+
+**桌面应用**
+
+- 语言 composable：`src/composables/useI18n.ts`；支持 `zh-CN` / `en`。
+- 持久化键：`LANGUAGE_STORAGE_KEY`（`nrm-desktop-language`）；启动时 `main.ts` 先尝试 Rust `get_app_language`，失败则回退浏览器语言。
+- 文案以 `useI18n.ts` 内嵌 `messages` 对象维护，键名形如 `app.xxx`、`registry.xxx`；新增 UI 文案需同时补中英文。
+- 错误文案单独模块：`src/utils/invoke-error-i18n.ts`、`src/utils/latency-error-i18n.ts`；Rust 错误经 formatter 再展示。
+- 托盘/后端语言同步：`src-tauri/src/app_settings.rs` 与 `get_app_language` / `set_app_language` command。
+
+**官网**
+
+- Nuxt 文件路由：`website/app/pages/[locale]/` 生成 `/en/*` 与 `/zh/*` 静态路径。
+- 站点配置与 SEO：`website/app/site.config.ts`；状态与主题：`website/app/composables/useSiteState.ts`。
+
+修改界面文案时，先确认属于桌面端 composable 还是官网页面/组件，避免混用两套 i18n 机制。
+
+### 主题（亮 / 暗 / 自动）
+
+- Composable：`src/composables/useTheme.ts`；可选值 `light` | `dark` | `auto`。
+- 持久化键：`nrm-desktop-theme`（JSON 字符串存 localStorage）。
+- 暗色模式通过 `document.documentElement.classList.toggle('dark', …)` 驱动；UnoCSS 与 Element Plus 暗色变量依赖 `html.dark`。
+- 全局暗色 CSS 变量在 `main.ts` 引入 `element-plus/theme-chalk/dark/css-vars.css`；设计 token 在 `src/styles/tokens.css`。
+- 主题切换动画尊重 `prefers-reduced-motion`；修改样式时需同时验证 light/dark/auto 三种状态。
+
+### 应用更新（Tauri Updater）
+
+- 前端逻辑：`src/composables/useAppUpdate.ts`、`useAppUpdatePreferences.ts`；UI：`AppUpdateDialog.vue`。
+- 仅在**打包后的 Tauri 运行时**可用（开发模式 `import.meta.env.DEV` 下 updater 不可用）。
+- 本地偏好键：`nrm-desktop-update-last-check-at`、`nrm-desktop-update-dismissed-version`；自动检查间隔 24 小时。
+- API：`@tauri-apps/plugin-updater` 的 `check()`；安装后通过 `restartApp`（`src/api/tauri.ts`）重启。
+- 配置与 manifest：`src-tauri/tauri.conf.json` updater 段、`scripts/verify-updater-setup.mjs`、`scripts/generate-updater-manifest.mjs`。
+- CI：`.github/workflows/bootstrap-updater-manifest.yml`；本地校验：`pnpm verify:updater`。
+
+修改 updater 行为或 Release 资产时，需同步检查 Rust 插件配置、前端 composable 和 manifest 生成脚本。
+
+### 跨平台注意事项
+
+- 构建脚本在 Windows 上通过 `process.platform === 'win32'` 分支处理（如 `scripts/spawn-pnpm.mjs`、`tauri-build-win.mjs`、`tauri-build-with-output.mjs`）。
+- Windows 专用构建：`pnpm build:win`；通用构建：`pnpm build`（脚本内按平台处理 bundle 产物）。
+- CI 跨平台 installer：`.github/workflows/build-installers.yml`、`.github/workflows/installer-build-reusable.yml`。
+- Shell spawn：Windows 需 `shell: true`（见 `spawn-pnpm.mjs`）；编写新 Node 脚本时沿用 `path.join` / `process.platform` 判断，避免硬编码 `/` 或 `\`。
+- Tauri 平台差异（托盘、单实例、WebView2 等）以 `src-tauri` 模块注释和 Tauri 官方 prerequisite 为准。
 
 ## 常见陷阱
 
@@ -406,6 +463,7 @@ pnpm changelog:context
 | `.github/workflows/release-installers.yml` | Release 相关 | 构建安装包 |
 | `.github/workflows/bootstrap-updater-manifest.yml` | 更新 manifest | Tauri updater 引导 |
 | `.github/workflows/build-installers.yml` | 构建安装包 | 跨平台 installer |
+| `.github/workflows/installer-build-reusable.yml` | 被其他 workflow 调用 | 可复用 installer 构建 job |
 
 本地可复现 CI 核心检查：
 
@@ -485,6 +543,8 @@ Agent 在修改项目文件或配置后，应检查 `AGENTS.md` 是否需要同�
 - CI/CD 配置变更（`.github/workflows/`）
 - 运行时版本变更（`.nvmrc`、`rust-toolchain.toml`、`engines`）
 - Lint 配置变更（`eslint.config.js`）
+
+**CodeGraph 同步**：新增/重命名/删除源码文件或较大范围重构后，在项目根目录运行 `codegraph sync`，再报告任务完成。
 
 更新方式：仅修改受影响章节，更新文首 `last-updated` 时间戳，不要整文件重生成。使用命令或路径前先验证其仍存在且有效。
 
