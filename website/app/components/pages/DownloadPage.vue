@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import DownloadMatrix from '../components/DownloadMatrix.vue'
-import { t } from '../lib/site'
+const { t } = useSiteState()
 </script>
 
 <template>

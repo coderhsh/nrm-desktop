@@ -1,17 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import {
-  LATEST_RELEASE_URL,
-  ensureReleaseLoaded,
-  findAsset,
-  formatSize,
-  t,
-  useSiteState,
-  type Copy,
-  type DownloadKind,
-} from '../lib/site'
+import type { Copy, DownloadKind } from '../site.config'
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     dense?: boolean
   }>(),
@@ -28,7 +19,17 @@ type DownloadCard = {
   recommendedFor: Array<'macos' | 'windows'>
 }
 
-const { release, releaseError, isLoadingRelease, userPlatform } = useSiteState()
+const {
+  ensureReleaseLoaded,
+  findAsset,
+  formatSize,
+  isLoadingRelease,
+  latestReleaseUrl,
+  release,
+  releaseError,
+  t,
+  userPlatform,
+} = useSiteState()
 
 const isRecommended = (card: DownloadCard) => {
   return userPlatform.value !== 'other' && card.recommendedFor.includes(userPlatform.value)
@@ -88,7 +89,7 @@ onMounted(() => {
       <span>{{ t({ en: 'Latest release', zh: '最新版本' }) }}</span>
       <strong>{{ isLoadingRelease ? '...' : release?.tag_name ?? 'latest' }}</strong>
     </div>
-    <a class="button secondary compact" :href="release?.html_url ?? LATEST_RELEASE_URL" target="_blank" rel="noreferrer">
+    <a class="button secondary compact" :href="release?.html_url ?? latestReleaseUrl" target="_blank" rel="noreferrer">
       {{ t({ en: 'Open release', zh: '查看发布' }) }}
     </a>
   </div>
@@ -117,7 +118,7 @@ onMounted(() => {
       <h3>{{ t(card.title) }}</h3>
       <p>{{ t(card.detail) }}</p>
       <small>{{ findAsset(card.id)?.name ?? t({ en: 'Fallback to GitHub Releases', zh: '回退到 GitHub Releases' }) }}</small>
-      <a class="button primary download-button" :href="findAsset(card.id)?.browser_download_url ?? LATEST_RELEASE_URL" target="_blank" rel="noreferrer">
+      <a class="button primary download-button" :href="findAsset(card.id)?.browser_download_url ?? latestReleaseUrl" target="_blank" rel="noreferrer">
         <span class="download-button-label">{{ t({ en: 'Download', zh: '下载' }) }}</span>
         <span class="download-button-size">
           {{ formatSize(findAsset(card.id)?.size) || '--' }}
