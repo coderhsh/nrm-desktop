@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import type { Copy, DownloadKind } from '../site.config'
+import type { Copy, DownloadKind } from '../types/site'
 
 withDefaults(
   defineProps<{

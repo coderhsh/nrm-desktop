@@ -9,14 +9,16 @@ import {
   normalizeLocale,
   pagePaths,
   primaryNav,
-  siteConfig,
-  type Copy,
-  type DownloadKind,
-  type GitHubRelease,
-  type Locale,
-  type PageKey,
-  type Theme,
-} from '../site.config'
+} from '../lib/site-runtime'
+import { siteConfig } from '../site.config'
+import type {
+  Copy,
+  DownloadKind,
+  GitHubRelease,
+  Locale,
+  PageKey,
+  Theme,
+} from '../types/site'
 
 const STORAGE_LANG = 'nrm-desktop.website.lang'
 const STORAGE_THEME = 'nrm-desktop.website.theme'

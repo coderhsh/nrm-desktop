@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://coderhsh.github.io/nrm-desktop/sitemap.xml
