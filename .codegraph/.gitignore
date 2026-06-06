@@ -1,0 +1,15 @@
+# CodeGraph data files
+# These are local to each machine and should not be committed
+
+# Database runtime files (main *.db is committed for team sharing)
+*.db-wal
+*.db-shm
+
+# Cache
+cache/
+
+# Logs
+*.log
+
+# Hook markers
+.dirty

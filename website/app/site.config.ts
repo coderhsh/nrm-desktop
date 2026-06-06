@@ -88,6 +88,18 @@ export const siteConfig = {
     },
   },
 
+  // 滚动动画：[data-reveal] 元素进入视口时的触发阈值和时长。
+  animation: {
+    // IntersectionObserver threshold：0~1，越小越早触发。0.05 表示元素刚露出底部边缘就触发。
+    threshold: 0.05,
+    // IntersectionObserver rootMargin：正值扩大检测区域，负值缩小。'0px 0px -5% 0px' 表示视口底部内缩 5%。
+    rootMargin: '0px 0px -5% 0px',
+    // 相邻元素的入场延迟差（毫秒）。
+    staggerDelay: 50,
+    // 入场延迟的最大值（毫秒），超过此值后所有元素不再累加延迟。
+    maxStagger: 250,
+  },
+
   // 顶部导航：page 对应固定页面 key，label 是中英文显示文案。
   nav: [
     { page: 'home', label: { en: 'Home', zh: '首页' } },

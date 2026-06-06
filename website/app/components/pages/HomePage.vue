@@ -1,5 +1,9 @@
 <script setup lang="ts">
 const { assetPath, linkTo, siteConfig, t } = useSiteState()
+
+const scrollToDownload = () => {
+  document.getElementById('home-download')?.scrollIntoView({ behavior: 'smooth' })
+}
 </script>
 
 <template>
@@ -11,7 +15,7 @@ const { assetPath, linkTo, siteConfig, t } = useSiteState()
       </div>
 
       <h1 data-reveal>
-        {{ t({ en: 'Manage registries in a calmer workspace.', zh: '把源管理放进更平静的桌面工作台。' }) }}
+        {{ t({ en: 'A desktop app built for npm registry management.', zh: '为管理 npm 源而生的桌面端应用。' }) }}
       </h1>
       <p data-reveal>
         {{
@@ -23,9 +27,9 @@ const { assetPath, linkTo, siteConfig, t } = useSiteState()
       </p>
 
       <div class="hero-actions" data-reveal>
-        <NuxtLink class="button primary" :to="linkTo('download')">
-          {{ t({ en: 'Download desktop', zh: '下载桌面端' }) }}
-        </NuxtLink>
+        <button class="button primary" type="button" @click="scrollToDownload">
+          {{ t({ en: 'Download', zh: '下载' }) }}
+        </button>
         <NuxtLink class="button secondary" :to="linkTo('configuration')">
           {{ t({ en: 'Read configuration guide', zh: '查看配置指南' }) }}
         </NuxtLink>
@@ -33,8 +37,8 @@ const { assetPath, linkTo, siteConfig, t } = useSiteState()
 
       <dl class="hero-stats" data-reveal>
         <div>
-          <dt>{{ t({ en: 'Runtime', zh: '运行时' }) }}</dt>
-          <dd>Tauri 2</dd>
+          <dt>{{ t({ en: 'Backend', zh: '后端' }) }}</dt>
+          <dd>Rust</dd>
         </div>
         <div>
           <dt>{{ t({ en: 'Frontend', zh: '前端' }) }}</dt>
@@ -49,9 +53,7 @@ const { assetPath, linkTo, siteConfig, t } = useSiteState()
 
     <div class="hero-device" data-parallax="0.09" data-reveal>
       <div class="device-window">
-        <div class="device-bar">
-          <span></span><span></span><span></span>
-        </div>
+        <div class="device-bar"><span></span><span></span><span></span></div>
         <div class="device-body">
           <aside>
             <h3>{{ t({ en: 'Groups', zh: '分类' }) }}</h3>
@@ -83,13 +85,13 @@ const { assetPath, linkTo, siteConfig, t } = useSiteState()
     </div>
   </section>
 
-  <section class="section">
+  <section id="home-download" class="section">
     <div class="section-kicker" data-reveal>
       <span>§01</span>
       <span>{{ t({ en: 'Release packages', zh: '发布安装包' }) }}</span>
     </div>
     <div class="section-head">
-      <h2 data-reveal>{{ t({ en: 'Download without guessing which asset matters.', zh: '不用猜哪个发布资产才是你真正需要的。' }) }}</h2>
+      <h2 data-reveal>{{ t({ en: 'The right build for your platform.', zh: '为你的平台匹配合适的版本。' }) }}</h2>
       <p data-reveal>
         {{
           t({

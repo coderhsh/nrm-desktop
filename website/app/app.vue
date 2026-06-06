@@ -5,7 +5,7 @@ import SiteNav from './components/SiteNav.vue'
 import { cleanupMotion, initMotion } from './lib/motion'
 
 const route = useRoute()
-const { currentPage, initClientState, lang, switchLanguage, switchTheme } = useSiteState()
+const { initClientState, lang, switchLanguage, switchTheme } = useSiteState()
 let refreshTimer = 0
 
 useSiteHead()
@@ -47,7 +47,6 @@ onBeforeUnmount(() => {
 <template>
   <div class="site-shell">
     <SiteNav
-      :current-page="currentPage"
       :lang="lang"
       @switch-language="switchLanguage"
       @switch-theme="switchTheme"
